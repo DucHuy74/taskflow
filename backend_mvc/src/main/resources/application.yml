@@ -51,10 +51,13 @@ spring:
           issuer-uri: ${KEYCLOAK_ISSUER_URI}
 
   neo4j:
-    uri: bolt://localhost:7687
+    uri: neo4j+s://d64a682c.databases.neo4j.io
     authentication:
       username: neo4j
-      password: 12345678
+      password: HdwlHzHdYhAqaJYfEPhhIPWWNtoilzXPfI4gWvYQNME
+    data:
+      neo4j:
+        database: neo4j
 
 jobrunr:
   background-job-server:
