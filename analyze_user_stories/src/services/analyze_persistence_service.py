@@ -1,57 +1,55 @@
 from src.models.analyze_story import AnalyzeStory
 from src.models.analyze_story_result import AnalyzeStoryResult
 
+
 class AnalyzePersistenceService:
 
     def __init__(self, db):
         self.db = db
 
-    def save_analysis(
+
+    def get_story(self, user_story_id):
+        return (
+            self.db.query(AnalyzeStory)
+            .filter(AnalyzeStory.as_user_story_id == user_story_id)
+            .first()
+        )
+
+    def get_pending_stories(self):
+
+        return (
+            self.db.query(AnalyzeStory)
+            .filter(AnalyzeStory.as_status == "RECEIVED")
+            .all()
+        )
+
+    def save_parse_result(
         self,
-        parsed_results,
-        knowledge_result,
-        sprint_id,
-        workspace_id,
-        creator_id
+        story,
+        parsed,
+        canonical_map
     ):
 
-        canonical_map = knowledge_result["canonical_map"]
+        subject_can = canonical_map.get(parsed["subject"], parsed["subject"])
+        action_can = canonical_map.get(parsed["action"], parsed["action"])
+        object_can = canonical_map.get(parsed["object"], parsed["object"])
 
-        for parsed in parsed_results:
+        result = AnalyzeStoryResult(
+            asr_story_id = story.as_id,
 
-            # --- 1. Save AnalyzeStory ---
-            story = AnalyzeStory(
-                as_raw_text = parsed["raw_text"],
-                as_status = "DONE",
-                as_sprint_id = sprint_id,
-                as_workspace_id = workspace_id,
-                as_creator_id = creator_id
-            )
+            asr_subject = parsed["subject"],
+            asr_action = parsed["action"],
+            asr_object = parsed["object"],
 
-            self.db.add(story)
-            self.db.flush()
+            asr_subject_canonical = subject_can,
+            asr_action_canonical = action_can,
+            asr_object_canonical = object_can,
 
-            # --- 2. Resolve canonical ---
-            subject_can = canonical_map.get(parsed["subject"], parsed["subject"])
-            action_can = canonical_map.get(parsed["action"], parsed["action"])
-            object_can = canonical_map.get(parsed["object"], parsed["object"])
+            asr_status = parsed["status"]
+        )
 
-            # --- 3. Save AnalyzeStoryResult ---
-            result = AnalyzeStoryResult(
-                asr_story_id = story.as_id,
+        self.db.add(result)
 
-                asr_subject = parsed["subject"],
-                asr_action = parsed["action"],
-                asr_object = parsed["object"],
-
-                asr_subject_canonical = subject_can,
-                asr_action_canonical = action_can,
-                asr_object_canonical = object_can,
-
-                asr_status = parsed["status"],
-                asr_creator_id = creator_id
-            )
-
-            self.db.add(result)
+        story.as_status = "DONE"
 
         self.db.commit()

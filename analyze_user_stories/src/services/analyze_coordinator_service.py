@@ -49,3 +49,56 @@ class AnalyzeCoordinatorService:
             "rules": rules,
             "transactions": transactions
         }
+     
+     
+    def parse_and_save(self, story_id):
+
+        story = self.persistence.get_story(story_id)
+
+        if story is None:
+            return {
+                "error": "Story not found",
+                "story_id": story_id
+            }
+        
+        parsed = self.parser.parse(story.as_raw_text)
+
+        if parsed.get("status") == "ERROR":
+            return {"status": "ERROR"}
+
+        knowledge_result = self.knowledge.process([parsed])
+        canonical_map = knowledge_result["canonical_map"]
+
+        self.persistence.save_parse_result(
+            story,
+            parsed,
+            canonical_map
+        )
+
+        return parsed   
+    
+    
+    def parse_pending_stories(self):
+
+        stories = self.persistence.get_pending_stories()
+
+        parsed_ids = []
+
+        for story in stories:
+
+            parsed = self.parser.parse(story.as_raw_text)
+
+            if parsed.get("status") == "ERROR":
+                continue
+
+            canonical_map = {}
+
+            self.persistence.save_parse_result(
+                story,
+                parsed,
+                canonical_map
+            )
+
+            parsed_ids.append(story.as_user_story_id)
+
+        return parsed_ids

@@ -22,6 +22,6 @@ public class UserStoryGraphListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(UserStoryCreatedEvent event) {
 
-        graphJobService.enqueueAnalysis(event);
+//        graphJobService.enqueueAnalysis(event);
     }
 }

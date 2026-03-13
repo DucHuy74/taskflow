@@ -11,6 +11,7 @@ class AnalyzeStory(Base):
     as_user_story_id = Column(String(36), nullable=True)
     as_sprint_id = Column(String(36), nullable=True)
     as_workspace_id = Column(String(36), nullable=True)
+    as_backlog_id = Column(String(36), nullable=True)
 
     
     as_raw_text = Column(Text, nullable=False)
@@ -20,7 +21,3 @@ class AnalyzeStory(Base):
     as_is_deleted = Column(Boolean, default=False)
     as_created_at = Column(DateTime, default=func.now())
     as_updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-    as_version = Column(Integer, default=1)
-
-    as_creator_id = Column(String(36))
-    as_modifier_id = Column(String(36))
