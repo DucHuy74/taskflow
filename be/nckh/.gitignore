@@ -39,6 +39,6 @@ build/
 .env
 
 # Ignore MySQL data and sockets
-nckh/mysql-replication/master-data/
-nckh/mysql-replication/slave-data/
+**/master-data/
+**/slave-data/
 *.sock
