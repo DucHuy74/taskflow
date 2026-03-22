@@ -15,10 +15,20 @@ spring:
       timeout: ${REDIS_TIMEOUT}
 
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-    driver-class-name: ${DB_DRIVER}
+#    url: ${DB_URL}
+#    username: ${DB_USERNAME}
+#    password: ${DB_PASSWORD}
+#    driver-class-name: ${DB_DRIVER}
+    master:
+      url: ${DB_MASTER_URL}
+      username: ${DB_MASTER_USERNAME}
+      password: ${DB_MASTER_PASSWORD}
+
+    slave:
+      url: ${DB_SLAVE_URL}
+      username: ${DB_SLAVE_USERNAME}
+      password: ${DB_SLAVE_PASSWORD}
+
     hikari:
       max-lifetime: ${DB_MAX_LIFETIME}
       idle-timeout: ${DB_IDLE_TIMEOUT}
@@ -58,6 +68,12 @@ spring:
     data:
       neo4j:
         database: neo4j
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
 
 jobrunr:
   background-job-server:

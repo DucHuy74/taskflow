@@ -1,5 +1,6 @@
 package com.xxxx.ddd.application.service.sprint.impl;
 
+import com.xxxx.ddd.application.annotation.ReadOnly;
 import com.xxxx.ddd.application.mapper.SprintMapper;
 import com.xxxx.ddd.application.mapper.UserStoryMapper;
 import com.xxxx.ddd.application.model.dto.request.SprintCreateRequest;
@@ -57,6 +58,7 @@ public class SprintAppServiceImpl implements SprintAppService {
 
     //Get all sprints of workspace
     @Override
+    @ReadOnly
     @Transactional(readOnly = true)
     public List<SprintResponse> getSprints(String workspaceId) {
 
