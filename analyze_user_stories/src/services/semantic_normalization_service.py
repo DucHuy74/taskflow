@@ -1,6 +1,6 @@
-class KnowledgeLearningService:
+class SemanticNormalizationService:
 
-    AUTO_MERGE_THRESHOLD = 0.85
+    AUTO_MERGE_THRESHOLD = 0.8
     REVIEW_THRESHOLD = 0.5
 
     def __init__(self, similarity_calculator):
@@ -47,44 +47,65 @@ class KnowledgeLearningService:
 
         results = []
 
-        for i in range(len(valid_svo)):
-            for j in range(i + 1, len(valid_svo)):
+        # 1. build context map
+        action_context = {}
 
-                for key in ["action", "object"]:
+        for item in valid_svo:
+            action = item.get("action")
+            obj = item.get("object")
 
-                    w1 = valid_svo[i].get(key)
-                    w2 = valid_svo[j].get(key)
+            if not action:
+                continue
 
-                    if not w1 or not w2:
-                        continue
+            action = action.lower()
+            obj = obj.lower() if obj else None
 
-                    w1 = w1.lower()
-                    w2 = w2.lower()
+            action_context.setdefault(action, set())
+            if obj:
+                action_context[action].add(obj)
 
-                    if w1 == w2:
-                        continue
+        words = list(action_context.keys())
 
+        print("\n===== ACTION CONTEXT =====")
+        for k, v in action_context.items():
+            print(k, "->", v)
+
+        # 2. compare
+        for i in range(len(words)):
+            for j in range(i + 1, len(words)):
+
+                w1 = words[i]
+                w2 = words[j]
+
+                try:
                     sim = float(
                         self.similarity_calculator.calculate(
-                            w1,
-                            w2,
-                            beta1=5.00,
-                            beta2=1.30,
+                            w1, w2,
+                            beta1=5.0,
+                            beta2=1.3,
                             bias_b=-2.0
                         )
                     )
+                except:
+                    continue
 
+                # context similarity
+                ctx1 = action_context[w1]
+                ctx2 = action_context[w2]
 
-                    # ===== SAFETY AGAINST NONE =====
-                    if sim is None:
-                        continue
+                if not ctx1 or not ctx2:
+                    continue
 
-                    results.append({
-                        "type": key,
-                        "w1": w1,
-                        "w2": w2,
-                        "similarity": float(sim)
-                    })
+                overlap = len(ctx1 & ctx2) / len(ctx1 | ctx2)
+
+                print(f"[SIM] {w1} ~ {w2} = {sim:.3f} | ctx = {overlap:.2f}")
+
+                results.append({
+                    "w1": w1,
+                    "w2": w2,
+                    "similarity": sim,
+                    "context_score": overlap
+                })
 
         return results
 
@@ -97,11 +118,13 @@ class KnowledgeLearningService:
         for item in similarity_results:
 
             sim = item["similarity"]
+            ctx = item["context_score"]
 
-            if sim >= self.AUTO_MERGE_THRESHOLD:
+            # KEY LOGIC
+            if sim >= 0.75 and ctx >= 0.5:
                 auto_merge.append(item)
 
-            elif sim >= self.REVIEW_THRESHOLD:
+            elif sim >= 0.6:
                 ambiguous.append(item)
 
         return auto_merge, ambiguous
@@ -123,6 +146,7 @@ class KnowledgeLearningService:
             py = find(y)
 
             if px != py:
+                # chọn root ổn định hơn
                 root = px if len(px) <= len(py) else py
                 parent[px] = root
                 parent[py] = root
@@ -130,7 +154,13 @@ class KnowledgeLearningService:
         for item in auto_merge:
             union(item["w1"], item["w2"])
 
-        return {word: find(word) for word in parent}
+        
+        all_words = set()
+        for item in auto_merge:
+            all_words.add(item["w1"])
+            all_words.add(item["w2"])
+
+        return {word: find(word) for word in all_words}
 
 
     def _analyze_frequency(self, valid_svo, canonical_map):

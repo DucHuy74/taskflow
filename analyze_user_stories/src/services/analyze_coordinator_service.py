@@ -1,3 +1,5 @@
+from src.services import neo4j_service
+
 class AnalyzeCoordinatorService:
 
     def __init__(
@@ -5,38 +7,37 @@ class AnalyzeCoordinatorService:
         parser_service,
         knowledge_service,
         statistics_service,
-        persistence_service
+        persistence_service,
+        neo4j_service=None
     ):
         self.parser = parser_service
         self.knowledge = knowledge_service
         self.statistics = statistics_service
         self.persistence = persistence_service
+        self.neo4j = neo4j_service
 
     def analyze_and_save(self, texts, sprint_id, workspace_id, creator_id):
 
         parsed_results = []
 
         # --- Parse ---
-        for text in texts:
+        for item in texts:
+
+            text = item["text"]
+            story_id = item["user_story_id"]
+
             parsed = self.parser.parse(text)
 
             if parsed.get("status") != "ERROR":
                 parsed["raw_text"] = text
+                parsed["user_story_id"] = story_id
                 parsed_results.append(parsed)
 
         # --- Learning ---
         knowledge_result = self.knowledge.process(parsed_results)
-        canonical_map = knowledge_result["canonical_map"]
-        valid_svo = knowledge_result["valid_svo"]
-        
-        transactions, rules = self.statistics.generate_association_rules(
-            valid_svo,
-            canonical_map
-        )
-
         
         # --- Persist ---
-        self.persistence.save_analysis(
+        self.persistence.save_result(
             parsed_results,
             knowledge_result,
             sprint_id,
@@ -44,61 +45,27 @@ class AnalyzeCoordinatorService:
             creator_id
         )
 
+        # --- build SVO list ---
+        svo_list = []
+        for item in parsed_results:
+            s = item.get("subject")
+            a = item.get("action")
+            o = item.get("object")
+
+            if not s or not a or not o:
+                print("Skip invalid SVO:", s, a, o)
+                continue
+
+            svo_list.append({
+                "subject": s,
+                "action": a,
+                "object": o,
+                "status": "VALID"
+            })
+
         return {
             "knowledge": knowledge_result,
-            "rules": rules,
-            "transactions": transactions
+            "svo_list": svo_list
         }
      
      
-    def parse_and_save(self, story_id):
-
-        story = self.persistence.get_story(story_id)
-
-        if story is None:
-            return {
-                "error": "Story not found",
-                "story_id": story_id
-            }
-        
-        parsed = self.parser.parse(story.as_raw_text)
-
-        if parsed.get("status") == "ERROR":
-            return {"status": "ERROR"}
-
-        knowledge_result = self.knowledge.process([parsed])
-        canonical_map = knowledge_result["canonical_map"]
-
-        self.persistence.save_parse_result(
-            story,
-            parsed,
-            canonical_map
-        )
-
-        return parsed   
-    
-    
-    def parse_pending_stories(self):
-
-        stories = self.persistence.get_pending_stories()
-
-        parsed_ids = []
-
-        for story in stories:
-
-            parsed = self.parser.parse(story.as_raw_text)
-
-            if parsed.get("status") == "ERROR":
-                continue
-
-            canonical_map = {}
-
-            self.persistence.save_parse_result(
-                story,
-                parsed,
-                canonical_map
-            )
-
-            parsed_ids.append(story.as_user_story_id)
-
-        return parsed_ids

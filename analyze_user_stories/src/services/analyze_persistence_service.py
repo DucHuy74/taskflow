@@ -1,4 +1,3 @@
-from src.models.analyze_story import AnalyzeStory
 from src.models.analyze_story_result import AnalyzeStoryResult
 
 
@@ -7,49 +6,38 @@ class AnalyzePersistenceService:
     def __init__(self, db):
         self.db = db
 
+    def save_result(self, parsed_results, knowledge_result, sprint_id, workspace_id, creator_id):
 
-    def get_story(self, user_story_id):
-        return (
-            self.db.query(AnalyzeStory)
-            .filter(AnalyzeStory.as_user_story_id == user_story_id)
-            .first()
-        )
+        canonical_map = knowledge_result["canonical_map"]
 
-    def get_pending_stories(self):
+        for parsed in parsed_results:
 
-        return (
-            self.db.query(AnalyzeStory)
-            .filter(AnalyzeStory.as_status == "RECEIVED")
-            .all()
-        )
+            subject_can = canonical_map.get(parsed["subject"], parsed["subject"])
+            action_can = canonical_map.get(parsed["action"], parsed["action"])
+            object_can = canonical_map.get(parsed["object"], parsed["object"])
 
-    def save_parse_result(
-        self,
-        story,
-        parsed,
-        canonical_map
-    ):
+            result = AnalyzeStoryResult(
+                asr_user_story_id=parsed["user_story_id"],
+                asr_workspace_id=workspace_id,
+                asr_sprint_id=sprint_id,
 
-        subject_can = canonical_map.get(parsed["subject"], parsed["subject"])
-        action_can = canonical_map.get(parsed["action"], parsed["action"])
-        object_can = canonical_map.get(parsed["object"], parsed["object"])
+                asr_subject=parsed["subject"],
+                asr_action=parsed["action"],
+                asr_object=parsed["object"],
 
-        result = AnalyzeStoryResult(
-            asr_story_id = story.as_id,
+                asr_subject_canonical=subject_can,
+                asr_action_canonical=action_can,
+                asr_object_canonical=object_can,
 
-            asr_subject = parsed["subject"],
-            asr_action = parsed["action"],
-            asr_object = parsed["object"],
+                asr_status=parsed["status"]
+            )
 
-            asr_subject_canonical = subject_can,
-            asr_action_canonical = action_can,
-            asr_object_canonical = object_can,
-
-            asr_status = parsed["status"]
-        )
-
-        self.db.add(result)
-
-        story.as_status = "DONE"
+            self.db.add(result)
 
         self.db.commit()
+        
+    def is_processed(self, user_story_id):
+        return self.db.query(AnalyzeStoryResult).filter(
+            AnalyzeStoryResult.asr_user_story_id == user_story_id,
+            AnalyzeStoryResult.asr_is_deleted == False
+        ).first()
