@@ -31,7 +31,7 @@ def callback(ch, method, properties, body):
     data = json.loads(body)
     print("Received message:", data)
 
-    # dùng generator đúng cách
+    
     db_write_gen = db_manager.get_session()
     db_slave_gen = get_slave_db()
 
@@ -44,15 +44,13 @@ def callback(ch, method, properties, body):
         
         graph_service = GraphBuildingService(
             knowledge_service,
-            statistics_service,
-            neo4j_service,
-            db_write  
+            neo4j_service
         )
 
         coordinator = AnalyzeCoordinatorService(
             parser_service,
             knowledge_service,
-            None,  # nếu không dùng statistics
+            None,  
             persistence
         )
 
@@ -72,7 +70,7 @@ def callback(ch, method, properties, body):
         # Ưu tiên data từ MQ
         text = content
 
-        # fallback nếu cần
+        # fallback nếu MQ không có data 
         # if not text:
         #     print("Fallback to SLAVE...")
         #     story = reader.get_story_by_id(story_id)
@@ -96,7 +94,7 @@ def callback(ch, method, properties, body):
         # --- build graph realtime ---
         svo_list = result.get("svo_list", [])
 
-        graph_service.process(
+        graph_service.process_realtime(
             svo_list=svo_list,
             workspace_id=data.get("workspaceId")
         )
@@ -109,7 +107,6 @@ def callback(ch, method, properties, body):
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
     finally:
-        # đóng đúng cách
         db_write.close()
         db_slave.close()
         db_write_gen.close()

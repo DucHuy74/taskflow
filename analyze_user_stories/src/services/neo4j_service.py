@@ -121,3 +121,11 @@ class Neo4jService:
             "data": data,
             "ws": workspace_id
         })
+        
+    
+    def clear_workspace(self, workspace_id):
+        query = """
+        MATCH (n {workspace_id: $ws})
+        DETACH DELETE n
+        """
+        self.conn.execute(query, {"ws": workspace_id})

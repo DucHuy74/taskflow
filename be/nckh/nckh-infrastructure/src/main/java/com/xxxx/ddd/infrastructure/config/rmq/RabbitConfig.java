@@ -13,6 +13,9 @@ public class RabbitConfig {
     public static final String EXCHANGE = "userstory.exchange";
     public static final String ROUTING_KEY = "userstory.created";
 
+    public static final String REBUILD_ROUTING_KEY = "graph.rebuild";
+    public static final String REBUILD_QUEUE = "graph.rebuild.queue";
+
     @Bean
     public Queue queue() {
         return new Queue(QUEUE, true);
@@ -29,5 +32,18 @@ public class RabbitConfig {
                 .bind(queue())
                 .to(exchange())
                 .with(ROUTING_KEY);
+    }
+
+    @Bean
+    public Queue rebuildQueue() {
+        return new Queue(REBUILD_QUEUE, true);
+    }
+
+    @Bean
+    public Binding rebuildBinding() {
+        return BindingBuilder
+                .bind(rebuildQueue())
+                .to(exchange())
+                .with(REBUILD_ROUTING_KEY);
     }
 }
