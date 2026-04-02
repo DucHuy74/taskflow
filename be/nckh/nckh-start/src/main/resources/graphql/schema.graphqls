@@ -1,0 +1,29 @@
+type GraphNode {
+    id: ID!
+    label: String!
+    type: String!
+}
+
+type GraphEdge {
+    from: ID!
+    to: ID!
+    type: String!
+    score: Float
+    confidence: Float
+    lift: Float
+}
+
+type GraphResponse {
+    nodes: [GraphNode!]!
+    edges: [GraphEdge!]!
+}
+
+type Query {
+    workspaceGraph(
+        workspaceId: ID!,
+        includeSimilarity: Boolean = true,
+        includeAssociation: Boolean = true,
+        minScore: Float = 0.0,
+        minConfidence: Float = 0.0
+    ): GraphResponse
+}

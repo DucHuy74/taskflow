@@ -1,6 +1,5 @@
 package com.xxxx.ddd.application.service.graph.impl;
 
-import com.xxxx.ddd.application.mapper.GraphNodeMapper;
 import com.xxxx.ddd.application.model.dto.graph.GraphEdgeDTO;
 import com.xxxx.ddd.application.model.dto.graph.GraphNodeDTO;
 import com.xxxx.ddd.application.model.dto.graph.GraphResponse;
@@ -10,122 +9,112 @@ import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class GraphServiceImpl implements GraphService {
 
     private final Neo4jClient neo4jClient;
-    private final GraphNodeMapper graphNodeMapper;
 
     @Override
-    public GraphResponse getGraph(String backlogId) {
+    public GraphResponse getWorkspaceGraph(
+            String workspaceId,
+            boolean includeSimilarity,
+            boolean includeAssociation,
+            double minScore,
+            double minConfidence
+    ) {
 
-        var rows = neo4jClient.query("""
-        MATCH (b:Backlog {id:$backlogId})-[:CONTAINS]->(us:UserStory)
-        OPTIONAL MATCH (us)-[r]->(n)
-        RETURN us, r, n,
-               startNode(r) AS fromNode,
-               endNode(r)   AS toNode
-    """)
-                .bind(backlogId).to("backlogId")
-                .fetch()
-                .all();
+        // ===================== NODES =====================
+        List<GraphNodeDTO> nodes = new ArrayList<>(
+                neo4jClient.query("""
+                    MATCH (t:Term {workspace_id: $ws})
+                    RETURN DISTINCT
+                        t.name AS id,
+                        t.name AS label,
+                        CASE 
+                            WHEN t:Subject THEN 'SUBJECT'
+                            WHEN t:Action THEN 'ACTION'
+                            WHEN t:Object THEN 'OBJECT'
+                            ELSE 'TERM'
+                        END AS type
+                """)
+                        .bind(workspaceId).to("ws")
+                        .fetchAs(GraphNodeDTO.class)
+                        .mappedBy((ts, rec) -> new GraphNodeDTO(
+                                rec.get("id").asString(),
+                                rec.get("label").asString(),
+                                rec.get("type").asString()
+                        ))
+                        .all()
+        );
 
-        Map<String, GraphNodeDTO> nodeMap = new LinkedHashMap<>();
-        List<GraphEdgeDTO> edges = new ArrayList<>();
 
-        for (Map<String, Object> row : rows) {
+        // ===================== EDGES =====================
+        StringBuilder query = new StringBuilder();
 
-            if (row.get("us") instanceof org.neo4j.driver.types.Node us) {
-                nodeMap.putIfAbsent(
-                        us.get("id").asString(),
-                        graphNodeMapper.toDto(us)
-                );
-            }
+        // --- SVO ---
+        query.append("""
+            MATCH (a:Term {workspace_id: $ws})-[r:PERFORM|TARGET]->(b:Term {workspace_id: $ws})
+            RETURN DISTINCT
+                a.name AS from,
+                b.name AS to,
+                type(r) AS type,
+                null AS score,
+                null AS confidence,
+                null AS lift
+        """);
 
-            if (row.get("n") instanceof org.neo4j.driver.types.Node n) {
-                String id = n.containsKey("id")
-                        ? n.get("id").asString()
-                        : n.get("name").asString();
-
-                nodeMap.putIfAbsent(id, graphNodeMapper.toDto(n));
-            }
-
-            if (row.get("r") instanceof org.neo4j.driver.types.Relationship r
-                    && row.get("fromNode") instanceof org.neo4j.driver.types.Node from
-                    && row.get("toNode") instanceof org.neo4j.driver.types.Node to) {
-
-                edges.add(new GraphEdgeDTO(
-                        from.get("id").asString(),
-                        to.containsKey("id")
-                                ? to.get("id").asString()
-                                : to.get("name").asString(),
-                        r.type()
-                ));
-            }
+        // --- SIMILAR ---
+        if (includeSimilarity) {
+            query.append("""
+                UNION
+                MATCH (a:Term {workspace_id: $ws})-[r:SIMILAR]->(b:Term {workspace_id: $ws})
+                WHERE r.score >= $minScore
+                RETURN DISTINCT
+                    a.name AS from,
+                    b.name AS to,
+                    'SIMILAR' AS type,
+                    r.score AS score,
+                    null AS confidence,
+                    null AS lift
+            """);
         }
 
-        return new GraphResponse(
-                new ArrayList<>(nodeMap.values()),
-                edges
-        );
-    }
-
-    @Override
-    public GraphResponse getSprintGraph(String sprintId) {
-
-        var rows = neo4jClient.query("""
-        MATCH (s:Sprint {id:$sprintId})<-[:IN_SPRINT]-(us:UserStory)
-        OPTIONAL MATCH (us)-[r]-(n)
-        RETURN us, r, n,
-               startNode(r) AS fromNode,
-               endNode(r)   AS toNode
-    """)
-                .bind(sprintId).to("sprintId")
-                .fetch()
-                .all();
-
-        Map<String, GraphNodeDTO> nodeMap = new LinkedHashMap<>();
-        List<GraphEdgeDTO> edges = new ArrayList<>();
-
-        for (Map<String, Object> row : rows) {
-
-            if (row.get("us") instanceof org.neo4j.driver.types.Node us) {
-                nodeMap.putIfAbsent(
-                        us.get("id").asString(),
-                        graphNodeMapper.toDto(us)
-                );
-            }
-
-            if (row.get("n") instanceof org.neo4j.driver.types.Node n) {
-                String id = n.containsKey("id")
-                        ? n.get("id").asString()
-                        : n.get("name").asString();
-
-                nodeMap.putIfAbsent(id, graphNodeMapper.toDto(n));
-            }
-
-            if (row.get("r") instanceof org.neo4j.driver.types.Relationship r
-                    && row.get("fromNode") instanceof org.neo4j.driver.types.Node from
-                    && row.get("toNode") instanceof org.neo4j.driver.types.Node to) {
-
-                edges.add(new GraphEdgeDTO(
-                        from.get("id").asString(),
-                        to.containsKey("id")
-                                ? to.get("id").asString()
-                                : to.get("name").asString(),
-                        r.type()
-                ));
-            }
+        // --- ASSOCIATED ---
+        if (includeAssociation) {
+            query.append("""
+                UNION
+                MATCH (a:Term {workspace_id: $ws})-[r:ASSOCIATED]->(b:Term {workspace_id: $ws})
+                WHERE r.confidence >= $minConfidence
+                RETURN DISTINCT
+                    a.name AS from,
+                    b.name AS to,
+                    'ASSOCIATED' AS type,
+                    null AS score,
+                    r.confidence AS confidence,
+                    r.lift AS lift
+            """);
         }
 
-        return new GraphResponse(
-                new ArrayList<>(nodeMap.values()),
-                edges
+        List<GraphEdgeDTO> edges = new ArrayList<>(
+                neo4jClient.query(query.toString())
+                        .bind(workspaceId).to("ws")
+                        .bind(minScore).to("minScore")
+                        .bind(minConfidence).to("minConfidence")
+                        .fetchAs(GraphEdgeDTO.class)
+                        .mappedBy((ts, rec) -> new GraphEdgeDTO(
+                                rec.get("from").asString(),
+                                rec.get("to").asString(),
+                                rec.get("type").asString(),
+                                rec.get("score").isNull() ? null : rec.get("score").asDouble(),
+                                rec.get("confidence").isNull() ? null : rec.get("confidence").asDouble(),
+                                rec.get("lift").isNull() ? null : rec.get("lift").asDouble()
+                        ))
+                        .all()
         );
+
+        return new GraphResponse(nodes, edges);
     }
 }

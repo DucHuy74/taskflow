@@ -4,6 +4,8 @@ server:
     context-path: ${SERVER_CONTEXT_PATH}
 
 spring:
+  graphql:
+    path: /graphql
   config:
     import: optional:file:.env
   data:
