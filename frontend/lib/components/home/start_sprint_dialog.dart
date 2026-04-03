@@ -65,8 +65,8 @@ class _StartSprintDialogState extends State<StartSprintDialog> {
     setState(() => _isLoading = false);
 
     if (success && mounted) {
-      Navigator.of(context).pop(); // Đóng dialog
-      widget.onSuccess(); // Gọi callback reload UI
+      Navigator.of(context).pop();
+      widget.onSuccess();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Sprint created successfully!'), backgroundColor: Colors.green),
       );

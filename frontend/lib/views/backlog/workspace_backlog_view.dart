@@ -101,52 +101,15 @@ class _WorkspaceBacklogViewState extends State<WorkspaceBacklogView> {
     }
   }
 
-  void _focusCreateIssue() {
-    _sprintInputFocusNode.requestFocus();
-  }
-
-  Widget _buildGraphTab() {
-    SprintModel? activeSprint;
-    try {
-      activeSprint = _viewModel.sprintList.firstWhere(
-        (s) => s.status == 'ACTIVE' || s.status == 'IN_PROGRESS',
-      );
-    } catch (e) {
-      activeSprint = null;
-    }
-
-    if (activeSprint == null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.hub_outlined, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              "No active sprint found",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF172B4D),
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              "Please go to the Backlog tab and start a sprint first.",
-              style: TextStyle(color: Color(0xFF5E6C84)),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return SprintGraphScreen(
-      sprintId: activeSprint.id,
-      sprintName: activeSprint.name,
+  // Widget hiển thị đồ thị (Dùng cho cả tab Graph và Calendar với Mock Data)
+  Widget _buildGraphView() {
+    return const SprintGraphScreen(
+      sprintId: "mock_id",
+      sprintName: "User Story Relationship (Mock)",
     );
   }
 
-  // --- [MỚI] Hàm xây dựng giao diện Tab Backlog (Code cũ tách ra) ---
+  // Widget hiển thị danh sách Backlog thông thường
   Widget _buildBacklogTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -155,18 +118,13 @@ class _WorkspaceBacklogViewState extends State<WorkspaceBacklogView> {
         children: [
           const BacklogSearchBar(),
           const SizedBox(height: 24),
-
-          // Section Sprint
           SprintSection(
             controller: _sprintInputController,
             onCreateStory: _handleCreateStory,
             sprints: _viewModel.sprintList,
             onMoveStoryToSprint: _handleMoveStoryToSprint,
           ),
-
           const SizedBox(height: 24),
-
-          // Section Backlog
           BacklogSection(
             onCreateStory: _handleCreateStory,
             backlogList: _viewModel.backlogList,
@@ -178,6 +136,24 @@ class _WorkspaceBacklogViewState extends State<WorkspaceBacklogView> {
     );
   }
 
+  // Hàm điều hướng hiển thị nội dung theo Tab
+  Widget _buildMainContent() {
+    switch (_activeTab) {
+      case 'Graph':
+      case 'Calendar':
+        return _buildGraphView();
+      case 'Backlog':
+        return _buildBacklogTab();
+      default:
+        return Center(
+          child: Text(
+            "Content for $_activeTab is under development",
+            style: const TextStyle(color: Colors.grey),
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -187,37 +163,38 @@ class _WorkspaceBacklogViewState extends State<WorkspaceBacklogView> {
           children: [
             Column(
               children: [
-                // Header Workspace
                 WorkspaceHeader(
                   workspace: widget.workspace,
                   activeTab: _activeTab,
                   onTabSelected: (tab) {
-                    setState(() => _activeTab = tab);
-                    // Nếu bấm vào tab Graph, refresh lại data để đảm bảo lấy đúng status Active
-                    if (tab == 'Graph') {
-                      _viewModel.fetchSprints(widget.workspace.id);
+                    setState(() {
+                      _activeTab = tab;
+                    });
+                    // Refresh dữ liệu nếu chuyển về tab Backlog
+                    if (tab == 'Backlog') {
+                      _viewModel.fetchBacklog(widget.workspace.id);
                     }
                   },
                 ),
-
-                // Nội dung thay đổi dựa trên Tab
                 Expanded(
                   child: Container(
                     color: const Color(0xFFF4F5F7),
-                    // Logic chuyển đổi giao diện
-                    child: _activeTab == 'Graph'
-                        ? _buildGraphTab()
-                        : _buildBacklogTab(),
+                    child: _buildMainContent(),
                   ),
                 ),
               ],
             ),
-
-            // Loading Overlay
+            // Hiển thị vòng xoay loading khi ViewModel đang xử lý
             if (_viewModel.isLoading)
               Container(
                 color: Colors.black.withOpacity(0.3),
-                child: const Center(child: CircularProgressIndicator()),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFF0052CC),
+                    ),
+                  ),
+                ),
               ),
           ],
         );

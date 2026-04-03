@@ -7,19 +7,17 @@ import 'dart:io'; // Để check Platform
 class SprintGraphService {
   Future<GraphQLClient> _getClient() async {
     final token = await AuthService.instance.getValidAccessToken();
-
-    // 1. Cấu hình đường dẫn chính xác theo Postman của bạn
-    // Postman: http://localhost:8080/api/graphql
+    
     String url;
     if (kIsWeb) {
-      url = 'http://127.0.0.1:8080/api/graphql'; // Web dùng localhost
+      url = 'http://localhost:8080/api/graphql';
     } else if (Platform.isAndroid) {
-      url = 'http://10.0.2.2:8080/api/graphql'; // Android dùng 10.0.2.2
+      url = 'http://localhost:8080/api/graphql'; 
     } else {
-      url = 'http://localhost:8080/api/graphql'; // iOS/Máy thật
+      url = 'http://localhost:8080/api/graphql'; 
     }
 
-    print("Connecting to Graph API: $url"); // In log để kiểm tra
+    print("Connecting to Graph API: $url");
 
     final HttpLink httpLink = HttpLink(
       url,
@@ -44,7 +42,6 @@ class SprintGraphService {
         }
       }
     ''';
-
     final QueryOptions options = QueryOptions(
       document: gql(query),
       variables: {'id': sprintId},
