@@ -49,7 +49,7 @@ class _HomePageState extends State<HomePage> {
 
   void _onMenuSelected(String menu) {
     setState(() => _selectedMenu = menu);
-    
+
     // Nếu đang ở mobile và mở drawer thì đóng lại sau khi chọn
     if (_isMobile(context) && Scaffold.of(context).isDrawerOpen) {
       Navigator.pop(context);
@@ -75,7 +75,7 @@ class _HomePageState extends State<HomePage> {
 
     if (selectedWorkspace != null) {
       return WorkspaceBacklogView(
-        key: ValueKey(selectedWorkspace.id), 
+        key: ValueKey(selectedWorkspace.id),
         workspace: selectedWorkspace,
       );
     }
