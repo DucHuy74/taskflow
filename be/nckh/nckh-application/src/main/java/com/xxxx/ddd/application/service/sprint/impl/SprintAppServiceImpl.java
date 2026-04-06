@@ -9,6 +9,7 @@ import com.xxxx.ddd.application.model.dto.response.UserStoryResponse;
 import com.xxxx.ddd.application.service.sprint.SprintAppService;
 import com.xxxx.ddd.common.exception.ErrorCode;
 import com.xxxx.dddd.domain.event.UserStoryCreatedEvent;
+import com.xxxx.dddd.domain.event.UserStoryMovedEvent;
 import com.xxxx.dddd.domain.exception.AppException;
 import com.xxxx.dddd.domain.model.entity.Sprint;
 import com.xxxx.dddd.domain.model.entity.UserStory;
@@ -160,6 +161,14 @@ public class SprintAppServiceImpl implements SprintAppService {
 
         story.setSprint(sprint);
         story.setBacklog(null);
+        publisher.publishEvent(
+                new UserStoryMovedEvent(
+                        story.getId(),
+                        sprint.getId(),
+                        null,               // không còn backlog
+                        sprint.getWorkspace().getId()
+                )
+        );
     }
 
     //Remove user story khỏi sprint (về backlog)

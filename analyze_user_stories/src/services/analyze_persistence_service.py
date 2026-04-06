@@ -41,3 +41,13 @@ class AnalyzePersistenceService:
             AnalyzeStoryResult.asr_user_story_id == user_story_id,
             AnalyzeStoryResult.asr_is_deleted == False
         ).first()
+        
+    def update_context(self, story_id, sprint_id, backlog_id):
+        result = self.db.query(AnalyzeStoryResult)\
+            .filter_by(asr_user_story_id=story_id)\
+            .first()
+
+        if result:
+            result.asr_sprint_id = sprint_id
+            result.asr_backlog_id = backlog_id
+            self.db.commit()

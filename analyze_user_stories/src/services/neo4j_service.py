@@ -4,7 +4,15 @@ class Neo4jService:
         self.conn = conn
 
     # --- SVO ---
-    def save_svo(self, svo_list, canonical_map, workspace_id):
+    def save_svo(
+    self,
+    svo_list,
+    canonical_map,
+    workspace_id,
+    story_id=None,
+    sprint_id=None,
+    backlog_id=None
+):
 
         data = []
 
@@ -14,7 +22,6 @@ class Neo4jService:
             a = canonical_map.get(svo["action"], svo["action"])
             o = canonical_map.get(svo["object"], svo["object"])
 
-            # tránh null node
             if not s or not a or not o:
                 continue
 
@@ -34,13 +41,21 @@ class Neo4jService:
         MERGE (act:Term {name: row.a, workspace_id: $ws})
         MERGE (obj:Term {name: row.o, workspace_id: $ws})
 
-        MERGE (sub)-[:PERFORM]->(act)
-        MERGE (act)-[:TARGET]->(obj)
+        MERGE (sub)-[r1:PERFORM {story_id: $storyId}]->(act)
+        SET r1.sprint_id = $sprintId,
+            r1.backlog_id = $backlogId
+
+        MERGE (act)-[r2:TARGET {story_id: $storyId}]->(obj)
+        SET r2.sprint_id = $sprintId,
+            r2.backlog_id = $backlogId
         """
 
         self.conn.execute(query, {
             "data": data,
-            "ws": workspace_id
+            "ws": workspace_id,
+            "storyId": story_id or "BATCH",
+            "sprintId": sprint_id,
+            "backlogId": backlog_id
         })
         
     # --- Similarity ---
@@ -123,6 +138,20 @@ class Neo4jService:
         })
         
     
+    def update_story_context(self, story_id, sprint_id, backlog_id):
+
+        query = """
+        MATCH ()-[r:PERFORM|TARGET {story_id: $storyId}]->()
+        SET r.sprint_id = $sprintId,
+            r.backlog_id = $backlogId
+        """
+
+        self.conn.execute(query, {
+            "storyId": story_id,
+            "sprintId": sprint_id,
+            "backlogId": backlog_id
+        })
+        
     def clear_workspace(self, workspace_id):
         query = """
         MATCH (n {workspace_id: $ws})

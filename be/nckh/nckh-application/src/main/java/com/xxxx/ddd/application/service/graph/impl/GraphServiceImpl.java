@@ -20,6 +20,8 @@ public class GraphServiceImpl implements GraphService {
     @Override
     public GraphResponse getWorkspaceGraph(
             String workspaceId,
+            String sprintId,
+            String backlogId,
             boolean includeSimilarity,
             boolean includeAssociation,
             double minScore,
@@ -30,10 +32,17 @@ public class GraphServiceImpl implements GraphService {
         List<GraphNodeDTO> nodes = new ArrayList<>(
                 neo4jClient.query("""
                     MATCH (t:Term {workspace_id: $ws})
+                    WHERE EXISTS {
+                        MATCH (t)-[r:PERFORM|TARGET]-()
+                        WHERE
+                            ($sprintId IS NULL OR r.sprint_id = $sprintId)
+                            AND
+                            ($backlogId IS NULL OR r.backlog_id = $backlogId)
+                    }
                     RETURN DISTINCT
                         t.name AS id,
                         t.name AS label,
-                        CASE 
+                        CASE
                             WHEN t:Subject THEN 'SUBJECT'
                             WHEN t:Action THEN 'ACTION'
                             WHEN t:Object THEN 'OBJECT'
@@ -41,6 +50,8 @@ public class GraphServiceImpl implements GraphService {
                         END AS type
                 """)
                         .bind(workspaceId).to("ws")
+                        .bind(sprintId).to("sprintId")
+                        .bind(backlogId).to("backlogId")
                         .fetchAs(GraphNodeDTO.class)
                         .mappedBy((ts, rec) -> new GraphNodeDTO(
                                 rec.get("id").asString(),
@@ -57,6 +68,10 @@ public class GraphServiceImpl implements GraphService {
         // --- SVO ---
         query.append("""
             MATCH (a:Term {workspace_id: $ws})-[r:PERFORM|TARGET]->(b:Term {workspace_id: $ws})
+            WHERE
+                ($sprintId IS NULL OR r.sprint_id = $sprintId)
+                AND
+                ($backlogId IS NULL OR r.backlog_id = $backlogId)
             RETURN DISTINCT
                 a.name AS from,
                 b.name AS to,
@@ -101,6 +116,8 @@ public class GraphServiceImpl implements GraphService {
         List<GraphEdgeDTO> edges = new ArrayList<>(
                 neo4jClient.query(query.toString())
                         .bind(workspaceId).to("ws")
+                        .bind(sprintId).to("sprintId")
+                        .bind(backlogId).to("backlogId")
                         .bind(minScore).to("minScore")
                         .bind(minConfidence).to("minConfidence")
                         .fetchAs(GraphEdgeDTO.class)

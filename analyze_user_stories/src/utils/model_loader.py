@@ -26,5 +26,3 @@ def load_models():
 
     word2Vec = KeyedVectors.load(str(word2vec_path), mmap='r')
     return nlp, word2Vec
-    
-

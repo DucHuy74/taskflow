@@ -16,6 +16,8 @@ public class GraphQueryResolver {
     @QueryMapping
     public GraphResponse workspaceGraph(
             @Argument("workspaceId") String workspaceId,
+            @Argument("sprintId") String sprintId,
+            @Argument("backlogId") String backlogId,
             @Argument("includeSimilarity") Boolean includeSimilarity,
             @Argument("includeAssociation") Boolean includeAssociation,
             @Argument("minScore") Double minScore,
@@ -29,6 +31,8 @@ public class GraphQueryResolver {
 
         return graphService.getWorkspaceGraph(
                 workspaceId,
+                sprintId,
+                backlogId,
                 useSimilarity,
                 useAssociation,
                 score,

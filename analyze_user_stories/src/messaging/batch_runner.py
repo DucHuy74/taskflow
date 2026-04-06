@@ -21,7 +21,6 @@ statistics_service = StatisticsService()
 neo4j_conn = Neo4jConnection()
 neo4j_service = Neo4jService(neo4j_conn)
 
-# CALLBACK
 def callback(ch, method, properties, body):
     try:
         data = json.loads(body)
@@ -31,22 +30,24 @@ def callback(ch, method, properties, body):
         return
 
     print("\n[BATCH] Received:", data)
-    print("[BATCH] Routing key:", method.routing_key)
 
-    # FILTER EVENT
-    if data.get("type") != "REBUILD_GRAPH":
+    event_type = data.get("type")
+    version = data.get("version")
+    payload = data.get("payload", {})
+
+    # validate type
+    if event_type != "REBUILD_GRAPH":
         print("[BATCH] Skip non-rebuild event")
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
-    workspace_id = data.get("workspaceId")
+    workspace_id = payload.get("workspaceId")
 
     if not workspace_id:
-        print("[BATCH] Missing workspaceId")
+        print("[BATCH] Missing workspaceId → skip")
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
-    # DB SESSION
     db_gen = db_manager.get_session()
     db = next(db_gen)
 
@@ -69,8 +70,8 @@ def callback(ch, method, properties, body):
     except Exception as e:
         print("[BATCH] Error:", e)
 
-        #  retry lại
-        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+        #  ko retry vô hạn
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
     finally:
         db.close()
