@@ -18,7 +18,7 @@ class GraphBuildingService:
         if not svo_list:
             return
 
-        # normalize nhẹ
+        # normalize
         knowledge = self.semantic_service.process(svo_list)
 
         canonical_map = knowledge["canonical_map"]
@@ -31,5 +31,6 @@ class GraphBuildingService:
             workspace_id,
             story_id,
             sprint_id,
-            backlog_id
+            backlog_id,
+            source="REALTIME"
         )

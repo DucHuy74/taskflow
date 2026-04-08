@@ -11,7 +11,8 @@ class Neo4jService:
     workspace_id,
     story_id=None,
     sprint_id=None,
-    backlog_id=None
+    backlog_id=None,
+    source="REALTIME"
 ):
 
         data = []
@@ -41,11 +42,17 @@ class Neo4jService:
         MERGE (act:Term {name: row.a, workspace_id: $ws})
         MERGE (obj:Term {name: row.o, workspace_id: $ws})
 
-        MERGE (sub)-[r1:PERFORM {story_id: $storyId}]->(act)
+        MERGE (sub)-[r1:PERFORM {
+            story_id: $storyId,
+            source: $source
+        }]->(act)
         SET r1.sprint_id = $sprintId,
             r1.backlog_id = $backlogId
 
-        MERGE (act)-[r2:TARGET {story_id: $storyId}]->(obj)
+        MERGE (act)-[r2:TARGET {
+            story_id: $storyId,
+            source: $source
+        }]->(obj)
         SET r2.sprint_id = $sprintId,
             r2.backlog_id = $backlogId
         """
@@ -53,9 +60,10 @@ class Neo4jService:
         self.conn.execute(query, {
             "data": data,
             "ws": workspace_id,
-            "storyId": story_id or "BATCH",
+            "storyId": story_id if story_id else None,
             "sprintId": sprint_id,
-            "backlogId": backlog_id
+            "backlogId": backlog_id,
+            "source": source
         })
         
     # --- Similarity ---
@@ -64,11 +72,9 @@ class Neo4jService:
         data = []
 
         for item in auto_merge:
-
             c1 = canonical_map.get(item["w1"], item["w1"])
             c2 = canonical_map.get(item["w2"], item["w2"])
 
-            # nếu cùng canonical thì bỏ luôn
             if c1 == c2:
                 continue
 
@@ -87,7 +93,7 @@ class Neo4jService:
         MERGE (a:Term {name: row.c1, workspace_id: $ws})
         MERGE (b:Term {name: row.c2, workspace_id: $ws})
 
-        MERGE (a)-[r:SIMILAR]->(b)
+        MERGE (a)-[r:SIMILAR {source: "BATCH"}]->(b)
         SET r.score = row.sim
         """
 
@@ -127,7 +133,7 @@ class Neo4jService:
         MERGE (a:Term {name: row.a, workspace_id: $ws})
         MERGE (c:Term {name: row.c, workspace_id: $ws})
 
-        MERGE (a)-[r:ASSOCIATED]->(c)
+        MERGE (a)-[r:ASSOCIATED {source: "BATCH"}]->(c)
         SET r.confidence = row.conf,
             r.lift = row.lift
         """
@@ -141,7 +147,8 @@ class Neo4jService:
     def update_story_context(self, story_id, sprint_id, backlog_id):
 
         query = """
-        MATCH ()-[r:PERFORM|TARGET {story_id: $storyId}]->()
+        MATCH ()-[r:PERFORM|TARGET]->()
+        WHERE r.story_id = $storyId
         SET r.sprint_id = $sprintId,
             r.backlog_id = $backlogId
         """

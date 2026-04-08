@@ -67,7 +67,7 @@ class GraphBatchService:
 
             # rebuild graph
             print("[BATCH] Saving SVO...")
-            self.neo4j_service.save_svo(valid_svo, canonical_map, workspace_id)
+            self.neo4j_service.save_svo(valid_svo, canonical_map, workspace_id, source="BATCH")
 
             print("[BATCH] Saving similarity...")
             self.neo4j_service.save_similarity(auto_merge, canonical_map, workspace_id)

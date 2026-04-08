@@ -7,6 +7,7 @@ public interface GraphService {
             String workspaceId,
             String sprintId,
             String backlogId,
+            String source,
             boolean includeSimilarity,
             boolean includeAssociation,
             double minScore,

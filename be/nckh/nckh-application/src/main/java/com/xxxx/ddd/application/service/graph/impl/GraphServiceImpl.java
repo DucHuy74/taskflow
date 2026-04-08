@@ -22,33 +22,35 @@ public class GraphServiceImpl implements GraphService {
             String workspaceId,
             String sprintId,
             String backlogId,
+            String source,
             boolean includeSimilarity,
             boolean includeAssociation,
             double minScore,
             double minConfidence
     ) {
 
-        // ===================== NODES =====================
+        // NODES
         List<GraphNodeDTO> nodes = new ArrayList<>(
                 neo4jClient.query("""
-                    MATCH (t:Term {workspace_id: $ws})
-                    WHERE EXISTS {
-                        MATCH (t)-[r:PERFORM|TARGET]-()
-                        WHERE
-                            ($sprintId IS NULL OR r.sprint_id = $sprintId)
-                            AND
-                            ($backlogId IS NULL OR r.backlog_id = $backlogId)
-                    }
-                    RETURN DISTINCT
-                        t.name AS id,
-                        t.name AS label,
-                        CASE
-                            WHEN t:Subject THEN 'SUBJECT'
-                            WHEN t:Action THEN 'ACTION'
-                            WHEN t:Object THEN 'OBJECT'
-                            ELSE 'TERM'
-                        END AS type
-                """)
+                            MATCH (t:Term {workspace_id: $ws})
+                            WHERE EXISTS {
+                                MATCH (t)-[r:PERFORM|TARGET]-()
+                                WHERE
+                                    r.source = $source
+                                    AND ($sprintId IS NULL OR r.sprint_id = $sprintId)
+                                    AND ($backlogId IS NULL OR r.backlog_id = $backlogId)
+                            }
+                            RETURN DISTINCT
+                                t.name AS id,
+                                t.name AS label,
+                                CASE
+                                    WHEN t:Subject THEN 'SUBJECT'
+                                    WHEN t:Action THEN 'ACTION'
+                                    WHEN t:Object THEN 'OBJECT'
+                                    ELSE 'TERM'
+                                END AS type
+                        """)
+                        .bind(source).to("source")
                         .bind(workspaceId).to("ws")
                         .bind(sprintId).to("sprintId")
                         .bind(backlogId).to("backlogId")
@@ -62,16 +64,16 @@ public class GraphServiceImpl implements GraphService {
         );
 
 
-        // ===================== EDGES =====================
+        //EDGES
         StringBuilder query = new StringBuilder();
 
         // --- SVO ---
         query.append("""
             MATCH (a:Term {workspace_id: $ws})-[r:PERFORM|TARGET]->(b:Term {workspace_id: $ws})
             WHERE
-                ($sprintId IS NULL OR r.sprint_id = $sprintId)
-                AND
-                ($backlogId IS NULL OR r.backlog_id = $backlogId)
+                r.source = $source
+                AND ($sprintId IS NULL OR r.sprint_id = $sprintId)
+                AND ($backlogId IS NULL OR r.backlog_id = $backlogId)
             RETURN DISTINCT
                 a.name AS from,
                 b.name AS to,
@@ -81,12 +83,13 @@ public class GraphServiceImpl implements GraphService {
                 null AS lift
         """);
 
-        // --- SIMILAR ---
+        //SIMILAR
         if (includeSimilarity) {
             query.append("""
                 UNION
                 MATCH (a:Term {workspace_id: $ws})-[r:SIMILAR]->(b:Term {workspace_id: $ws})
-                WHERE r.score >= $minScore
+                WHERE r.source = $source
+                AND r.score >= $minScore
                 RETURN DISTINCT
                     a.name AS from,
                     b.name AS to,
@@ -97,12 +100,13 @@ public class GraphServiceImpl implements GraphService {
             """);
         }
 
-        // --- ASSOCIATED ---
+        // ASSOCIATED
         if (includeAssociation) {
             query.append("""
                 UNION
                 MATCH (a:Term {workspace_id: $ws})-[r:ASSOCIATED]->(b:Term {workspace_id: $ws})
-                WHERE r.confidence >= $minConfidence
+                WHERE r.source = $source
+                AND r.confidence >= $minConfidence
                 RETURN DISTINCT
                     a.name AS from,
                     b.name AS to,
@@ -120,6 +124,7 @@ public class GraphServiceImpl implements GraphService {
                         .bind(backlogId).to("backlogId")
                         .bind(minScore).to("minScore")
                         .bind(minConfidence).to("minConfidence")
+                        .bind(source).to("source")
                         .fetchAs(GraphEdgeDTO.class)
                         .mappedBy((ts, rec) -> new GraphEdgeDTO(
                                 rec.get("from").asString(),

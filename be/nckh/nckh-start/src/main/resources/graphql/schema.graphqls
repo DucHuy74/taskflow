@@ -1,0 +1,49 @@
+type GraphNode {
+    id: ID!
+    label: String!
+    type: String!   # Term | UserStory | Sprint
+}
+
+type GraphEdge {
+    from: ID!
+    to: ID!
+    type: String!
+
+    # ===== Analytics =====
+    score: Float
+    confidence: Float
+    lift: Float
+
+    # ===== Context =====
+    storyId: ID
+    sprintId: ID
+    backlogId: ID
+
+    source: String   # REALTIME | BATCH
+}
+
+type GraphResponse {
+    nodes: [GraphNode!]!
+    edges: [GraphEdge!]!
+}
+
+type Query {
+    workspaceGraph(
+        workspaceId: ID!
+
+        # ===== Context filter =====
+        sprintId: ID
+        backlogId: ID
+
+        # ===== Graph type =====
+        source: String   # REALTIME | BATCH
+
+        # ===== Feature toggle =====
+        includeSimilarity: Boolean = true
+        includeAssociation: Boolean = true
+
+        # ===== Analytics filter =====
+        minScore: Float = 0.0
+        minConfidence: Float = 0.0
+    ): GraphResponse
+}
