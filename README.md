@@ -53,7 +53,7 @@ docker exec -it mysql-master mysql -uroot -proot
 
 CREATE USER 'replica'@'%' IDENTIFIED BY '123456';
 
-GRANT REPLICATION SLAVE ON *.* TO 'replica'@'%';
+GRANT REPLICATION SLAVE ON (*.*) TO 'replica'@'%'; // bỏ dấu ngoặc
 
 FLUSH PRIVILEGES;
 
