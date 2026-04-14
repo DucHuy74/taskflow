@@ -51,7 +51,7 @@ docker exec -it mysql-master mysql -uroot -proot
 
 🔹 Bước 2: Tạo user replication
 
-CREATE USER 'replica'@'%' IDENTIFIED BY '123456';
+CREATE USER 'replica'@'%' IDENTIFIED WITH mysql_native_password BY '123456';
 
 GRANT REPLICATION SLAVE ON (*.*) TO 'replica'@'%'; // bỏ dấu ngoặc
 
