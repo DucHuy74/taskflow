@@ -6,108 +6,26 @@ import 'package:provider/provider.dart';
 
 import '../../models/backlog/graph_model.dart';
 import '../../viewmodels/backlog/graph_view_model.dart';
+import 'theme/graph_theme.dart';
+import 'painters/graph_painters.dart';
+import 'widgets/graph_legend.dart';
+import 'widgets/start_sprint_panel.dart';
+import 'widgets/node_tooltip.dart';
+import 'widgets/graph_node_widgets.dart';
+import '../../services/home/workspace_service.dart';
 
-// =============================================================================
-// THEME CONFIGURATION
-// =============================================================================
-class GraphTheme {
-  final Color bgColor;
-  final Color subjectFill;
-  final Color subjectBorder;
-  final Color verbFill;
-  final Color verbBorder;
-  final Color objectFill;
-  final Color objectBorder;
-  final Color lineColor;
-  final Color highlightLine;
-  final Color textPrimary;
-  final Color textSecondary;
-  final Color doneColor;
-  final Color inProgressColor;
-  final Color panelBg;
-  final Color panelBorder;
-  final Color tooltipShadow;
-  final Color lassoColor;
-  final Color selectionBorder;
-
-  GraphTheme({
-    required this.bgColor,
-    required this.subjectFill,
-    required this.subjectBorder,
-    required this.verbFill,
-    required this.verbBorder,
-    required this.objectFill,
-    required this.objectBorder,
-    required this.lineColor,
-    required this.highlightLine,
-    required this.textPrimary,
-    required this.textSecondary,
-    required this.doneColor,
-    required this.inProgressColor,
-    required this.panelBg,
-    required this.panelBorder,
-    required this.tooltipShadow,
-    required this.lassoColor,
-    required this.selectionBorder,
-  });
-
-  factory GraphTheme.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return isDark ? GraphTheme.dark() : GraphTheme.light();
-  }
-
-  factory GraphTheme.dark() => GraphTheme(
-    bgColor: const Color(0xFF0D1117),
-    subjectFill: const Color(0xFF161B22),
-    subjectBorder: const Color(0xFF58A6FF),
-    verbFill: const Color(0xFF1A1040),
-    verbBorder: const Color(0xFF7C3AED),
-    objectFill: const Color(0xFF0D1117),
-    objectBorder: const Color(0xFF22D3EE),
-    lineColor: const Color(0x556E7FBF),
-    highlightLine: const Color(0xFF818CF8),
-    textPrimary: const Color(0xFFE6EDF3),
-    textSecondary: const Color(0xFF8B949E),
-    doneColor: const Color(0xFF238636),
-    inProgressColor: const Color(0xFFD29922),
-    panelBg: const Color(0xFF161B22),
-    panelBorder: const Color(0xFF30363D),
-    tooltipShadow: Colors.black.withOpacity(0.5),
-    lassoColor: Colors.white70,
-    selectionBorder: Colors.white,
-  );
-
-  factory GraphTheme.light() => GraphTheme(
-    bgColor: const Color(0xFFF4F5F7),
-    subjectFill: Colors.white,
-    subjectBorder: const Color(0xFF0052CC),
-    verbFill: const Color(0xFFEAE6FF),
-    verbBorder: const Color(0xFF5243AA),
-    objectFill: Colors.white,
-    objectBorder: const Color(0xFF00B8D9),
-    lineColor: const Color(0xFFDFE1E6),
-    highlightLine: const Color(0xFF0052CC),
-    textPrimary: const Color(0xFF172B4D),
-    textSecondary: const Color(0xFF5E6C84),
-    doneColor: const Color(0xFF00875A),
-    inProgressColor: const Color(0xFFFF991F),
-    panelBg: Colors.white,
-    panelBorder: const Color(0xFFDFE1E6),
-    tooltipShadow: const Color(0xFF091E42).withOpacity(0.15),
-    lassoColor: const Color(0xFF0052CC).withOpacity(0.7),
-    selectionBorder: const Color(0xFF172B4D),
-  );
-}
 
 // =============================================================================
 // CLASS WRAPPER: BỌC PROVIDER
 // =============================================================================
 class BacklogGraphScreen extends StatelessWidget {
+  final String workspaceId;
   final String backlogId;
   final String backlogName;
 
   const BacklogGraphScreen({
     Key? key,
+    required this.workspaceId,
     required this.backlogId,
     required this.backlogName,
   }) : super(key: key);
@@ -117,6 +35,7 @@ class BacklogGraphScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => GraphViewModel(),
       child: _BacklogGraphScreenContent(
+        workspaceId: workspaceId,
         backlogId: backlogId,
         backlogName: backlogName,
       ),
@@ -128,11 +47,13 @@ class BacklogGraphScreen extends StatelessWidget {
 // CLASS VIEW CONTENT
 // =============================================================================
 class _BacklogGraphScreenContent extends StatefulWidget {
+  final String workspaceId;
   final String backlogId;
   final String backlogName;
 
   const _BacklogGraphScreenContent({
     Key? key,
+    required this.workspaceId,
     required this.backlogId,
     required this.backlogName,
   }) : super(key: key);
@@ -182,7 +103,7 @@ class _BacklogGraphScreenContentState extends State<_BacklogGraphScreenContent>
 
   Future<void> _loadData() async {
     final vm = context.read<GraphViewModel>();
-    await vm.fetchGraphData(widget.backlogId);
+    await vm.fetchGraphData(widget.workspaceId, widget.backlogId);
 
     if (mounted && vm.stories.isNotEmpty) {
       setState(() {
@@ -426,7 +347,10 @@ class _BacklogGraphScreenContentState extends State<_BacklogGraphScreenContent>
                     ),
                   ),
                 ),
-                Positioned(top: 16, right: 16, child: _buildLegend(vm.stories)),
+                Positioned(
+                  top: 16, right: 16,
+                  child: GraphLegend(stories: vm.stories, theme: theme, uniqueSubjects: _getUniqueSubjects(vm.stories)),
+                ),
 
                 // --- START SPRINT PANEL ---
                 if (_selectedNodeKeys.isNotEmpty)
@@ -434,162 +358,27 @@ class _BacklogGraphScreenContentState extends State<_BacklogGraphScreenContent>
                     bottom: 32,
                     left: 0,
                     right: 0,
-                    child: Center(child: _buildStartSprintPanel()),
+                    child: Center(
+                      child: StartSprintPanel(
+                        selectedNodesCount: _selectedNodeKeys.length,
+                        selectedVerbsCount: _selectedVerbsCount,
+                        theme: theme,
+                        onStartSprint: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Bắt đầu Sprint với các hành động đã chọn!')),
+                          );
+                          setState(() => _selectedNodeKeys.clear());
+                        },
+                        onClose: () => setState(() => _selectedNodeKeys.clear()),
+                      ),
+                    ),
                   ),
               ],
             ),
     );
   }
 
-  Widget _buildStartSprintPanel() {
-    int verbsCount = _selectedVerbsCount;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      decoration: BoxDecoration(
-        color: theme.panelBg,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: theme.verbBorder, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: theme.verbBorder.withOpacity(0.3),
-            blurRadius: 20,
-            spreadRadius: 2,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '${_selectedNodeKeys.length} Nodes Selected ($verbsCount Actions)',
-            style: TextStyle(
-              color: theme.textPrimary,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(width: 20),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.verbBorder,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Bắt đầu Sprint với các hành động đã chọn!'),
-                ),
-              );
-              setState(() {
-                _selectedNodeKeys.clear();
-              });
-            },
-            child: const Text(
-              'Start Sprint',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: Icon(Icons.close, color: theme.textSecondary),
-            onPressed: () => setState(() => _selectedNodeKeys.clear()),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegend(List<AnalyzedStory> stories) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.panelBg,
-        border: Border.all(color: theme.panelBorder),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'RADIAL S-V-O GRAPH',
-            style: TextStyle(
-              color: theme.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 10),
-          _legendItem(theme.subjectBorder, 'Actor (S)', isCircle: true),
-          _legendItem(theme.objectBorder, 'Object (O)', isCircle: false),
-          _legendItem(theme.verbBorder, 'Action (V)', isCircle: true),
-          const SizedBox(height: 6),
-          _legendItem(theme.doneColor, 'Done', isDot: true),
-          _legendItem(theme.inProgressColor, 'In Progress', isDot: true),
-          const SizedBox(height: 8),
-          Text(
-            '${_getUniqueSubjects(stories).length} entities / ${stories.length} stories',
-            style: TextStyle(color: theme.textSecondary, fontSize: 10),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _legendItem(
-    Color color,
-    String label, {
-    bool isCircle = false,
-    bool isDot = false,
-  }) {
-    Widget icon;
-    if (isDot) {
-      icon = Container(
-        width: 10,
-        height: 10,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      );
-    } else if (isCircle) {
-      icon = Container(
-        width: 14,
-        height: 14,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: color, width: 2),
-          color: Colors.transparent,
-        ),
-      );
-    } else {
-      icon = Container(
-        width: 18,
-        height: 12,
-        decoration: BoxDecoration(
-          border: Border.all(color: color, width: 1.5),
-          borderRadius: BorderRadius.circular(3),
-          color: Colors.transparent,
-        ),
-      );
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        children: [
-          icon,
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(color: theme.textSecondary, fontSize: 11),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _buildNodeWidgets(List<AnalyzedStory> stories) {
+      List<Widget> _buildNodeWidgets(List<AnalyzedStory> stories) {
     List<Widget> widgets = [];
     Set<String> renderedKeys = {};
 
@@ -677,20 +466,16 @@ class _BacklogGraphScreenContentState extends State<_BacklogGraphScreenContent>
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  _buildNodeUI(
-                    text,
-                    type,
-                    story,
-                    width,
-                    height,
-                    isHovered,
-                    isSelected,
-                  ),
+                  type == NodeType.subject 
+                      ? GraphNodeWidgets.buildSubjectNode(text, width, height, isHovered, isSelected, theme)
+                      : type == NodeType.verb 
+                          ? GraphNodeWidgets.buildVerbNode(text, width, height, isHovered, isSelected, theme, _spinController)
+                          : GraphNodeWidgets.buildObjectNode(text, story, width, height, isHovered, isSelected, theme),
                   if (isHovered && type == NodeType.object)
                     Positioned(
                       left: width + 8,
                       top: 0,
-                      child: _buildTooltip(text, storyCount),
+                      child: NodeTooltip(objectName: text, count: storyCount, theme: theme),
                     ),
                 ],
               ),
@@ -708,204 +493,6 @@ class _BacklogGraphScreenContentState extends State<_BacklogGraphScreenContent>
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNodeUI(
-    String text,
-    NodeType type,
-    AnalyzedStory? story,
-    double w,
-    double h,
-    bool isHovered,
-    bool isSelected,
-  ) {
-    switch (type) {
-      case NodeType.subject:
-        return _buildSubjectNode(text, w, h, isHovered, isSelected);
-      case NodeType.verb:
-        return _buildVerbNode(text, w, h, isHovered, isSelected);
-      case NodeType.object:
-        return _buildObjectNode(text, story, w, h, isHovered, isSelected);
-    }
-  }
-
-  Widget _buildSubjectNode(
-    String text,
-    double w,
-    double h,
-    bool isHovered,
-    bool isSelected,
-  ) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      width: w,
-      height: h,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: isSelected
-            ? theme.subjectBorder.withOpacity(0.3)
-            : theme.subjectFill,
-        borderRadius: BorderRadius.circular(h / 2),
-        border: Border.all(
-          color: isSelected
-              ? theme.selectionBorder
-              : (isHovered
-                    ? theme.subjectBorder
-                    : theme.subjectBorder.withOpacity(0.7)),
-          width: isSelected || isHovered ? 2.5 : 2.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: theme.subjectBorder.withOpacity(
-              isSelected || isHovered ? 0.4 : 0.15,
-            ),
-            blurRadius: isSelected || isHovered ? 20 : 12,
-          ),
-        ],
-      ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: theme.textPrimary,
-          fontWeight: FontWeight.bold,
-          fontSize: text.length > 8 ? 12 : 14,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVerbNode(
-    String text,
-    double w,
-    double h,
-    bool isHovered,
-    bool isSelected,
-  ) {
-    return AnimatedBuilder(
-      animation: _spinController,
-      builder: (context, child) {
-        return CustomPaint(
-          painter: _GlowCirclePainter(
-            color: isSelected ? theme.selectionBorder : theme.verbBorder,
-            glowRadius: (isSelected || isHovered) ? 0.8 : 0.4,
-            animValue: _spinController.value,
-          ),
-          child: Container(
-            width: w,
-            height: h,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: theme.verbFill,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isSelected
-                    ? theme.selectionBorder
-                    : theme.verbBorder.withOpacity(isHovered ? 1.0 : 0.8),
-                width: isSelected ? 2.5 : 1.5,
-              ),
-            ),
-            child: Text(
-              text,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: theme.textPrimary,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildObjectNode(
-    String text,
-    AnalyzedStory? story,
-    double w,
-    double h,
-    bool isHovered,
-    bool isSelected,
-  ) {
-    Color borderColor = story?.status == USStatus.done
-        ? theme.doneColor
-        : (story?.status == USStatus.inProgress
-              ? theme.inProgressColor
-              : theme.objectBorder);
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      width: w,
-      height: h,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: isSelected ? borderColor.withOpacity(0.3) : theme.objectFill,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isSelected
-              ? theme.selectionBorder
-              : (isHovered ? borderColor : borderColor.withOpacity(0.7)),
-          width: isSelected || isHovered ? 2.0 : 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: borderColor.withOpacity(
-              isSelected || isHovered ? 0.35 : 0.1,
-            ),
-            blurRadius: isSelected || isHovered ? 16 : 6,
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: theme.textPrimary,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTooltip(String objectName, int count) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: theme.panelBg,
-        border: Border.all(color: theme.panelBorder),
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: theme.tooltipShadow,
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            objectName,
-            style: TextStyle(
-              color: theme.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Object entity -- reused in $count ${count == 1 ? 'story' : 'stories'}',
-            style: TextStyle(color: theme.textSecondary, fontSize: 12),
-          ),
         ],
       ),
     );
@@ -976,7 +563,36 @@ class _BacklogGraphScreenContentState extends State<_BacklogGraphScreenContent>
           }),
         ),
         const SizedBox(height: 10),
-        _fabButton(heroTag: "r", icon: Icons.refresh, onPressed: _loadData),
+        _fabButton(
+          heroTag: "r",
+          icon: Icons.refresh,
+          onPressed: () async {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Đang kích hoạt rebuild graph...')),
+            );
+            final success = await WorkspaceService().rebuildGraph(widget.workspaceId);
+            if (success) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Rebuild graph thành công!'),
+                    backgroundColor: theme.doneColor,
+                  ),
+                );
+                _loadData();
+              }
+            } else {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Rebuild graph thất bại!'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          },
+        ),
       ],
     );
   }
@@ -1073,179 +689,3 @@ class _BacklogGraphScreenContentState extends State<_BacklogGraphScreenContent>
   }
 }
 
-// =============================================================================
-// GRAPH PAINTERS
-// =============================================================================
-class GraphLinesPainter extends CustomPainter {
-  final Map<String, Offset> nodePositions;
-  final Set<String> edges;
-  final Set<String> highlightedEdges; // Thay đổi từ hoveredKey sang Set cụ thể
-  final GraphTheme theme;
-
-  GraphLinesPainter({
-    required this.nodePositions,
-    required this.edges,
-    required this.highlightedEdges,
-    required this.theme,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    for (var edge in edges) {
-      final parts = edge.split('|');
-      if (parts.length != 2) continue;
-
-      final fromKey = parts[0];
-      final toKey = parts[1];
-
-      if (!nodePositions.containsKey(fromKey) ||
-          !nodePositions.containsKey(toKey))
-        continue;
-
-      Offset fromCenter = nodePositions[fromKey]!;
-      Offset toCenter = nodePositions[toKey]!;
-
-      // Kiểm tra dây này có thuộc list highlight không
-      bool isHighlighted = highlightedEdges.contains(edge);
-
-      final paint = Paint()
-        ..color = isHighlighted
-            ? theme.highlightLine.withOpacity(0.9)
-            : theme.lineColor
-        ..strokeWidth = isHighlighted ? 2.5 : 1.0
-        ..style = PaintingStyle.stroke;
-
-      _drawCurvedLine(canvas, fromCenter, toCenter, paint);
-    }
-  }
-
-  void _drawCurvedLine(Canvas canvas, Offset from, Offset to, Paint paint) {
-    final mid = Offset((from.dx + to.dx) / 2, (from.dy + to.dy) / 2);
-    final path = Path()
-      ..moveTo(from.dx, from.dy)
-      ..quadraticBezierTo(mid.dx, from.dy, to.dx, to.dy);
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant GraphLinesPainter old) => true;
-}
-
-class ZoningPainter extends CustomPainter {
-  final Map<String, Offset> nodePositions;
-  final Set<String> zonedSubjects;
-  final List<AnalyzedStory> mockData;
-  final Function(String) isObjectASubject;
-  final Function(String) makeObjectKey;
-  final GraphTheme theme;
-
-  ZoningPainter({
-    required this.nodePositions,
-    required this.zonedSubjects,
-    required this.mockData,
-    required this.isObjectASubject,
-    required this.makeObjectKey,
-    required this.theme,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (zonedSubjects.isEmpty) return;
-    final paint = Paint()
-      ..color = theme.verbBorder.withOpacity(0.8)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
-
-    for (var subName in zonedSubjects) {
-      final stories = mockData.where((e) => e.subject == subName).toList();
-      for (var s in stories) {
-        if (!isObjectASubject(s.object)) {
-          String objKey = makeObjectKey(s.object);
-          if (nodePositions.containsKey(objKey)) {
-            _drawDashedCircle(canvas, nodePositions[objKey]!, 54, paint);
-          }
-        }
-      }
-    }
-  }
-
-  void _drawDashedCircle(
-    Canvas canvas,
-    Offset center,
-    double radius,
-    Paint paint,
-  ) {
-    const double dashWidth = 8, dashSpace = 6;
-    Path path = Path()
-      ..addOval(Rect.fromCircle(center: center, radius: radius));
-    for (ui.PathMetric metric in path.computeMetrics()) {
-      double d = 0.0;
-      while (d < metric.length) {
-        canvas.drawPath(metric.extractPath(d, d + dashWidth), paint);
-        d += dashWidth + dashSpace;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => true;
-}
-
-class _GlowCirclePainter extends CustomPainter {
-  final Color color;
-  final double glowRadius;
-  final double animValue;
-
-  _GlowCirclePainter({
-    required this.color,
-    required this.glowRadius,
-    required this.animValue,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-    double pulse = 0.5 + 0.5 * sin(animValue * 2 * pi);
-    final glowPaint = Paint()
-      ..color = color.withOpacity(0.15 + 0.1 * pulse)
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, 8 + 4 * pulse);
-    canvas.drawCircle(center, radius + 4, glowPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _GlowCirclePainter old) =>
-      old.animValue != animValue || old.glowRadius != glowRadius;
-}
-
-class LassoPainter extends CustomPainter {
-  final List<Offset> drawnPoints;
-  final GraphTheme theme;
-
-  LassoPainter({required this.drawnPoints, required this.theme});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (drawnPoints.isEmpty) return;
-
-    final path = Path();
-    path.moveTo(drawnPoints.first.dx, drawnPoints.first.dy);
-    for (int i = 1; i < drawnPoints.length; i++) {
-      path.lineTo(drawnPoints[i].dx, drawnPoints[i].dy);
-    }
-
-    final strokePaint = Paint()
-      ..color = theme.lassoColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    canvas.drawPath(path, strokePaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant LassoPainter oldDelegate) {
-    return true;
-  }
-}

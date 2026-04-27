@@ -110,4 +110,31 @@ class WorkspaceService {
       return [];
     }
   }
+
+  // Rebuild Graph
+  Future<bool> rebuildGraph(String workspaceId) async {
+    final requestUrl = Uri.parse('$baseUrl/$workspaceId/rebuild-graph');
+    final token = await AuthService.instance.getValidAccessToken();
+
+    try {
+      final response = await http.post(
+        requestUrl,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+          'x-api-key': dotenv.env['API_KEY'] ?? '',
+        },
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return true;
+      } else {
+        print('Lỗi gọi Graph API: Status ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('Exception fetching graph: $e');
+      return false;
+    }
+  }
 }

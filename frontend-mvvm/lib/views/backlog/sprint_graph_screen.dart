@@ -398,10 +398,7 @@ class _SprintGraphScreenState extends State<SprintGraphScreen>
     SprintStatus enumStatus = _mapStringToSprintStatus(newStatus);
 
     for (String id in storyIds) {
-      final success = await _viewModel.updateUserStoryStatus(
-        id,
-        enumStatus,
-      );
+      final success = await _viewModel.updateUserStoryStatus(id, enumStatus);
 
       if (success) {
         setState(() {

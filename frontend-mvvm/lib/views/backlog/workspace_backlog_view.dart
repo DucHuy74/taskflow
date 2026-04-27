@@ -128,6 +128,7 @@ class _WorkspaceBacklogViewState extends State<WorkspaceBacklogView> {
                 ],
               ),
               child: BacklogGraphScreen(
+                workspaceId: widget.workspace.id,
                 backlogId: widget.workspace.backlog?.id ?? "",
                 backlogName: widget.workspace.backlog?.name ?? "",
               ),

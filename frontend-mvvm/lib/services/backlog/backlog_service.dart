@@ -8,7 +8,9 @@ class BacklogService {
   static const String _baseUrl = 'http://localhost:8080/api';
 
   Future<List<UserStoryModel>> getBacklog(String workspaceId) async {
-    final url = Uri.parse('$_baseUrl/user-stories/workspace/$workspaceId/backlog');
+    final url = Uri.parse(
+      '$_baseUrl/user-stories/workspace/$workspaceId/backlog',
+    );
 
     try {
       final token = await AuthService.instance.getValidAccessToken();
@@ -35,6 +37,7 @@ class BacklogService {
     }
   }
 
+  // Tạo UserStory
   Future<bool> createUserStory({
     required String workspaceId,
     required String storyText,
@@ -51,11 +54,13 @@ class BacklogService {
           'Authorization': 'Bearer $token',
           'x-api-key': dotenv.env['API_KEY'] ?? '',
         },
-        body: jsonEncode({
-          "workspaceId": workspaceId,
-          "storyText": storyText,
-          "status": status,
-        }),
+        body: jsonEncode([
+          {
+            "workspaceId": workspaceId,
+            "storyText": storyText,
+            "status": status,
+          },
+        ]),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {

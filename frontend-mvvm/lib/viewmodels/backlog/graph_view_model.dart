@@ -10,13 +10,13 @@ class GraphViewModel extends ChangeNotifier {
   String? errorMessage;
   List<AnalyzedStory> stories = [];
 
-  Future<void> fetchGraphData(String backlogId) async {
+  Future<void> fetchGraphData(String workspaceId, String backlogId) async {
     isLoading = true;
     errorMessage = null;
     notifyListeners();
 
     try {
-      final data = await _service.getBacklogGraph(backlogId);
+      final data = await _service.getBacklogGraph(workspaceId, backlogId);
       if (data != null) {
         _parseGraphToStories(data);
       } else {

@@ -11,9 +11,9 @@ class AuthService {
   AuthService._internal();
   static final AuthService instance = AuthService._internal();
 
-  final String _clientId = 'dacs_app';
+  final String _clientId = 'nckh_app';
   final String _clientSecret = dotenv.env['Client_Secret'] ?? '';
-  final String _issuer = 'http://localhost:8180/realms/dacs';
+  final String _issuer = 'http://localhost:8180/realms/nckh';
 
   late final TokenStorage _storage = kIsWeb
       ? WebTokenStorage()
