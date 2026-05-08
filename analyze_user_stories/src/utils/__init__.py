@@ -1,7 +1,7 @@
 from collections import Counter
 from typing import Optional, Tuple
 
-from fastapi import Body
+from fastapi.temp_pydantic_v1_params import Body
 
 
 def find_subject(doc) -> Optional[str]:
@@ -94,6 +94,8 @@ def print_similarity_results(title, results):
 
 
 def route_handler(controller):
+    from fastapi import Body
+
     async def handler(data: dict = Body(...)):
         return controller(data)
     return handler
