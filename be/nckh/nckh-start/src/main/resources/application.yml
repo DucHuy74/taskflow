@@ -17,10 +17,10 @@ spring:
       timeout: ${REDIS_TIMEOUT}
 
   datasource:
-#    url: ${DB_URL}
-#    username: ${DB_USERNAME}
-#    password: ${DB_PASSWORD}
-#    driver-class-name: ${DB_DRIVER}
+    #    url: ${DB_URL}
+    #    username: ${DB_USERNAME}
+    #    password: ${DB_PASSWORD}
+    #    driver-class-name: ${DB_DRIVER}
     master:
       url: ${DB_MASTER_URL}
       username: ${DB_MASTER_USERNAME}
@@ -63,13 +63,13 @@ spring:
           issuer-uri: ${KEYCLOAK_ISSUER_URI}
 
   neo4j:
-    uri: neo4j+s://d64a682c.databases.neo4j.io
+    uri: ${NEO4J_URI}
     authentication:
-      username: neo4j
-      password: HdwlHzHdYhAqaJYfEPhhIPWWNtoilzXPfI4gWvYQNME
+      username: ${NEO4J_USERNAME}
+      password: ${NEO4J_PASSWORD}
     data:
       neo4j:
-        database: neo4j
+        database: ${NEO4J_DATABASE}
 
   rabbitmq:
     host: localhost

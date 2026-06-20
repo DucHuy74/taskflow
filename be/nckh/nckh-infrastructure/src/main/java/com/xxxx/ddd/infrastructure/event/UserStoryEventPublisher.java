@@ -3,11 +3,13 @@ package com.xxxx.ddd.infrastructure.event;
 import com.xxxx.ddd.infrastructure.config.rmq.RabbitConfig;
 import com.xxxx.dddd.domain.event.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class UserStoryEventPublisher {
 
     private final RabbitTemplate rabbitTemplate;
@@ -30,6 +32,7 @@ public class UserStoryEventPublisher {
                 RabbitConfig.CREATED_ROUTING_KEY,
                 message
         );
+        log.debug("Sent to exchange={}, routingKey={}", RabbitConfig.USERSTORY_EXCHANGE, RabbitConfig.CREATED_ROUTING_KEY);
     }
 
     public void publishMoved(UserStoryMovedEvent event) {
@@ -49,5 +52,6 @@ public class UserStoryEventPublisher {
                 RabbitConfig.MOVED_ROUTING_KEY,
                 message
         );
+        log.debug("Sent to exchange={}, routingKey={}", RabbitConfig.USERSTORY_EXCHANGE, RabbitConfig.MOVED_ROUTING_KEY);
     }
 }

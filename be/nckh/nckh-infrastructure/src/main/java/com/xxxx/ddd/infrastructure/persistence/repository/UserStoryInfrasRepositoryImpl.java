@@ -6,6 +6,7 @@ import com.xxxx.dddd.domain.repository.UserStoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,6 +39,11 @@ public class UserStoryInfrasRepositoryImpl implements UserStoryRepository {
     @Override
     public Optional<UserStory> findById(String userStoryId){
         return jpa.findById(userStoryId);
+    }
+
+    @Override
+    public List<UserStory> findAllById(Collection<String> userStoryIds) {
+        return jpa.findAllById(userStoryIds);
     }
 
     @Override

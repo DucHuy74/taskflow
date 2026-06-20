@@ -1,7 +1,9 @@
 type GraphNode {
     id: ID!
     label: String!
-    type: String!   # Term | UserStory | Sprint
+    type: String!
+
+    priority: Float
 }
 
 type GraphEdge {

@@ -3,5 +3,6 @@ package com.xxxx.ddd.application.model.dto.graph;
 public record GraphNodeDTO(
         String id,
         String label,
-        String type
+        String type,
+        Double priority
 ) {}

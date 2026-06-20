@@ -17,6 +17,8 @@ public interface SprintAppService {
 
     void addUserStoryToSprint(String sprintId, String userStoryId);
 
+    void addUserStoriesToSprint(String sprintId, List<String> userStoryIds);
+
     void removeUserStoryFromSprint(String userStoryId);
 
     List<UserStoryResponse> getBacklog(String workspaceId);

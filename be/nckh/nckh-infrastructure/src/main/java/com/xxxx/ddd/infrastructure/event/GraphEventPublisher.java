@@ -1,6 +1,5 @@
 package com.xxxx.ddd.infrastructure.event;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xxxx.ddd.application.port.async.GraphEventPort;
 import com.xxxx.ddd.infrastructure.config.rmq.RabbitConfig;
 import com.xxxx.dddd.domain.event.BaseEventMessage;

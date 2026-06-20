@@ -1,5 +1,6 @@
 package com.xxxx.ddd.controller.http;
 
+import com.xxxx.ddd.application.model.dto.request.SprintAddUserStoriesRequest;
 import com.xxxx.ddd.application.model.dto.request.SprintCreateRequest;
 import com.xxxx.ddd.application.model.dto.response.SprintResponse;
 import com.xxxx.ddd.application.model.dto.response.UserStoryResponse;
@@ -86,6 +87,20 @@ public class SprintController {
         return ResponseEntity.ok(
                 ApiResponse.<Void>builder()
                         .message("User story added to sprint")
+                        .build()
+        );
+    }
+
+    // Add multiple user stories to sprint
+    @PostMapping("/{sprintId}/user-stories")
+    public ResponseEntity<ApiResponse<Void>> addUserStoriesToSprint(
+            @PathVariable("sprintId") String sprintId,
+            @RequestBody SprintAddUserStoriesRequest request
+    ) {
+        sprintService.addUserStoriesToSprint(sprintId, request.getUserStoryIds());
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .message("User stories added to sprint")
                         .build()
         );
     }
