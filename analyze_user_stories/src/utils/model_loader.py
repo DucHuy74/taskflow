@@ -55,5 +55,3 @@ def ensure_local_sbert_model():
     model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
     model.save(str(sbert_model_dir))
     return sbert_model_dir
-    
-

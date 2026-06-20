@@ -10,6 +10,7 @@ from src.services.statistics_service import StatisticsService
 from src.services.similarity_factory import build_similarity_calculator
 from src.utils.model_loader import load_models
 from src.services.neo4j_service import Neo4jService
+from src.services.priority_service import PriorityService
 
 # LOAD MODEL 
 nlp, word2Vec = load_models()
@@ -20,6 +21,7 @@ statistics_service = StatisticsService()
 
 neo4j_conn = Neo4jConnection()
 neo4j_service = Neo4jService(neo4j_conn)
+
 
 def callback(ch, method, properties, body):
     try:

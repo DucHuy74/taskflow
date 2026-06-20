@@ -1,11 +1,14 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 from typing import List
 from sqlalchemy.orm import Session
 
 from src.database import db
 from src.database.dependencies import get_db
+from src.database.neo4j import Neo4jConnection
 from src.utils.model_loader import load_models
+from src.services.neo4j_service import Neo4jService
+from constant import REDUNDANCY_DEBUG_TOP_K_DEFAULT
 
 from src.services.analyze_parsing_service import AnalyzeParsingService
 from src.services.semantic_normalization_service import SemanticNormalizationService
@@ -23,6 +26,7 @@ similarity_calculator = build_similarity_calculator(word2Vec)
 parser_service = AnalyzeParsingService(nlp, word2Vec)
 semantic_service = SemanticNormalizationService(similarity_calculator)
 statistics_service = StatisticsService()
+neo4j_service = Neo4jService(Neo4jConnection())
 
 ## Request models
 class ParseRequest(BaseModel):
@@ -61,3 +65,17 @@ def learn_user_stories(req: LearnRequest, db: Session = Depends(get_db)):
         workspace_id="WS_1",
         creator_id="USER_1"
     )
+
+
+@router.get("/debug/redundancy/{workspace_id}")
+def debug_redundancy_pairs(
+    workspace_id: str,
+    top_k: int = Query(default=REDUNDANCY_DEBUG_TOP_K_DEFAULT, ge=1, le=200),
+):
+    pairs = neo4j_service.get_top_redundant_pairs(workspace_id=workspace_id, top_k=top_k)
+    return {
+        "workspace_id": workspace_id,
+        "top_k": top_k,
+        "count": len(pairs),
+        "pairs": pairs,
+    }
