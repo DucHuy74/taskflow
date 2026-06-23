@@ -21,6 +21,8 @@ class AnalyzeStoryResult(Base):
     asr_object_canonical = Column(String(100))
 
     asr_status = Column(String(20))
+    asr_parse_method = Column(String(30))
+    asr_confidence = Column(Float)
 
     asr_is_deleted = Column(Boolean, default=False)
     asr_created_at = Column(DateTime, default=func.now())

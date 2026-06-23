@@ -5,6 +5,7 @@ from src.database.db import db_manager
 from src.database.neo4j import Neo4jConnection
 
 from src.services.graph_batch_service import GraphBatchService
+from src.services.neo4j_write_lock import workspace_write_lock
 from src.services.semantic_normalization_service import SemanticNormalizationService
 from src.services.statistics_service import StatisticsService
 from src.services.similarity_factory import build_similarity_calculator
@@ -63,7 +64,8 @@ def callback(ch, method, properties, body):
 
         print(f"[BATCH] Rebuilding workspace: {workspace_id}")
 
-        batch_service.rebuild_workspace(workspace_id)
+        with workspace_write_lock.exclusive(workspace_id):
+            batch_service.rebuild_workspace(workspace_id)
 
         print(f"[BATCH] Done workspace: {workspace_id}")
 

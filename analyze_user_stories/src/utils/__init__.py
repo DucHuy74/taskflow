@@ -1,7 +1,12 @@
 from collections import Counter
 from typing import Optional, Tuple
 
-from fastapi.temp_pydantic_v1_params import Body
+
+def sorted_term_pair(left: str, right: str) -> Tuple[str, str]:
+    """Return a stable, order-independent key for a pair of terms."""
+    if left <= right:
+        return left, right
+    return right, left
 
 
 def find_subject(doc) -> Optional[str]:

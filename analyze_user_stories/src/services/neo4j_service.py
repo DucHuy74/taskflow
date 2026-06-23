@@ -6,6 +6,12 @@ class Neo4jService:
     def __init__(self, conn):
         self.conn = conn
 
+    def _write(self, query, params=None):
+        return self.conn.execute_write(query, params)
+
+    def _read(self, query, params=None):
+        return self.conn.execute(query, params)
+
     # --- SVO ---
     def save_svo(
         self,
@@ -74,7 +80,7 @@ class Neo4jService:
             r2.backlog_id = $backlogId
         """
 
-        self.conn.execute(query, {
+        self._write(query, {
             "data": data,
             "ws": workspace_id,
             "sprintId": sprint_id,
@@ -113,7 +119,7 @@ class Neo4jService:
         SET r.score = row.sim
         """
 
-        self.conn.execute(query, {
+        self._write(query, {
             "data": data,
             "ws": workspace_id
         })
@@ -154,7 +160,7 @@ class Neo4jService:
             r.lift = row.lift
         """
 
-        self.conn.execute(query, {
+        self._write(query, {
             "data": data,
             "ws": workspace_id
         })
@@ -169,7 +175,7 @@ class Neo4jService:
             r.backlog_id = $backlogId
         """
 
-        self.conn.execute(query, {
+        self._write(query, {
             "storyId": story_id,
             "sprintId": sprint_id,
             "backlogId": backlog_id
@@ -180,7 +186,7 @@ class Neo4jService:
         MATCH (n {workspace_id: $ws})
         DETACH DELETE n
         """
-        self.conn.execute(query, {"ws": workspace_id})
+        self._write(query, {"ws": workspace_id})
 
     def load_similarity_map(self, workspace_id):
         query = """
@@ -189,7 +195,7 @@ class Neo4jService:
         WHERE b IS NOT NULL
         RETURN a.name AS left_term, b.name AS right_term, coalesce(r.score, 0.0) AS score
         """
-        return self.conn.execute(query, {"ws": workspace_id})
+        return self._read(query, {"ws": workspace_id})
 
     def load_rule_map(self, workspace_id):
         query = """
@@ -199,7 +205,7 @@ class Neo4jService:
                coalesce(r.confidence, 0.0) AS confidence,
                coalesce(r.lift, 0.0) AS lift
         """
-        return self.conn.execute(query, {"ws": workspace_id})
+        return self._read(query, {"ws": workspace_id})
 
     def load_story_priorities(self, workspace_id):
         query = """
@@ -207,7 +213,7 @@ class Neo4jService:
         MATCH (s:UserStory {id: r.story_id})
         RETURN DISTINCT s.id AS story_id, coalesce(s.priority, 0.0) AS priority
         """
-        return self.conn.execute(query, {"ws": workspace_id})
+        return self._read(query, {"ws": workspace_id})
 
     def clear_redundancy_pairs(self, workspace_id):
         """Xóa cạnh REDUNDANT_WITH cũ của workspace trước khi ghi batch mới."""
@@ -215,7 +221,7 @@ class Neo4jService:
         MATCH (:UserStory)-[r:REDUNDANT_WITH {workspace_id: $ws}]->(:UserStory)
         DELETE r
         """
-        self.conn.execute(query, {"ws": workspace_id})
+        self._write(query, {"ws": workspace_id})
 
     def save_redundancy_pairs(self, workspace_id, pairs):
         if not pairs:
@@ -235,7 +241,7 @@ class Neo4jService:
             r.is_redundant = coalesce(row.is_redundant, false)
         RETURN count(r) AS written
         """
-        rows = self.conn.execute(query, {"ws": workspace_id, "pairs": pairs})
+        rows = self._write(query, {"ws": workspace_id, "pairs": pairs})
         written = rows[0]["written"] if rows else len(pairs)
         print(f"[NEO4J] REDUNDANT_WITH saved: {written} edges workspace={workspace_id}")
         return written
@@ -245,7 +251,7 @@ class Neo4jService:
         MATCH (:UserStory)-[r:REDUNDANT_WITH {workspace_id: $ws}]->(:UserStory)
         RETURN count(r) AS total
         """
-        rows = self.conn.execute(query, {"ws": workspace_id})
+        rows = self._read(query, {"ws": workspace_id})
         return rows[0]["total"] if rows else 0
 
     def save_story_priority_v2(self, workspace_id, story_outputs):
@@ -261,7 +267,7 @@ class Neo4jService:
             s.redundancy_group_id = row.redundancy_group_id,
             s.workspace_id = coalesce(s.workspace_id, $ws)
         """
-        self.conn.execute(query, {"ws": workspace_id, "rows": story_outputs})
+        self._write(query, {"ws": workspace_id, "rows": story_outputs})
 
     def save_classification_metrics(self, workspace_id, model_name, metrics):
         query = """
@@ -269,7 +275,7 @@ class Neo4jService:
         SET m.model_name = $model_name,
             m.metrics_json = $metrics_json
         """
-        self.conn.execute(
+        self._write(
             query,
             {
                 "ws": workspace_id,
@@ -289,8 +295,8 @@ class Neo4jService:
         ORDER BY redundancy_prob DESC
         LIMIT $top_k
         """
-        return self.conn.execute(query, {"ws": workspace_id, "top_k": top_k})
+        return self._read(query, {"ws": workspace_id, "top_k": top_k})
         
     def run_query(self, query, params=None):
-        result = self.conn.execute(query, params or {})
+        result = self._read(query, params or {})
         return list(result) 

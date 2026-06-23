@@ -29,7 +29,9 @@ class AnalyzePersistenceService:
                 asr_action_canonical=action_can,
                 asr_object_canonical=object_can,
 
-                asr_status=parsed["status"]
+                asr_status=parsed["status"],
+                asr_parse_method=parsed.get("parse_method"),
+                asr_confidence=parsed.get("confidence"),
             )
 
             self.db.add(result)

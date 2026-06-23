@@ -13,6 +13,8 @@ from src.services.analyze_coordinator_service import AnalyzeCoordinatorService
 from src.services.user_story_read_service import UserStoryReadService
 from src.services.graph_building_service import GraphBuildingService
 from src.services.neo4j_service import Neo4jService
+from src.services.domain_vocabulary_service import DomainVocabularyService
+from src.services.neo4j_write_lock import workspace_write_lock
 
 from src.services.similarity_factory import build_similarity_calculator
 from src.utils.model_loader import load_models
@@ -49,13 +51,16 @@ def handle_story_created(data):
         persistence = AnalyzePersistenceService(db_write)
         reader = UserStoryReadService(db_slave)
 
+        domain_vocab_service = DomainVocabularyService(db_slave)
+        parser = AnalyzeParsingService(nlp, word2Vec, domain_vocab_service)
+
         graph_service = GraphBuildingService(
             knowledge_service,
             neo4j_service
         )
 
         coordinator = AnalyzeCoordinatorService(
-            parser_service,
+            parser,
             knowledge_service,
             None,
             persistence
@@ -63,6 +68,7 @@ def handle_story_created(data):
 
         story_id = data.get("id")
         content = data.get("storyText")
+        workspace_id = data.get("workspaceId")
 
         #VALIDATION KHÔNG THROW
         if not story_id:
@@ -84,19 +90,29 @@ def handle_story_created(data):
                 "user_story_id": story_id
             }],
             sprint_id=data.get("sprintId"),
-            workspace_id=data.get("workspaceId"),
+            workspace_id=workspace_id,
             creator_id=None
         )
 
         svo_list = result.get("svo_list", [])
 
-        graph_service.process_realtime(
-            svo_list=svo_list,
-            workspace_id=data.get("workspaceId"),
-            story_id=story_id,
-            sprint_id=data.get("sprintId"),
-            backlog_id=data.get("backlogId")
-        )
+        if workspace_id:
+            with workspace_write_lock.shared(workspace_id):
+                graph_service.process_realtime(
+                    svo_list=svo_list,
+                    workspace_id=workspace_id,
+                    story_id=story_id,
+                    sprint_id=data.get("sprintId"),
+                    backlog_id=data.get("backlogId")
+                )
+        else:
+            graph_service.process_realtime(
+                svo_list=svo_list,
+                workspace_id=workspace_id,
+                story_id=story_id,
+                sprint_id=data.get("sprintId"),
+                backlog_id=data.get("backlogId")
+            )
 
         print(f"[CREATE] Done story_id={story_id}")
 
@@ -126,11 +142,20 @@ def handle_story_moved(data):
             backlog_id=data.get("backlogId")
         )
 
-        neo4j_service.update_story_context(
-            story_id=story_id,
-            sprint_id=data.get("sprintId"),
-            backlog_id=data.get("backlogId")
-        )
+        workspace_id = data.get("workspaceId")
+        if workspace_id:
+            with workspace_write_lock.shared(workspace_id):
+                neo4j_service.update_story_context(
+                    story_id=story_id,
+                    sprint_id=data.get("sprintId"),
+                    backlog_id=data.get("backlogId")
+                )
+        else:
+            neo4j_service.update_story_context(
+                story_id=story_id,
+                sprint_id=data.get("sprintId"),
+                backlog_id=data.get("backlogId")
+            )
 
         print(f"[MOVE] Updated story {story_id}")
 

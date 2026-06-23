@@ -1,8 +1,21 @@
 from neo4j import GraphDatabase
+from neo4j.exceptions import TransientError
 import os
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+def _is_transient_error(exc: Exception) -> bool:
+    if isinstance(exc, TransientError):
+        return True
+    message = str(exc).lower()
+    return any(
+        keyword in message
+        for keyword in ("deadlock", "lock", "transient", "timeout", "unavailable")
+    )
+
 
 class Neo4jConnection:
 
@@ -18,11 +31,40 @@ class Neo4jConnection:
     def close(self):
         self.driver.close()
 
+    def _run_with_retry(self, operation, max_retries: int = 3):
+        delay = 0.1
+        last_error = None
+
+        for attempt in range(max_retries):
+            try:
+                with self.driver.session() as session:
+                    return operation(session)
+            except Exception as exc:
+                last_error = exc
+                if attempt == max_retries - 1 or not _is_transient_error(exc):
+                    raise
+                time.sleep(delay)
+                delay *= 2
+
+        raise last_error
+
     def execute(self, query, params=None):
-        with self.driver.session() as session:
+        def operation(session):
             result = session.run(query, params or {})
             return [record.data() for record in result]
-        
+
+        return self._run_with_retry(operation)
+
+    def execute_write(self, query, params=None):
+        def operation(session):
+            def work(tx):
+                result = tx.run(query, params or {})
+                return [record.data() for record in result]
+
+            return session.execute_write(work)
+
+        return self._run_with_retry(operation)
+
     # =========================
     # DROP GRAPH
     # =========================

@@ -11,6 +11,7 @@ from src.services.neo4j_service import Neo4jService
 from constant import REDUNDANCY_DEBUG_TOP_K_DEFAULT
 
 from src.services.analyze_parsing_service import AnalyzeParsingService
+from src.services.domain_vocabulary_service import DomainVocabularyService
 from src.services.semantic_normalization_service import SemanticNormalizationService
 from src.services.analyze_coordinator_service import AnalyzeCoordinatorService
 from src.services.analyze_persistence_service import AnalyzePersistenceService
@@ -51,16 +52,18 @@ def learn_user_stories(req: LearnRequest, db: Session = Depends(get_db)):
         return {"error": "texts cannot be empty"}
 
     persistence_service = AnalyzePersistenceService(db)
+    domain_vocab_service = DomainVocabularyService(db)
+    parser = AnalyzeParsingService(nlp, word2Vec, domain_vocab_service)
 
     coordinator = AnalyzeCoordinatorService(
-        parser_service,
+        parser,
         semantic_service,
         statistics_service,
         persistence_service
     )
 
     return coordinator.analyze_and_save(
-        texts=req.texts,
+        texts=[{"text": t, "user_story_id": f"learn_{i}"} for i, t in enumerate(req.texts)],
         sprint_id="SPRINT_1",
         workspace_id="WS_1",
         creator_id="USER_1"
