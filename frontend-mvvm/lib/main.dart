@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'core/locator.dart';
 import '../views/auth/login_screen.dart';
 import '../views/home/home_page.dart';
 import '../views/landingpage.dart';
@@ -10,6 +11,7 @@ final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+  setupLocator();
   runApp(const MyApp());
 }
 

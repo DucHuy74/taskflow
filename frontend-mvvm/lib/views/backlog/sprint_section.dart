@@ -134,7 +134,7 @@ class _SprintSectionState extends State<SprintSection> {
             ...doneSprints.map(
               (sprint) => SprintContainer(
                 sprint: sprint,
-                isCompleted: true, 
+                isCompleted: true,
                 onMoveStoryToSprint: widget.onMoveStoryToSprint,
                 onSprintStarted: widget.onSprintStarted,
               ),
@@ -297,134 +297,143 @@ class _SprintContainerState extends State<SprintContainer> {
         border: Border(bottom: BorderSide(color: Color(0xFFEBECF0))),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.view_week_outlined,
-            size: 18,
-            color: Color(0xFF42526E),
+          const Padding(
+            padding: EdgeInsets.only(top: 2.0),
+            child: Icon(
+              Icons.view_week_outlined,
+              size: 18,
+              color: Color(0xFF42526E),
+            ),
           ),
           const SizedBox(width: 8),
 
-          Row(
-            children: [
-              Text(
-                widget.sprint.name,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF172B4D),
+          // Vùng chứa thông tin (Tự động xuống dòng nếu hẹp)
+          Expanded(
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                Text(
+                  widget.sprint.name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF172B4D),
+                  ),
                 ),
-              ),
-
-              if (isSprintActive) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.blue.shade200),
-                  ),
-                  child: Text(
-                    'IN PROGRESS',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade700,
+                if (isSprintActive)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Text(
+                      'IN PROGRESS',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade700,
+                      ),
                     ),
                   ),
-                ),
-              ],
-
-              if (widget.isCompleted) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.green.shade200),
-                  ),
-                  child: Text(
-                    'DONE',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green.shade700,
+                if (widget.isCompleted)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.green.shade200),
+                    ),
+                    child: Text(
+                      'DONE',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                      ),
                     ),
                   ),
-                ),
+                if (dateRange.isNotEmpty)
+                  Text(
+                    dateRange,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF5E6C84),
+                    ),
+                  ),
               ],
-            ],
+            ),
           ),
 
           const SizedBox(width: 12),
-          if (dateRange.isNotEmpty)
-            Text(
-              dateRange,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF5E6C84)),
-            ),
-          const Spacer(),
 
-          // LOGIC ẨN/HIỆN NÚT BẤM
-          if (!widget.isCompleted)
-            ElevatedButton(
-              onPressed: isSprintActive
-                  ? () =>
-                        widget.onSprintStarted(
+          // Các nút hành động luôn bám phải
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!widget.isCompleted)
+                ElevatedButton(
+                  onPressed: isSprintActive
+                      ? () => widget.onSprintStarted(
                           widget.sprint.id,
                           widget.sprint.name,
-                        ) 
-                  : (_viewModel.isLoading
-                        ? null
-                        : _handleStartSprint), 
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isSprintActive
-                    ? const Color(0xFF0052CC)
-                    : const Color(0xFFF4F5F7),
-                foregroundColor: isSprintActive
-                    ? Colors.white
-                    : const Color(0xFF42526E),
-                elevation: 0,
-                side: BorderSide(
-                  color: isSprintActive
-                      ? Colors.transparent
-                      : const Color(0xFFDFE1E6),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 0,
-                ),
-                minimumSize: const Size(0, 32),
-              ),
-              child: _viewModel.isLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(
-                      isSprintActive ? 'View Graph' : 'Start sprint',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
+                        )
+                      : (_viewModel.isLoading ? null : _handleStartSprint),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isSprintActive
+                        ? const Color(0xFF0052CC)
+                        : const Color(0xFFF4F5F7),
+                    foregroundColor: isSprintActive
+                        ? Colors.white
+                        : const Color(0xFF42526E),
+                    elevation: 0,
+                    side: BorderSide(
+                      color: isSprintActive
+                          ? Colors.transparent
+                          : const Color(0xFFDFE1E6),
                     ),
-            ),
-
-          IconButton(
-            icon: const Icon(
-              Icons.more_horiz,
-              size: 20,
-              color: Color(0xFF42526E),
-            ),
-            onPressed: () {},
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 0,
+                    ),
+                    minimumSize: const Size(0, 32),
+                  ),
+                  child: _viewModel.isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          isSprintActive ? 'View Graph' : 'Start sprint',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              IconButton(
+                icon: const Icon(
+                  Icons.more_horiz,
+                  size: 20,
+                  color: Color(0xFF42526E),
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () {},
+              ),
+            ],
           ),
         ],
       ),

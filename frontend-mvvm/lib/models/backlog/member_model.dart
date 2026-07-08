@@ -3,11 +3,7 @@ class MemberModel {
   final String email;
   final String role;
 
-  MemberModel({
-    required this.userId,
-    required this.email,
-    required this.role,
-  });
+  MemberModel({required this.userId, required this.email, required this.role});
 
   factory MemberModel.fromJson(Map<String, dynamic> json) {
     return MemberModel(

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'create_project.dart'; 
+import 'create_project.dart';
 
 class SpaceTemplatesPage extends StatefulWidget {
   const SpaceTemplatesPage({Key? key}) : super(key: key);

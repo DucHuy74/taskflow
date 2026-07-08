@@ -1,4 +1,5 @@
 // lib/views/backlog/workspace_backlog_view.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../models/home/workspace_model.dart';
 import '../../models/backlog/sprint_model.dart';
@@ -8,6 +9,7 @@ import 'sprint_section.dart';
 import '../../components/home/backlog_section.dart';
 import 'backlog_graph_screen.dart';
 import 'sprint_graph_screen.dart';
+import 'summary_view.dart';
 
 class WorkspaceBacklogView extends StatefulWidget {
   final WorkspaceModel workspace;
@@ -52,25 +54,65 @@ class _WorkspaceBacklogViewState extends State<WorkspaceBacklogView> {
   }
 
   void _handleCreateStory(String text) async {
-    if (text.isEmpty) return;
-    final success = await _viewModel.createStory(widget.workspace.id, text);
+    if (text.trim().isEmpty) return;
+
+    List<String> validStories = [];
+
+    // Thử parse nếu nội dung là một mảng JSON từ Postman
+    try {
+      final parsed = jsonDecode(text.trim());
+      if (parsed is List) {
+        for (var item in parsed) {
+          if (item is Map && item.containsKey('storyText')) {
+            String st = item['storyText'].toString().trim();
+            if (st.isNotEmpty) validStories.add(st);
+          }
+        }
+      }
+    } catch (_) {
+      // Bỏ qua lỗi parse, tiếp tục với cách tách dòng bình thường
+    }
+
+    // Nếu không phải JSON hợp lệ hoặc mảng trống, fallback về cách chia dòng (newline hoặc comma)
+    if (validStories.isEmpty) {
+      List<String> rawStories = text.split(RegExp(r'\n+'));
+      if (rawStories.length == 1 && text.contains(', As a')) {
+        rawStories = text.split(RegExp(r',\s*(?=As a)'));
+      }
+      for (String raw in rawStories) {
+        String storyText = raw.trim();
+        if (storyText.isNotEmpty) {
+          validStories.add(storyText);
+        }
+      }
+    }
+
+    if (validStories.isEmpty) return;
+
+    // Gửi toàn bộ story texts xuống backend trong 1 request
+    final allSuccess = await _viewModel.createMultipleStories(
+      widget.workspace.id,
+      validStories,
+    );
+
     if (mounted) {
-      if (success) {
+      if (allSuccess) {
         _sprintInputController.clear();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('User story created!'),
+            content: Text('Đã tạo User Story thành công!'),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Failed to create'),
+            content: Text('Có lỗi khi tạo một số User Story'),
             backgroundColor: Colors.red,
           ),
         );
       }
+      _viewModel.fetchBacklog(widget.workspace.id);
     }
   }
 
@@ -128,6 +170,7 @@ class _WorkspaceBacklogViewState extends State<WorkspaceBacklogView> {
                 ],
               ),
               child: BacklogGraphScreen(
+                workspaceId: widget.workspace.id,
                 backlogId: widget.workspace.backlog?.id ?? "",
                 backlogName: widget.workspace.backlog?.name ?? "",
               ),
@@ -195,6 +238,9 @@ class _WorkspaceBacklogViewState extends State<WorkspaceBacklogView> {
             ),
           );
         }
+
+      case 'Summary':
+        return SummaryView(workspace: widget.workspace, viewModel: _viewModel);
 
       default:
         return Center(

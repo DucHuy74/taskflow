@@ -47,13 +47,13 @@ class _ProfilePageState extends State<ProfilePage> {
           style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 20,
-            color: textColor, 
+            color: textColor,
           ),
         ),
         centerTitle: true,
         backgroundColor: backgroundColor,
         elevation: 0,
-        iconTheme: IconThemeData(color: appBarIconColor), 
+        iconTheme: IconThemeData(color: appBarIconColor),
       ),
       body: ListenableBuilder(
         listenable: _viewModel,
@@ -102,8 +102,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   : 'U',
                               style: TextStyle(
                                 fontSize: 40,
-                                color:
-                                    textColor, 
+                                color: textColor,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -115,7 +114,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             color: const Color(0xFFF0C070),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: backgroundColor, 
+                              color: backgroundColor,
                               width: 3,
                             ),
                           ),

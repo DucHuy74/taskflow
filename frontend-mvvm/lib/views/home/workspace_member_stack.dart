@@ -113,64 +113,65 @@ class _WorkspaceMembersDialogState extends State<WorkspaceMembersDialog> {
                       );
                     }
                     return ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: _viewModel.members.length,
-                        separatorBuilder: (context, index) =>
-                            const Divider(height: 16, color: Color(0xFFEBECF0)),
-                        itemBuilder: (context, index) {
-                          final member = _viewModel.members[index];
-                          final initial = member.email.isNotEmpty
-                              ? member.email[0].toUpperCase()
-                              : '?';
+                      shrinkWrap: true,
+                      itemCount: _viewModel.members.length,
+                      separatorBuilder: (context, index) =>
+                          const Divider(height: 16, color: Color(0xFFEBECF0)),
+                      itemBuilder: (context, index) {
+                        final member = _viewModel.members[index];
+                        final initial = member.email.isNotEmpty
+                            ? member.email[0].toUpperCase()
+                            : '?';
 
-                          return Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 18,
-                                backgroundColor: _getAvatarColor(member.email),
-                                child: Text(
-                                  initial,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                        return Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundColor: _getAvatarColor(member.email),
+                              child: Text(
+                                initial,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  member.email,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF172B4D),
-                                  ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                member.email,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF172B4D),
                                 ),
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFDEEBFF),
-                                  borderRadius: BorderRadius.circular(3),
-                                ),
-                                child: Text(
-                                  member.role,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF0052CC),
-                                  ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDEEBFF),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                              child: Text(
+                                member.role,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0052CC),
                                 ),
                               ),
-                            ],
-                          );
-                        },
-                      );
-                  }),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -249,7 +250,9 @@ class _WorkspaceMemberStackState extends State<WorkspaceMemberStack> {
                   ),
                   child: CircleAvatar(
                     radius: 14,
-                    backgroundColor: _getAvatarColor(_viewModel.members[i].email),
+                    backgroundColor: _getAvatarColor(
+                      _viewModel.members[i].email,
+                    ),
                     child: Text(
                       _viewModel.members[i].email.isNotEmpty
                           ? _viewModel.members[i].email[0].toUpperCase()
@@ -287,6 +290,7 @@ class _WorkspaceMemberStackState extends State<WorkspaceMemberStack> {
               ),
           ],
         );
-      });
+      },
+    );
   }
 }

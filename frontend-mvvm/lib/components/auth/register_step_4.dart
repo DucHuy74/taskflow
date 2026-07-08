@@ -22,7 +22,14 @@ class RegisterStep4 extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Create a password', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF172B4D))),
+        const Text(
+          'Create a password',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF172B4D),
+          ),
+        ),
         const SizedBox(height: 24),
         TextFormField(
           controller: passwordController,
@@ -41,11 +48,21 @@ class RegisterStep4 extends StatelessWidget {
               Expanded(
                 child: Container(
                   height: 4,
-                  decoration: BoxDecoration(color: strengthColor, borderRadius: BorderRadius.circular(2)),
+                  decoration: BoxDecoration(
+                    color: strengthColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
-              Text(strengthText, style: TextStyle(fontSize: 12, color: strengthColor, fontWeight: FontWeight.w500)),
+              Text(
+                strengthText,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: strengthColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
       ],

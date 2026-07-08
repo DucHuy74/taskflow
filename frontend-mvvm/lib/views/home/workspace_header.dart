@@ -87,12 +87,15 @@ class WorkspaceHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Text(
-          workspace.name.isNotEmpty ? workspace.name : "Workspace",
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF172B4D),
+        Flexible(
+          child: Text(
+            workspace.name.isNotEmpty ? workspace.name : "Workspace",
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF172B4D),
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         const SizedBox(width: 12),

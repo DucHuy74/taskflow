@@ -4,13 +4,25 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../models/home/workspace_model.dart';
 import '../auth/auth_service.dart';
 import '../../models/backlog/member_model.dart';
+import '../../mockdata/home/workspace_dataset.dart';
+import '../../mockdata/backlog/member_dataset.dart';
+
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class WorkspaceService {
-  static const String url = 'http://localhost:8080/api/workspace';
+  static String get url =>
+      '${dotenv.env['BASE_URL'] ?? 'http://localhost:8080/api'}/workspace';
 
   // --- Lấy workspace ---
   Future<List<WorkspaceModel>> getWorkspaces() async {
     try {
+      final useMock = dotenv.env['USE_MOCK'] == 'true';
+
+      if (useMock) {
+        await Future.delayed(const Duration(seconds: 1)); // Mock network delay
+        return WorkspaceDataset.workspaces;
+      }
+
       final token = await AuthService.instance.getValidAccessToken();
       if (token == null) return [];
 
@@ -38,7 +50,8 @@ class WorkspaceService {
   }
 
   // --- Tạo workspace ---
-  static const String baseUrl = 'http://localhost:8080/api/workspace';
+  static String get baseUrl =>
+      '${dotenv.env['BASE_URL'] ?? 'http://localhost:8080/api'}/workspace';
 
   Future<WorkspaceResponse?> createWorkspace({
     required String name,
@@ -85,11 +98,17 @@ class WorkspaceService {
 
   Future<List<MemberModel>> getWorkspaceMembers(String workspaceId) async {
     try {
+      final useMock = dotenv.env['USE_MOCK'] == 'true';
+      if (useMock) {
+        await Future.delayed(const Duration(seconds: 1)); // Mock network delay
+        return MemberDataset.members;
+      }
+
       final token = await AuthService.instance.getValidAccessToken();
       if (token == null) return [];
 
       final response = await http.get(
-        Uri.parse('$url/$workspaceId/members'), 
+        Uri.parse('$url/$workspaceId/members'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -108,6 +127,33 @@ class WorkspaceService {
     } catch (e) {
       print('Error loading members: $e');
       return [];
+    }
+  }
+
+  // Rebuild Graph
+  Future<bool> rebuildGraph(String workspaceId) async {
+    final requestUrl = Uri.parse('$baseUrl/$workspaceId/rebuild-graph');
+    final token = await AuthService.instance.getValidAccessToken();
+
+    try {
+      final response = await http.post(
+        requestUrl,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+          'x-api-key': dotenv.env['API_KEY'] ?? '',
+        },
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return true;
+      } else {
+        print('Lỗi gọi Graph API: Status ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('Exception fetching graph: $e');
+      return false;
     }
   }
 }

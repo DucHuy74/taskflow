@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../services/home/workspace_service.dart';
 import '../../models/home/workspace_model.dart';
+import '../../core/locator.dart';
 
 class HomeViewModel extends ChangeNotifier {
-  final WorkspaceService _workspaceService = WorkspaceService();
+  final _workspaceService = locator<WorkspaceService>();
 
   List<WorkspaceModel> _workspaces = [];
   List<WorkspaceModel> get workspaces => _workspaces;

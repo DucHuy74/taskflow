@@ -6,7 +6,7 @@ import '../../components/auth/register_step_1.dart';
 import '../../components/auth/register_step_2.dart';
 import '../../components/auth/register_step_3.dart';
 import '../../components/auth/register_step_4.dart';
-import '../../components/auth/auth_header.dart'; 
+import '../../components/auth/auth_header.dart';
 
 class RegisterPage extends StatelessWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -119,9 +119,7 @@ class _RegisterViewState extends State<_RegisterView> {
                             ? null
                             : () async {
                                 if (vm.currentStep < 3) {
-                                  if (!vm.nextStep(_pageController, context)) {
-                                    
-                                  }
+                                  if (!vm.nextStep(_pageController, context)) {}
                                 } else {
                                   final res = await vm.register();
                                   if (!mounted) return;
@@ -147,7 +145,9 @@ class _RegisterViewState extends State<_RegisterView> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : Text(vm.currentStep < 3 ? 'Next' : 'Register'),
                       ),

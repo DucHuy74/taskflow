@@ -18,18 +18,10 @@ class UserStoryModel {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'storyText': storyText,
-      'status': status,
-    };
+    return {'id': id, 'storyText': storyText, 'status': status};
   }
 
-  UserStoryModel copyWith({
-    String? id,
-    String? storyText,
-    String? status,
-  }) {
+  UserStoryModel copyWith({String? id, String? storyText, String? status}) {
     return UserStoryModel(
       id: id ?? this.id,
       storyText: storyText ?? this.storyText,

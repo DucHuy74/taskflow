@@ -21,6 +21,9 @@ class TaskFlowAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   // --- HÀM MỞ POPUP NOTIFICATION ---
   void _showNotificationMenu(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobileView = screenWidth < 800;
+
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -32,7 +35,7 @@ class TaskFlowAppBar extends StatelessWidget implements PreferredSizeWidget {
           children: [
             Positioned(
               top: 56.0,
-              right: 120.0,
+              right: isMobileView ? 8.0 : 120.0,
               child: NotificationPopup(
                 onClose: () => Navigator.of(context).pop(),
               ),
@@ -62,7 +65,7 @@ class TaskFlowAppBar extends StatelessWidget implements PreferredSizeWidget {
         : const Color(0xFF0052CC);
 
     return AppBar(
-      backgroundColor: appBarColor, 
+      backgroundColor: appBarColor,
       elevation: 0,
       leading: isMobile
           ? null
@@ -98,7 +101,7 @@ class TaskFlowAppBar extends StatelessWidget implements PreferredSizeWidget {
             child: Container(
               height: 36,
               decoration: BoxDecoration(
-                color: searchBgColor, 
+                color: searchBgColor,
                 borderRadius: BorderRadius.circular(4),
                 border: isDarkMode
                     ? Border.all(
@@ -275,7 +278,7 @@ class TaskFlowAppBar extends StatelessWidget implements PreferredSizeWidget {
                 leading: const Icon(Icons.light_mode_outlined),
                 title: const Text('Light'),
                 onTap: () {
-                  themeNotifier.value = ThemeMode.light; 
+                  themeNotifier.value = ThemeMode.light;
                   Navigator.pop(dialogContext);
                 },
               ),
@@ -283,7 +286,7 @@ class TaskFlowAppBar extends StatelessWidget implements PreferredSizeWidget {
                 leading: const Icon(Icons.dark_mode_outlined),
                 title: const Text('Dark'),
                 onTap: () {
-                  themeNotifier.value = ThemeMode.dark; 
+                  themeNotifier.value = ThemeMode.dark;
                   Navigator.pop(dialogContext);
                 },
               ),

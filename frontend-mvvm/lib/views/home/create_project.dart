@@ -56,9 +56,8 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
 
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => InviteToProjectPage(
-            workspaceId: newWorkspaceId,
-          ),
+          builder: (context) =>
+              InviteToProjectPage(workspaceId: newWorkspaceId),
         ),
       );
     } else {

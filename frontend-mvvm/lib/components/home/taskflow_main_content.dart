@@ -3,24 +3,34 @@ import 'package:flutter/material.dart';
 class TaskFlowMainContent extends StatelessWidget {
   final VoidCallback onCreate;
 
-  const TaskFlowMainContent({
-    Key? key,
-    required this.onCreate,
-  }) : super(key: key);
+  const TaskFlowMainContent({Key? key, required this.onCreate})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    final titleColor = isDarkMode ? const Color(0xFFB6C2CF) : const Color(0xFF172B4D);
-    final subtitleColor = isDarkMode ? const Color(0xFF8C9BAB) : const Color(0xFF5E6C84);
-    
-    final btnBgColor = isDarkMode ? const Color(0xFF579DFF) : const Color(0xFF0052CC);
-    final btnTextColor = isDarkMode ? const Color(0xFF1D2125) : Colors.white;
-    final linkColor = isDarkMode ? const Color(0xFF579DFF) : const Color(0xFF0052CC);
+    final titleColor = isDarkMode
+        ? const Color(0xFFB6C2CF)
+        : const Color(0xFF172B4D);
+    final subtitleColor = isDarkMode
+        ? const Color(0xFF8C9BAB)
+        : const Color(0xFF5E6C84);
 
-    final lockIconColor = isDarkMode ? const Color(0xFF1D2125) : const Color(0xFF172B4D);
-    final keyBgColor = isDarkMode ? const Color(0xFF579DFF) : const Color(0xFF0052CC);
+    final btnBgColor = isDarkMode
+        ? const Color(0xFF579DFF)
+        : const Color(0xFF0052CC);
+    final btnTextColor = isDarkMode ? const Color(0xFF1D2125) : Colors.white;
+    final linkColor = isDarkMode
+        ? const Color(0xFF579DFF)
+        : const Color(0xFF0052CC);
+
+    final lockIconColor = isDarkMode
+        ? const Color(0xFF1D2125)
+        : const Color(0xFF172B4D);
+    final keyBgColor = isDarkMode
+        ? const Color(0xFF579DFF)
+        : const Color(0xFF0052CC);
     final keyIconColor = isDarkMode ? const Color(0xFF1D2125) : Colors.white;
 
     return Center(
@@ -37,7 +47,9 @@ class TaskFlowMainContent extends StatelessWidget {
                   width: 120,
                   height: 120,
                   decoration: const BoxDecoration(
-                    color: Color(0xFFFFC400), // Màu vàng của Jira giữ nguyên vì nó nổi trên cả 2 nền
+                    color: Color(
+                      0xFFFFC400,
+                    ), // Màu vàng của Jira giữ nguyên vì nó nổi trên cả 2 nền
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -67,22 +79,18 @@ class TaskFlowMainContent extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             Text(
-              'Space not found',
+              'Welcome to TaskFlow',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w600,
-                color: titleColor, // Đổi màu tiêu đề
+                color: titleColor,
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              'You tried to access a space that doesn\'t exist, or that you don\'t have permission to access. Speak to your TaskFlow admin or space admin to get access.',
+              'Select a workspace from the sidebar to view its backlog and graph, or create a new one to get started.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: subtitleColor, // Đổi màu nội dung chữ
-                height: 1.5,
-              ),
+              style: TextStyle(fontSize: 16, color: subtitleColor, height: 1.5),
             ),
             const SizedBox(height: 32),
             ElevatedButton(

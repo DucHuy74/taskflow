@@ -4,7 +4,7 @@ import '../../services/home/workspace_service.dart';
 
 class WorkspaceMemberViewModel extends ChangeNotifier {
   final WorkspaceService _service = WorkspaceService();
-  
+
   List<MemberModel> _members = [];
   List<MemberModel> get members => _members;
 

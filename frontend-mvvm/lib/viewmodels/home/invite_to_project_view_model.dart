@@ -5,7 +5,7 @@ class InviteViewModel extends ChangeNotifier {
   final InvitationService _service = InvitationService();
 
   final List<String> _invitedMembers = [];
-  String _selectedRole = 'Administrator'; 
+  String _selectedRole = 'Administrator';
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -65,7 +65,11 @@ class InviteViewModel extends ChangeNotifier {
 
     try {
       final backendRole = _mapRoleToBackend(_selectedRole);
-      final success = await _service.sendInvites(workspaceId, _invitedMembers, backendRole);
+      final success = await _service.sendInvites(
+        workspaceId,
+        _invitedMembers,
+        backendRole,
+      );
 
       if (success) {
         _invitedMembers.clear();

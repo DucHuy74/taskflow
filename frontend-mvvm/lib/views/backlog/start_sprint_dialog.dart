@@ -18,9 +18,9 @@ class StartSprintDialog extends StatefulWidget {
 class _StartSprintDialogState extends State<StartSprintDialog> {
   final TextEditingController _nameController = TextEditingController();
   final SprintViewModel _viewModel = SprintViewModel();
-  
+
   DateTime _startDate = DateTime.now();
-  DateTime _endDate = DateTime.now().add(const Duration(days: 14)); 
+  DateTime _endDate = DateTime.now().add(const Duration(days: 14));
 
   @override
   void initState() {
@@ -63,11 +63,17 @@ class _StartSprintDialogState extends State<StartSprintDialog> {
       Navigator.of(context).pop();
       widget.onSuccess();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sprint created successfully!'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Sprint created successfully!'),
+          backgroundColor: Colors.green,
+        ),
       );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to create sprint'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Failed to create sprint'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -90,24 +96,37 @@ class _StartSprintDialogState extends State<StartSprintDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("Start Sprint", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const Text(
+                  "Start Sprint",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.of(context).pop(),
-                )
+                ),
               ],
             ),
             const SizedBox(height: 24),
-            
+
             // Sprint Name
-            const Text("Sprint name *", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF42526E))),
+            const Text(
+              "Sprint name *",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF42526E),
+              ),
+            ),
             const SizedBox(height: 6),
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
             ),
             const SizedBox(height: 16),
-            
+
             // Duration & Dates Row
             Row(
               children: [
@@ -115,16 +134,32 @@ class _StartSprintDialogState extends State<StartSprintDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("Start date *", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF42526E))),
+                      const Text(
+                        "Start date *",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF42526E),
+                        ),
+                      ),
                       const SizedBox(height: 6),
                       InkWell(
                         onTap: () => _selectDate(context, true),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(4)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [Text(_formatDateDisplay(_startDate)), const Icon(Icons.calendar_today, size: 16)],
+                            children: [
+                              Text(_formatDateDisplay(_startDate)),
+                              const Icon(Icons.calendar_today, size: 16),
+                            ],
                           ),
                         ),
                       ),
@@ -136,16 +171,32 @@ class _StartSprintDialogState extends State<StartSprintDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("End date *", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF42526E))),
+                      const Text(
+                        "End date *",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF42526E),
+                        ),
+                      ),
                       const SizedBox(height: 6),
                       InkWell(
                         onTap: () => _selectDate(context, false),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(4)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [Text(_formatDateDisplay(_endDate)), const Icon(Icons.calendar_today, size: 16)],
+                            children: [
+                              Text(_formatDateDisplay(_endDate)),
+                              const Icon(Icons.calendar_today, size: 16),
+                            ],
                           ),
                         ),
                       ),
@@ -155,7 +206,7 @@ class _StartSprintDialogState extends State<StartSprintDialog> {
               ],
             ),
             const SizedBox(height: 32),
-            
+
             ListenableBuilder(
               listenable: _viewModel,
               builder: (context, child) {
@@ -169,15 +220,27 @@ class _StartSprintDialogState extends State<StartSprintDialog> {
                     const SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: _viewModel.isLoading ? null : _handleStart,
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0052CC)),
-                      child: _viewModel.isLoading 
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text("Start", style: TextStyle(fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0052CC),
+                      ),
+                      child: _viewModel.isLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              "Start",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                     ),
                   ],
                 );
-              }
-            )
+              },
+            ),
           ],
         ),
       ),

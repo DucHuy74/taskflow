@@ -38,9 +38,10 @@ class _NotificationPopupState extends State<NotificationPopup> {
         const SnackBar(content: Text('Joined workspace successfully!')),
       );
     } else {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to accept invitation.')),
-      );
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to accept invitation.')),
+        );
     }
   }
 
@@ -51,9 +52,10 @@ class _NotificationPopupState extends State<NotificationPopup> {
         const SnackBar(content: Text('Declined workspace invitation.')),
       );
     } else {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to decline invitation.')),
-      );
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to decline invitation.')),
+        );
     }
   }
 
@@ -95,13 +97,16 @@ class _NotificationPopupState extends State<NotificationPopup> {
         ? const Color(0xFF579DFF)
         : const Color(0xFF0052CC);
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final popupWidth = screenWidth < 450 ? screenWidth - 16 : 420.0;
+
     return ListenableBuilder(
       listenable: _viewModel,
       builder: (context, child) {
         return Material(
           color: Colors.transparent,
           child: Container(
-            width: 420, // Tăng width nhẹ một chút để đủ không gian cho Tab
+            width: popupWidth,
             height: 500,
             decoration: BoxDecoration(
               color: bgColor,
@@ -132,14 +137,23 @@ class _NotificationPopupState extends State<NotificationPopup> {
                         ),
                       ),
                       const Spacer(),
-                      if (_viewModel.notifications.isNotEmpty && _activeTab == 'Direct')
+                      if (_viewModel.notifications.isNotEmpty &&
+                          _activeTab == 'Direct')
                         IconButton(
-                          icon: Icon(Icons.done_all, size: 20, color: iconColor),
+                          icon: Icon(
+                            Icons.done_all,
+                            size: 20,
+                            color: iconColor,
+                          ),
                           onPressed: () => _viewModel.markAllAsRead(),
                           tooltip: 'Mark all as read',
                         ),
                       IconButton(
-                        icon: Icon(Icons.open_in_new, size: 20, color: iconColor),
+                        icon: Icon(
+                          Icons.open_in_new,
+                          size: 20,
+                          color: iconColor,
+                        ),
                         onPressed: () {},
                         tooltip: 'Open in full page',
                       ),
@@ -195,7 +209,7 @@ class _NotificationPopupState extends State<NotificationPopup> {
             ),
           ),
         );
-      }
+      },
     );
   }
 

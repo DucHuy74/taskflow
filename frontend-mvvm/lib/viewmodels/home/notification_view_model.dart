@@ -25,7 +25,7 @@ class NotificationViewModel extends ChangeNotifier {
     notifyListeners();
 
     _notifications = await _notificationService.getUnreadNotifications();
-    
+
     _isLoading = false;
     notifyListeners();
   }
@@ -35,7 +35,7 @@ class NotificationViewModel extends ChangeNotifier {
     notifyListeners();
 
     _pendingInvitations = await _invitationService.getPendingInvitations();
-    
+
     _isLoadingInvitations = false;
     notifyListeners();
   }
@@ -69,7 +69,7 @@ class NotificationViewModel extends ChangeNotifier {
     if (success) {
       _notifications.clear();
     }
-    
+
     _isLoading = false;
     notifyListeners();
     return success;

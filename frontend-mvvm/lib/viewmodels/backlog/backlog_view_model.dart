@@ -3,10 +3,11 @@ import '../../services/backlog/backlog_service.dart';
 import '../../services/backlog/sprint_service.dart';
 import '../../models/backlog/user_story_model.dart';
 import '../../models/backlog/sprint_model.dart';
+import '../../core/locator.dart';
 
 class BacklogViewModel extends ChangeNotifier {
-  final BacklogService _backlogService = BacklogService();
-  final SprintService _sprintService = SprintService();
+  final _backlogService = locator<BacklogService>();
+  final _sprintService = locator<SprintService>();
 
   List<UserStoryModel> _backlogList = [];
   List<UserStoryModel> get backlogList => _backlogList;
@@ -38,6 +39,30 @@ class BacklogViewModel extends ChangeNotifier {
     final success = await _backlogService.createUserStory(
       workspaceId: workspaceId,
       storyText: text,
+    );
+
+    if (success) {
+      await fetchBacklog(workspaceId);
+    } else {
+      _isLoading = false;
+      notifyListeners();
+    }
+
+    return success;
+  }
+
+  Future<bool> createMultipleStories(
+    String workspaceId,
+    List<String> texts,
+  ) async {
+    if (texts.isEmpty) return false;
+
+    _isLoading = true;
+    notifyListeners();
+
+    final success = await _backlogService.createMultipleUserStories(
+      workspaceId: workspaceId,
+      storyTexts: texts,
     );
 
     if (success) {

@@ -4,10 +4,11 @@ import '../../models/backlog/user_story_model.dart';
 import '../../models/backlog/sprint_model.dart';
 import '../../services/backlog/userstory_service.dart';
 import '../../models/backlog/task_status.dart';
+import '../../core/locator.dart';
 
 class SprintViewModel extends ChangeNotifier {
-  final SprintService _sprintService = SprintService();
-  final UserStoryService _userStoryService = UserStoryService();
+  final _sprintService = locator<SprintService>();
+  final _userStoryService = locator<UserStoryService>();
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;

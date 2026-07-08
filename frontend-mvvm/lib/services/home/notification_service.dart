@@ -3,16 +3,27 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../auth/auth_service.dart';
 import '../../models/home/notification_model.dart';
+import '../../mockdata/home/notification_dataset.dart';
+
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class NotificationService {
-  static const String _baseUrl = 'http://localhost:8080/api';
+  static String get _baseUrl =>
+      dotenv.env['BASE_URL'] ?? 'http://localhost:8080/api';
 
   // 1. Lấy danh sách thông báo chưa đọc
   Future<List<NotificationModel>> getUnreadNotifications() async {
-    final url = Uri.parse('$_baseUrl/notifications/unread');
-    final token = await AuthService.instance.getValidAccessToken();
-
     try {
+      final useMock = dotenv.env['USE_MOCK'] == 'true';
+
+      if (useMock) {
+        await Future.delayed(const Duration(seconds: 1)); // Mock network delay
+        return NotificationDataset.notifications;
+      }
+
+      final url = Uri.parse('$_baseUrl/notifications/unread');
+      final token = await AuthService.instance.getValidAccessToken();
+
       final response = await http.get(
         url,
         headers: {

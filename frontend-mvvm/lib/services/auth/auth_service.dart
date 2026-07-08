@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
-import 'dart:html' as html;
+import 'package:universal_html/html.dart' as html;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'token_storage.dart';
 import 'token_storage_mobile.dart';
@@ -11,9 +11,10 @@ class AuthService {
   AuthService._internal();
   static final AuthService instance = AuthService._internal();
 
-  final String _clientId = 'dacs_app';
+  final String _clientId = 'nckh_app';
   final String _clientSecret = dotenv.env['Client_Secret'] ?? '';
-  final String _issuer = 'http://localhost:8180/realms/dacs';
+  final String _issuer =
+      dotenv.env['KEYCLOAK_ISSUER'] ?? 'http://localhost:8180/realms/nckh';
 
   late final TokenStorage _storage = kIsWeb
       ? WebTokenStorage()
@@ -98,7 +99,10 @@ class AuthService {
     await _storage.deleteAll();
 
     if (kIsWeb) {
-      html.window.location.replace('http://localhost:3000/login');
+      final loginUrl = dotenv.env['API_URL'] != null
+          ? '${dotenv.env['API_URL']}login'
+          : 'http://localhost:3000/login';
+      html.window.location.replace(loginUrl);
     }
   }
 
@@ -109,7 +113,7 @@ class AuthService {
     final logoutUrl =
         '$_issuer/protocol/openid-connect/logout'
         '?id_token_hint=$idToken'
-        '&post_logout_redirect_uri=http://localhost:3000';
+        '&post_logout_redirect_uri=${dotenv.env['API_URL']?.replaceAll(RegExp(r'/$'), '') ?? 'http://localhost:3000'}';
 
     html.window.location.replace(logoutUrl);
   }

@@ -1,4 +1,4 @@
-import 'dart:html' as html;
+import 'package:universal_html/html.dart' as html;
 import 'token_storage.dart';
 
 class WebTokenStorage implements TokenStorage {

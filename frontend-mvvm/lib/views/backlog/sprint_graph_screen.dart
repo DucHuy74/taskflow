@@ -147,7 +147,9 @@ class _SprintGraphScreenState extends State<SprintGraphScreen>
   String? _errorMessage;
 
   List<SprintSvoStory> _stories = [];
-  Map<String, Offset> nodePositions = {};
+  final ValueNotifier<Map<String, Offset>> _positionsNotifier = ValueNotifier(
+    {},
+  );
   Set<String> edges = {};
 
   Set<String> expandedSubjects = {};
@@ -159,13 +161,19 @@ class _SprintGraphScreenState extends State<SprintGraphScreen>
   List<Offset> _drawnPoints = [];
   Set<String> _selectedNodeKeys = {};
 
+  Offset? _nodeDragOffset;
+
   late AnimationController _spinController;
+  final TransformationController _transformationController =
+      TransformationController();
 
   GraphTheme get theme => GraphTheme.of(context);
 
   @override
   void initState() {
     super.initState();
+    _transformationController.value = Matrix4.identity();
+
     _spinController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -176,6 +184,7 @@ class _SprintGraphScreenState extends State<SprintGraphScreen>
   @override
   void dispose() {
     _spinController.dispose();
+    _transformationController.dispose();
     super.dispose();
   }
 
@@ -255,19 +264,19 @@ class _SprintGraphScreenState extends State<SprintGraphScreen>
   String _makeObjectKey(String name) => "obj_$name";
 
   void _calculateLayout(List<SprintSvoStory> stories) {
-    nodePositions.clear();
+    Map<String, Offset> newPositions = {};
     edges.clear();
 
     List<String> subjects = _getUniqueSubjects(stories);
-    const double subjectX = 150;
-    const double verbX = 420;
-    const double objectX = 720;
+    const double subjectX = 350;
+    const double verbX = 650;
+    const double objectX = 950;
 
-    double currentSubjectY = 140;
+    double currentSubjectY = 200;
     const double spacing = 120;
 
     for (var subName in subjects) {
-      nodePositions["sub_$subName"] = Offset(subjectX, currentSubjectY);
+      newPositions["sub_$subName"] = Offset(subjectX, currentSubjectY);
       currentSubjectY += spacing;
     }
 
@@ -293,31 +302,35 @@ class _SprintGraphScreenState extends State<SprintGraphScreen>
       edges.add("$verbKey|$targetKey");
     }
 
-    double currentVerbY = 140;
+    double currentVerbY = 200;
     for (var verbKey in uniqueVerbs) {
-      nodePositions[verbKey] = Offset(verbX, currentVerbY);
+      newPositions[verbKey] = Offset(verbX, currentVerbY);
       currentVerbY += spacing;
     }
 
-    double currentObjY = 140;
+    double currentObjY = 200;
     for (var objKey in uniqueObjects) {
-      nodePositions[objKey] = Offset(objectX, currentObjY);
+      newPositions[objKey] = Offset(objectX, currentObjY);
       currentObjY += spacing;
     }
+
+    _positionsNotifier.value = newPositions;
   }
 
   void _avoidCollision(String movedKey, Offset newPos) {
     const minDist = 70.0;
-    nodePositions[movedKey] = newPos;
-    for (var key in nodePositions.keys) {
+    final map = Map<String, Offset>.from(_positionsNotifier.value);
+    map[movedKey] = newPos;
+    for (var key in map.keys) {
       if (key == movedKey) continue;
-      final other = nodePositions[key]!;
+      final other = map[key]!;
       final dist = (newPos - other).distance;
       if (dist < minDist && dist > 0) {
         final push = (other - newPos) / dist * (minDist - dist) * 0.5;
-        nodePositions[key] = other + push;
+        map[key] = other + push;
       }
     }
+    _positionsNotifier.value = map;
   }
 
   Set<String> _getHighlightedEdges(List<SprintSvoStory> stories) {
@@ -358,7 +371,7 @@ class _SprintGraphScreenState extends State<SprintGraphScreen>
     setState(() {
       if (_drawnPoints.length > 2) {
         Path selectionPath = Path()..addPolygon(_drawnPoints, true);
-        nodePositions.forEach((key, pos) {
+        _positionsNotifier.value.forEach((key, pos) {
           if (selectionPath.contains(pos)) _selectedNodeKeys.add(key);
         });
       }
@@ -398,10 +411,7 @@ class _SprintGraphScreenState extends State<SprintGraphScreen>
     SprintStatus enumStatus = _mapStringToSprintStatus(newStatus);
 
     for (String id in storyIds) {
-      final success = await _viewModel.updateUserStoryStatus(
-        id,
-        enumStatus,
-      );
+      final success = await _viewModel.updateUserStoryStatus(id, enumStatus);
 
       if (success) {
         setState(() {
@@ -661,54 +671,66 @@ class _SprintGraphScreenState extends State<SprintGraphScreen>
           : Stack(
               children: [
                 InteractiveViewer(
+                  transformationController: _transformationController,
                   panEnabled: !_isLassoMode,
                   scaleEnabled: !_isLassoMode,
                   constrained: false,
-                  boundaryMargin: const EdgeInsets.all(2000),
-                  minScale: 0.1,
-                  maxScale: 4.0,
+                  boundaryMargin: const EdgeInsets.all(300),
+                  minScale: 0.2,
+                  maxScale: 3.0,
                   child: GestureDetector(
                     onPanStart: _isLassoMode ? _onLassoPanStart : null,
                     onPanUpdate: _isLassoMode ? _onLassoPanUpdate : null,
                     onPanEnd: _isLassoMode ? _onLassoPanEnd : null,
                     child: SizedBox(
                       width: 2500,
-                      height: 2500,
+                      height: 5000,
                       child: Stack(
+                        clipBehavior: Clip.none,
                         children: [
-                          AnimatedBuilder(
-                            animation: _spinController,
-                            builder: (_, __) => CustomPaint(
-                              size: const Size(2500, 2500),
-                              painter: GraphLinesPainter(
-                                nodePositions: nodePositions,
-                                edges: edges,
-                                highlightedEdges: highlightedEdges,
-                                theme: theme,
-                              ),
-                            ),
+                          ValueListenableBuilder<Map<String, Offset>>(
+                            valueListenable: _positionsNotifier,
+                            builder: (context, positions, child) {
+                              return AnimatedBuilder(
+                                animation: _spinController,
+                                builder: (_, __) => CustomPaint(
+                                  size: const Size(2500, 5000),
+                                  painter: GraphLinesPainter(
+                                    nodePositions: positions,
+                                    edges: edges,
+                                    highlightedEdges: highlightedEdges,
+                                    theme: theme,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                          CustomPaint(
-                            size: const Size(2500, 2500),
-                            painter: ZoningPainter(
-                              nodePositions: nodePositions,
-                              zonedSubjects: zonedSubjects,
-                              mockData: _stories,
-                              isObjectASubject: (obj) =>
-                                  _isObjectASubject(obj, _stories),
-                              makeObjectKey: _makeObjectKey,
-                              theme: theme,
-                            ),
+                          ValueListenableBuilder<Map<String, Offset>>(
+                            valueListenable: _positionsNotifier,
+                            builder: (context, positions, child) {
+                              return CustomPaint(
+                                size: const Size(2500, 5000),
+                                painter: ZoningPainter(
+                                  nodePositions: positions,
+                                  zonedSubjects: zonedSubjects,
+                                  mockData: _stories,
+                                  isObjectASubject: (obj) =>
+                                      _isObjectASubject(obj, _stories),
+                                  makeObjectKey: _makeObjectKey,
+                                  theme: theme,
+                                ),
+                              );
+                            },
                           ),
                           if (_isLassoMode && _drawnPoints.isNotEmpty)
                             CustomPaint(
-                              size: const Size(2500, 2500),
+                              size: const Size(2500, 5000),
                               painter: LassoPainter(
                                 drawnPoints: _drawnPoints,
                                 theme: theme,
                               ),
                             ),
-                          ..._buildNodeWidgets(),
+                          ..._buildNodeWidgets(_stories),
                         ],
                       ),
                     ),
@@ -727,7 +749,7 @@ class _SprintGraphScreenState extends State<SprintGraphScreen>
     );
   }
 
-  List<Widget> _buildNodeWidgets() {
+  List<Widget> _buildNodeWidgets(List<SprintSvoStory> stories) {
     List<Widget> widgets = [];
     Set<String> renderedKeys = {};
 
@@ -741,21 +763,21 @@ class _SprintGraphScreenState extends State<SprintGraphScreen>
       }
     }
 
-    for (var key in nodePositions.keys) {
+    for (var key in _positionsNotifier.value.keys) {
       if (renderedKeys.contains(key)) continue;
       renderedKeys.add(key);
 
       if (key.startsWith("sub_")) {
         String name = key.replaceFirst("sub_", "");
-        widgets.add(_buildNode(key, name, NodeType.subject, null));
+        widgets.add(_buildNode(key, name, NodeType.subject, null, stories));
       } else if (key.startsWith("verb_")) {
         String name = key.replaceFirst("verb_", "");
         SprintSvoStory? repStory = findRepresentativeStory(name, true);
-        widgets.add(_buildNode(key, name, NodeType.verb, repStory));
+        widgets.add(_buildNode(key, name, NodeType.verb, repStory, stories));
       } else if (key.startsWith("obj_")) {
         String name = key.replaceFirst("obj_", "");
         SprintSvoStory? repStory = findRepresentativeStory(name, false);
-        widgets.add(_buildNode(key, name, NodeType.object, repStory));
+        widgets.add(_buildNode(key, name, NodeType.object, repStory, stories));
       }
     }
 
@@ -767,8 +789,8 @@ class _SprintGraphScreenState extends State<SprintGraphScreen>
     String text,
     NodeType type,
     SprintSvoStory? story,
+    List<SprintSvoStory> stories,
   ) {
-    Offset pos = nodePositions[key]!;
     double width = type == NodeType.verb ? 64 : 110;
     double height = type == NodeType.verb
         ? 64
@@ -777,12 +799,19 @@ class _SprintGraphScreenState extends State<SprintGraphScreen>
     bool isHovered = _hoveredNodeKey == key;
     bool isSelected = _selectedNodeKeys.contains(key);
     int storyCount = type == NodeType.object
-        ? _stories.where((s) => s.object == text).length
+        ? stories.where((s) => s.object == text).length
         : 0;
 
-    return Positioned(
-      left: pos.dx - width / 2,
-      top: pos.dy - height / 2 - (type == NodeType.verb ? 12 : 0),
+    return ValueListenableBuilder<Map<String, Offset>>(
+      valueListenable: _positionsNotifier,
+      builder: (context, positions, child) {
+        final pos = positions[key] ?? Offset.zero;
+        return Positioned(
+          left: pos.dx - width / 2,
+          top: pos.dy - height / 2 - (type == NodeType.verb ? 12 : 0),
+          child: child!,
+        );
+      },
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -793,10 +822,33 @@ class _SprintGraphScreenState extends State<SprintGraphScreen>
             onEnter: (_) => setState(() => _hoveredNodeKey = key),
             onExit: (_) => setState(() => _hoveredNodeKey = null),
             child: GestureDetector(
-              onPanUpdate: (d) {
+              onPanStart: (d) {
                 if (!_isZoningMode && !_isLassoMode) {
-                  setState(() => _avoidCollision(key, pos + d.delta));
+                  final RenderBox renderBox =
+                      context.findRenderObject() as RenderBox;
+                  final localPos = renderBox.globalToLocal(d.globalPosition);
+                  final scenePoint = _transformationController.toScene(
+                    localPos,
+                  );
+                  final pos = _positionsNotifier.value[key] ?? Offset.zero;
+                  _nodeDragOffset = pos - scenePoint;
                 }
+              },
+              onPanUpdate: (d) {
+                if (!_isZoningMode &&
+                    !_isLassoMode &&
+                    _nodeDragOffset != null) {
+                  final RenderBox renderBox =
+                      context.findRenderObject() as RenderBox;
+                  final localPos = renderBox.globalToLocal(d.globalPosition);
+                  final scenePoint = _transformationController.toScene(
+                    localPos,
+                  );
+                  _avoidCollision(key, scenePoint + _nodeDragOffset!);
+                }
+              },
+              onPanEnd: (d) {
+                _nodeDragOffset = null;
               },
               onTap: () {
                 if (_isLassoMode) {
@@ -1277,12 +1329,14 @@ class GraphLinesPainter extends CustomPainter {
   final Map<String, Offset> nodePositions;
   final Set<String> edges;
   final Set<String> highlightedEdges;
+  final Set<String>? dimmedEdges;
   final GraphTheme theme;
 
   GraphLinesPainter({
     required this.nodePositions,
     required this.edges,
     required this.highlightedEdges,
+    this.dimmedEdges,
     required this.theme,
   });
 
@@ -1303,11 +1357,12 @@ class GraphLinesPainter extends CustomPainter {
       Offset toCenter = nodePositions[toKey]!;
 
       bool isHighlighted = highlightedEdges.contains(edge);
+      bool isDimmed = dimmedEdges?.contains(edge) ?? false;
 
       final paint = Paint()
         ..color = isHighlighted
             ? theme.highlightLine.withOpacity(0.9)
-            : theme.lineColor
+            : (isDimmed ? theme.lineColor.withOpacity(0.1) : theme.lineColor)
         ..strokeWidth = isHighlighted ? 2.5 : 1.0
         ..style = PaintingStyle.stroke;
 

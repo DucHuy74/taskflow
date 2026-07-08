@@ -87,12 +87,16 @@ class _HomePageState extends State<HomePage> {
         return Scaffold(
           backgroundColor: isDarkMode ? const Color(0xFF22272B) : Colors.white,
 
-          appBar: TaskFlowAppBar(isMobile: isMobile, onCreate: _showCreateDialog),
+          appBar: TaskFlowAppBar(
+            isMobile: isMobile,
+            onCreate: _showCreateDialog,
+          ),
 
           drawer: isMobile
               ? TaskFlowDrawer(
                   selectedMenu: _selectedMenu,
                   onMenuSelected: _onMenuSelected,
+                  workspaces: _viewModel.workspaces,
                 )
               : null,
 

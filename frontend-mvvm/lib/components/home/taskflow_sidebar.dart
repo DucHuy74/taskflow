@@ -35,9 +35,15 @@ class TaskFlowSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDarkMode ? const Color(0xFF1D2125) : const Color(0xFFFAFBFC);
-    final borderColor = isDarkMode ? const Color(0xFF38414A) : Colors.grey.shade200;
-    final sectionTitleColor = isDarkMode ? const Color(0xFF8C9BAB) : const Color(0xFF5E6C84);
+    final bgColor = isDarkMode
+        ? const Color(0xFF1D2125)
+        : const Color(0xFFFAFBFC);
+    final borderColor = isDarkMode
+        ? const Color(0xFF38414A)
+        : Colors.grey.shade200;
+    final sectionTitleColor = isDarkMode
+        ? const Color(0xFF8C9BAB)
+        : const Color(0xFF5E6C84);
 
     return Container(
       width: 240,
@@ -48,11 +54,31 @@ class TaskFlowSidebar extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: 12),
         children: [
-          _buildMenuItem('For you', Icons.person_outline, true, isDarkMode: isDarkMode),
-          _buildMenuItem('Recent', Icons.access_time, true, isDarkMode: isDarkMode),
-          _buildMenuItem('Starred', Icons.star_border, true, isDarkMode: isDarkMode),
+          _buildMenuItem(
+            'For you',
+            Icons.person_outline,
+            true,
+            isDarkMode: isDarkMode,
+          ),
+          _buildMenuItem(
+            'Recent',
+            Icons.access_time,
+            true,
+            isDarkMode: isDarkMode,
+          ),
+          _buildMenuItem(
+            'Starred',
+            Icons.star_border,
+            true,
+            isDarkMode: isDarkMode,
+          ),
           _buildMenuItem('Apps', Icons.apps, true, isDarkMode: isDarkMode),
-          _buildMenuItem('Plans', Icons.calendar_today_outlined, true, isDarkMode: isDarkMode),
+          _buildMenuItem(
+            'Plans',
+            Icons.calendar_today_outlined,
+            true,
+            isDarkMode: isDarkMode,
+          ),
 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -95,7 +121,9 @@ class TaskFlowSidebar extends StatelessWidget {
               ),
             )
           else
-            ...workspaces.map((ws) => _buildWorkspaceItem(ws, isDarkMode)).toList(),
+            ...workspaces
+                .map((ws) => _buildWorkspaceItem(ws, isDarkMode))
+                .toList(),
 
           _buildMenuItem(
             'More spaces',
@@ -129,8 +157,20 @@ class TaskFlowSidebar extends StatelessWidget {
             indent: true,
             isDarkMode: isDarkMode,
           ),
-          _buildMenuItem('Filters', Icons.filter_list, true, indent: true, isDarkMode: isDarkMode),
-          _buildMenuItem('Dashboards', Icons.dashboard, true, indent: true, isDarkMode: isDarkMode),
+          _buildMenuItem(
+            'Filters',
+            Icons.filter_list,
+            true,
+            indent: true,
+            isDarkMode: isDarkMode,
+          ),
+          _buildMenuItem(
+            'Dashboards',
+            Icons.dashboard,
+            true,
+            indent: true,
+            isDarkMode: isDarkMode,
+          ),
           _buildMenuItem(
             'Operations',
             Icons.build_outlined,
@@ -138,7 +178,13 @@ class TaskFlowSidebar extends StatelessWidget {
             indent: true,
             isDarkMode: isDarkMode,
           ),
-          _buildMenuItem('Customers', Icons.people_outline, true, indent: true, isDarkMode: isDarkMode),
+          _buildMenuItem(
+            'Customers',
+            Icons.people_outline,
+            true,
+            indent: true,
+            isDarkMode: isDarkMode,
+          ),
           _buildMenuItem(
             'Customer experiences',
             Icons.headset_mic_outlined,
@@ -181,11 +227,17 @@ class TaskFlowSidebar extends StatelessWidget {
   }
 
   Widget _buildWorkspaceItem(WorkspaceModel ws, bool isDarkMode) {
-    final isSelected = selectedMenu == ws.name; 
-    
-    final selectedColor = isDarkMode ? const Color(0xFF579DFF) : const Color(0xFF0052CC);
-    final unselectedTextColor = isDarkMode ? const Color(0xFFB6C2CF) : const Color(0xFF172B4D);
-    final selectedTileBg = isDarkMode ? const Color(0xFF1C2B41) : const Color(0xFFDEEBFF);
+    final isSelected = selectedMenu == ws.name;
+
+    final selectedColor = isDarkMode
+        ? const Color(0xFF579DFF)
+        : const Color(0xFF0052CC);
+    final unselectedTextColor = isDarkMode
+        ? const Color(0xFFB6C2CF)
+        : const Color(0xFF172B4D);
+    final selectedTileBg = isDarkMode
+        ? const Color(0xFF1C2B41)
+        : const Color(0xFFDEEBFF);
 
     return Container(
       margin: const EdgeInsets.only(left: 12),
@@ -235,11 +287,19 @@ class TaskFlowSidebar extends StatelessWidget {
     required bool isDarkMode, // Bắt buộc truyền vào
   }) {
     final isSelected = selectedMenu == title;
-    
-    final selectedColor = isDarkMode ? const Color(0xFF579DFF) : const Color(0xFF0052CC);
-    final unselectedIconColor = isDarkMode ? const Color(0xFF8C9BAB) : const Color(0xFF5E6C84);
-    final unselectedTextColor = isDarkMode ? const Color(0xFFB6C2CF) : const Color(0xFF172B4D);
-    final selectedTileBg = isDarkMode ? const Color(0xFF1C2B41) : const Color(0xFFDEEBFF);
+
+    final selectedColor = isDarkMode
+        ? const Color(0xFF579DFF)
+        : const Color(0xFF0052CC);
+    final unselectedIconColor = isDarkMode
+        ? const Color(0xFF8C9BAB)
+        : const Color(0xFF5E6C84);
+    final unselectedTextColor = isDarkMode
+        ? const Color(0xFFB6C2CF)
+        : const Color(0xFF172B4D);
+    final selectedTileBg = isDarkMode
+        ? const Color(0xFF1C2B41)
+        : const Color(0xFFDEEBFF);
 
     return Container(
       margin: EdgeInsets.only(left: indent ? 24 : 0),
@@ -274,22 +334,20 @@ class TaskFlowSidebar extends StatelessWidget {
                 child: Text(
                   badge,
                   style: TextStyle(
-                    color: isDarkMode ? const Color(0xFF1D2125) : Colors.white, // Chữ trong badge
+                    color: isDarkMode
+                        ? const Color(0xFF1D2125)
+                        : Colors.white, // Chữ trong badge
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             if (external)
-               Icon(Icons.open_in_new, size: 14, color: unselectedIconColor),
+              Icon(Icons.open_in_new, size: 14, color: unselectedIconColor),
           ],
         ),
         trailing: title == 'Recent' || title == 'Starred'
-            ? Icon(
-                Icons.chevron_right,
-                size: 18,
-                color: unselectedIconColor,
-              )
+            ? Icon(Icons.chevron_right, size: 18, color: unselectedIconColor)
             : null,
         selected: isSelected,
         selectedTileColor: selectedTileBg,

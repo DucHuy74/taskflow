@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/home/workspace_service.dart';
-import '../../models/home/workspace_model.dart'; 
+import '../../models/home/workspace_model.dart';
 
 class CreateProjectViewModel extends ChangeNotifier {
   final WorkspaceService _workspaceService = WorkspaceService();

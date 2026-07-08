@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'backlog_common.dart';
 import '../../models/backlog/user_story_model.dart';
 import '../../views/backlog/start_sprint_dialog.dart';
+import '../../viewmodels/backlog/backlog_view_model.dart';
 
 class BacklogSection extends StatefulWidget {
   final Function(String) onCreateStory;
   final List<UserStoryModel> backlogList;
-  final String workspaceId; 
-  final VoidCallback onSprintCreated; 
+  final String workspaceId;
+  final VoidCallback onSprintCreated;
 
   const BacklogSection({
     Key? key,
@@ -25,6 +28,21 @@ class _BacklogSectionState extends State<BacklogSection> {
   bool _isCreating = false;
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.onKeyEvent = (node, event) {
+      if (event is KeyDownEvent &&
+          event.logicalKey == LogicalKeyboardKey.enter) {
+        if (!HardwareKeyboard.instance.isShiftPressed) {
+          _handleSubmit(_controller.text);
+          return KeyEventResult.handled;
+        }
+      }
+      return KeyEventResult.ignored;
+    };
+  }
 
   @override
   void dispose() {
@@ -89,10 +107,17 @@ class _BacklogSectionState extends State<BacklogSection> {
             child: TextField(
               controller: _controller,
               focusNode: _focusNode,
-              onSubmitted: _handleSubmit,
+              maxLines: 5,
+              minLines: 1,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
               decoration: const InputDecoration(
-                hintText: 'Create issue (Press Enter to save)',
-                hintStyle: TextStyle(color: Color(0xFF5E6C84), fontWeight: FontWeight.w500),
+                hintText:
+                    'Create issue (Press Enter to save, Shift+Enter for new line)',
+                hintStyle: TextStyle(
+                  color: Color(0xFF5E6C84),
+                  fontWeight: FontWeight.w500,
+                ),
                 border: InputBorder.none,
               ),
             ),
@@ -137,7 +162,10 @@ class _BacklogSectionState extends State<BacklogSection> {
             SizedBox(width: 12),
             Text(
               'Create issue',
-              style: TextStyle(color: Color(0xFF5E6C84), fontWeight: FontWeight.w500),
+              style: TextStyle(
+                color: Color(0xFF5E6C84),
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -150,63 +178,155 @@ class _BacklogSectionState extends State<BacklogSection> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: widget.backlogList.length,
-      separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFEBECF0)),
+      separatorBuilder: (context, index) =>
+          const Divider(height: 1, color: Color(0xFFEBECF0)),
       itemBuilder: (context, index) {
         final story = widget.backlogList[index];
-        
+
         return Draggable<String>(
-          data: story.id, 
-          
+          data: story.id,
+
           feedback: Material(
             elevation: 4.0,
             borderRadius: BorderRadius.circular(4),
             color: Colors.transparent,
             child: Container(
-              width: MediaQuery.of(context).size.width * 0.85, 
+              width: MediaQuery.of(context).size.width * 0.85,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(4),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10)
-                ]
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                  ),
+                ],
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.check_box_outline_blank, size: 20, color: Color(0xFFDFE1E6)),
+                  const Icon(
+                    Icons.check_box_outline_blank,
+                    size: 20,
+                    color: Color(0xFFDFE1E6),
+                  ),
                   const SizedBox(width: 12),
-                  Expanded(child: Text(story.storyText, style: const TextStyle(fontSize: 14, color: Color(0xFF172B4D)))),
+                  Expanded(
+                    child: Text(
+                      story.storyText,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF172B4D),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-          
+
           childWhenDragging: Opacity(
             opacity: 0.3,
             child: _buildStoryItem(story),
           ),
-          
+
           child: _buildStoryItem(story),
         );
       },
     );
   }
 
+  void _showContextMenu(Offset position, UserStoryModel story) async {
+    final viewModel = context.read<BacklogViewModel>();
+    final availableSprints = viewModel.sprintList
+        .where(
+          (s) =>
+              s.status.toLowerCase() != 'active' &&
+              s.status.toLowerCase() != 'done',
+        )
+        .toList();
+
+    if (availableSprints.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No unstarted sprints available')),
+      );
+      return;
+    }
+
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+
+    final selectedSprintId = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        position & const Size(40, 40),
+        Offset.zero & overlay.size,
+      ),
+      items: availableSprints.map((sprint) {
+        return PopupMenuItem<String>(
+          value: sprint.id,
+          child: Text('Add to ${sprint.name}'),
+        );
+      }).toList(),
+    );
+
+    if (selectedSprintId != null) {
+      final success = await viewModel.addStoryToSprint(
+        sprintId: selectedSprintId,
+        userStoryId: story.id,
+      );
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Added to sprint successfully')),
+        );
+        viewModel.fetchBacklog(widget.workspaceId);
+        viewModel.fetchSprints(widget.workspaceId);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to add to sprint')),
+        );
+      }
+    }
+  }
+
   Widget _buildStoryItem(UserStoryModel story) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          const Icon(Icons.check_box_outline_blank, size: 20, color: Color(0xFFDFE1E6)),
-          const SizedBox(width: 12),
-          Expanded(child: Text(story.storyText, style: const TextStyle(fontSize: 14, color: Color(0xFF172B4D)))),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(color: const Color(0xFFDFE1E6), borderRadius: BorderRadius.circular(4)),
-            child: Text(story.status, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-          ),
-        ],
+    return GestureDetector(
+      onSecondaryTapDown: (details) {
+        _showContextMenu(details.globalPosition, story);
+      },
+      child: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.check_box_outline_blank,
+              size: 20,
+              color: Color(0xFFDFE1E6),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                story.storyText,
+                style: const TextStyle(fontSize: 14, color: Color(0xFF172B4D)),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFDFE1E6),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                story.status,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -218,7 +338,10 @@ class _BacklogSectionState extends State<BacklogSection> {
         children: [
           const Icon(Icons.inbox, size: 48, color: Color(0xFFDFE1E6)),
           const SizedBox(height: 16),
-          const Text('Your backlog is empty.', style: TextStyle(fontSize: 14, color: Color(0xFF5E6C84))),
+          const Text(
+            'Your backlog is empty.',
+            style: TextStyle(fontSize: 14, color: Color(0xFF5E6C84)),
+          ),
         ],
       ),
     );
@@ -232,11 +355,26 @@ class _BacklogSectionState extends State<BacklogSection> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.keyboard_arrow_down, size: 20, color: Color(0xFF42526E)),
+          const Icon(
+            Icons.keyboard_arrow_down,
+            size: 20,
+            color: Color(0xFF42526E),
+          ),
           const SizedBox(width: 8),
-          const Text('Backlog', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF172B4D))),
+          const Text(
+            'Backlog',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF172B4D),
+            ),
+          ),
           const Spacer(),
-          StatusBadge(count: count.toString(), bgColor: const Color(0xFFDFE1E6), textColor: const Color(0xFF42526E)),
+          StatusBadge(
+            count: count.toString(),
+            bgColor: const Color(0xFFDFE1E6),
+            textColor: const Color(0xFF42526E),
+          ),
           const SizedBox(width: 16),
           ElevatedButton(
             onPressed: () {
@@ -255,7 +393,10 @@ class _BacklogSectionState extends State<BacklogSection> {
               side: const BorderSide(color: Color(0xFFDFE1E6)),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
-            child: const Text('Create sprint', style: TextStyle(fontWeight: FontWeight.w600)),
+            child: const Text(
+              'Create sprint',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),

@@ -57,7 +57,7 @@ class _LoginPageState extends State<LoginPage> {
           backgroundColor: Color(0xFF61BD4F),
         ),
       );
-      Navigator.of(context).pushReplacementNamed('/home');
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -117,9 +117,7 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const AuthHeader(
-                subtitle: 'Log in to continue',
-              ),
+              const AuthHeader(subtitle: 'Log in to continue'),
 
               SizedBox(height: isSmallScreen ? 32 : 40),
 
@@ -305,5 +303,6 @@ class _LoginPageState extends State<LoginPage> {
       },
     );
   }
+
   // Footer links handled in AuthFooter component
 }
