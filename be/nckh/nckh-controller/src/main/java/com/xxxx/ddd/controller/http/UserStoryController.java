@@ -25,14 +25,14 @@ public class UserStoryController {
 
     // Create user story
     @PostMapping("/workspace/{workspaceId}")
-    public ResponseEntity<ApiResponse<UserStoryResponse>> createUserStory(
+    public ResponseEntity<ApiResponse<List<UserStoryResponse>>> createUserStory(
             @PathVariable("workspaceId") String workspaceId,
-            @RequestBody UserStoryCreateRequest request
+            @RequestBody List<UserStoryCreateRequest> requests
     ) {
         return ResponseEntity.ok(
-                ApiResponse.<UserStoryResponse>builder()
+                ApiResponse.<List<UserStoryResponse>>builder()
                         .message("User story created successfully")
-                        .result(userStoryService.create(workspaceId, request))
+                        .result(userStoryService.create(workspaceId, requests))
                         .build()
         );
     }
@@ -76,5 +76,13 @@ public class UserStoryController {
                         .build()
         );
     }
+
+
+
+    @GetMapping("/{id}")
+    public UserStoryResponse getById(@PathVariable("id") String id){
+        return userStoryService.getById(id);
+    }
+
 }
 

@@ -37,3 +37,8 @@ build/
 ### Mac OS ###
 .DS_Store
 .env
+
+# Ignore MySQL data and sockets
+**/master-data/
+**/slave-data/
+*.sock

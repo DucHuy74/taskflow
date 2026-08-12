@@ -7,7 +7,10 @@ class AnalyzeStoryResult(Base):
     __tablename__ = "analyze_story_results"
 
     asr_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    asr_story_id = Column(String(36), ForeignKey("analyze_stories.as_id"), nullable=True)
+
+    asr_user_story_id = Column(String(36))  
+    asr_workspace_id = Column(String(36))
+    asr_sprint_id = Column(String(36))
 
     asr_subject = Column(String(100))
     asr_action = Column(String(100))
@@ -17,7 +20,7 @@ class AnalyzeStoryResult(Base):
     asr_action_canonical = Column(String(100))
     asr_object_canonical = Column(String(100))
 
-    asr_status = Column(String(20), comment="VALID | AMBIGUOUS | ERROR")
+    asr_status = Column(String(20))
 
     asr_is_deleted = Column(Boolean, default=False)
     asr_created_at = Column(DateTime, default=func.now())
