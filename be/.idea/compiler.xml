@@ -3,7 +3,7 @@
   <component name="CompilerConfiguration">
     <annotationProcessing>
       <profile default="true" name="Default" enabled="true" />
-      <profile name="Annotation profile for dacs-common" enabled="true">
+      <profile name="Annotation profile for nckh-common" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -18,7 +18,7 @@
         </processorPath>
         <module name="nckh-common" />
       </profile>
-      <profile name="Annotation profile for dacs-controller" enabled="true">
+      <profile name="Annotation profile for nckh-controller" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -30,7 +30,7 @@
         </processorPath>
         <module name="nckh-controller" />
       </profile>
-      <profile name="Annotation profile for dacs-domain" enabled="true">
+      <profile name="Annotation profile for nckh-domain" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -42,7 +42,7 @@
         </processorPath>
         <module name="nckh-domain" />
       </profile>
-      <profile name="Annotation profile for dacs-infrastructure" enabled="true">
+      <profile name="Annotation profile for nckh-infrastructure" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -54,7 +54,7 @@
         </processorPath>
         <module name="nckh-infrastructure" />
       </profile>
-      <profile name="Annotation profile for dacs-start" enabled="true">
+      <profile name="Annotation profile for nckh-start" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -69,7 +69,7 @@
         </processorPath>
         <module name="nckh-start" />
       </profile>
-      <profile name="Annotation profile for dacs" enabled="true">
+      <profile name="Annotation profile for nckh" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />

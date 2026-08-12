@@ -34,7 +34,7 @@ public class JobRunrConfig {
                 .useStorageProvider(storageProvider)
                 .useJobActivator(jobActivator)
                 .useBackgroundJobServer()
-                .useDashboard(8000)
+                .useDashboard(8001)
                 .initialize()
                 .getJobScheduler();
     }

@@ -28,4 +28,6 @@ public interface WorkspaceAppService {
     List<WorkspaceMemberResponse> getMembers(String workspaceId);
 
     void deleteWorkspace(String workspaceId);
+
+    void triggerRebuildGraph(String workspaceId);
 }
