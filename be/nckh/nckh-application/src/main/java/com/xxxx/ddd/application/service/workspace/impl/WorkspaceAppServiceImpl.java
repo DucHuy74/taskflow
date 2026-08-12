@@ -6,6 +6,7 @@ import com.xxxx.ddd.application.model.dto.request.WorkspaceCreateRequest;
 import com.xxxx.ddd.application.model.dto.request.WorkspaceUpdateRequest;
 import com.xxxx.ddd.application.model.dto.response.WorkspaceMemberResponse;
 import com.xxxx.ddd.application.model.dto.response.WorkspaceResponse;
+import com.xxxx.ddd.application.port.async.GraphEventPort;
 import com.xxxx.ddd.application.port.async.InvitationAsyncPort;
 import com.xxxx.ddd.application.service.notification.NotificationAppService;
 import com.xxxx.ddd.application.service.profile.ProfileAppService;
@@ -21,6 +22,7 @@ import com.xxxx.dddd.domain.model.entity.workspace.WorkspaceRole;
 import com.xxxx.dddd.domain.model.enums.InvitationStatus;
 import com.xxxx.dddd.domain.model.enums.NotificationType;
 import com.xxxx.dddd.domain.model.enums.WorkspaceRoleType;
+import com.xxxx.dddd.domain.model.graph.GraphRebuildEvent;
 import com.xxxx.dddd.domain.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
@@ -53,6 +55,7 @@ public class WorkspaceAppServiceImpl implements WorkspaceAppService {
     NotificationAppService notificationService;
     InvitationAsyncPort invitationAsyncPort;
     ProfileAppService profileAppService;
+    GraphEventPort graphEventPort;
 
 
     private WorkspaceMember requireAdmin(
@@ -261,4 +264,8 @@ public class WorkspaceAppServiceImpl implements WorkspaceAppService {
                 .toList();
     }
 
+
+    public void triggerRebuildGraph(String workspaceId) {
+        graphEventPort.sendRebuildEvent(workspaceId);
+    }
 }

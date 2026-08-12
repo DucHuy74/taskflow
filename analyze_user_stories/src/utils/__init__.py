@@ -19,7 +19,7 @@ def find_subject(doc) -> Optional[str]:
 
 def find_verb_object(doc) -> Tuple[Optional[str], Optional[str]]:
     verb = None
-    object = None
+    obj = None
 
     main_verb = None
     for token in doc:
@@ -46,12 +46,23 @@ def find_verb_object(doc) -> Tuple[Optional[str], Optional[str]]:
         #dobj là tân ngữ trực tiếp
         #attr là thuộc tính
         #pobj là tân ngữ giới từ
-        if child.dep_ in ("dobj", "attr", "pobj"):
-            object = child.lemma_
+        
+        # direct object
+        if child.dep_ in ("dobj", "obj", "attr"):
+            obj = child.lemma_
+            break
+        
+        # preposition object
+        if child.dep_ == "prep":
+            for prep_child in child.children:
+                if prep_child.dep_ == "pobj":
+                    obj = prep_child.lemma_
+                    break
+                
+        if obj:
             break
     
-    return verb, object
-    
+    return verb, obj
 
 
 def objects_frequency(svo):
