@@ -1,0 +1,53 @@
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+dist
+build
+
+# Virtual environment
+venv
+.venv
+env
+.env
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Large ML model files
+word2vec-google-news-300*
+*.vectors.npy
+*.kv
+
+# Experiment files (not needed in production)
+experiment
+tests
+scripts
+interface
+
+# Docker files
+Dockerfile
+.dockerignore
+docker-compose*
+
+# Documentation
+README.md
+*.txt
+*.md
+
+# Database migrations (run separately)
+migrations
+
+# Local config
+config*.yml
+*.local.yml
