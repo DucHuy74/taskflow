@@ -12,7 +12,7 @@ public class CorsConfiguration {
         org.springframework.web.cors.CorsConfiguration corsConfiguration =
                 new org.springframework.web.cors.CorsConfiguration();
 
-        corsConfiguration.addAllowedOrigin("*");
+        corsConfiguration.addAllowedOriginPattern("*");
         corsConfiguration.addAllowedMethod("*");
         corsConfiguration.addAllowedHeader("*");
 
