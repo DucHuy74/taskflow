@@ -4,8 +4,6 @@ import com.xxxx.dddd.domain.model.enums.WorkspaceRoleType;
 import lombok.Data;
 
 @Data
-public class WorkspaceAddMemberRequest {
-    private String email;
+public class ChangeMemberRoleRequest {
     private WorkspaceRoleType role;
 }
-

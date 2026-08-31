@@ -36,8 +36,6 @@ public class SecurityConfig {
 
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
 
-                        .requestMatchers(HttpMethod.GET, "/user-stories/*").permitAll()
-
                         .anyRequest().authenticated());
 
         httpSecurity.oauth2ResourceServer(oauth2 -> oauth2.jwt(

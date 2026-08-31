@@ -3,7 +3,9 @@ package com.xxxx.ddd.application.service.graph.impl;
 import com.xxxx.ddd.application.model.dto.graph.GraphEdgeDTO;
 import com.xxxx.ddd.application.model.dto.graph.GraphNodeDTO;
 import com.xxxx.ddd.application.model.dto.graph.GraphResponse;
+import com.xxxx.ddd.application.service.access.WorkspaceAccessService;
 import com.xxxx.ddd.application.service.graph.GraphService;
+import com.xxxx.dddd.domain.model.enums.Permission;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import java.util.List;
 public class GraphServiceImpl implements GraphService {
 
     private final Neo4jClient neo4jClient;
+    private final WorkspaceAccessService workspaceAccessService;
 
     @Override
     public GraphResponse getWorkspaceGraph(
@@ -28,6 +31,8 @@ public class GraphServiceImpl implements GraphService {
             double minScore,
             double minConfidence
     ) {
+
+        workspaceAccessService.require(workspaceId, Permission.WORKSPACE_BROWSE);
 
         List<GraphNodeDTO> nodes = new ArrayList<>();
 

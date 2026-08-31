@@ -8,6 +8,7 @@ import com.xxxx.ddd.application.model.dto.response.WorkspaceMemberResponse;
 import com.xxxx.ddd.application.model.dto.response.WorkspaceResponse;
 import com.xxxx.ddd.application.port.async.GraphEventPort;
 import com.xxxx.ddd.application.port.async.InvitationAsyncPort;
+import com.xxxx.ddd.application.service.access.WorkspaceAccessService;
 import com.xxxx.ddd.application.service.notification.NotificationAppService;
 import com.xxxx.ddd.application.service.profile.ProfileAppService;
 import com.xxxx.ddd.application.service.workspace.WorkspaceAppService;
@@ -21,8 +22,10 @@ import com.xxxx.dddd.domain.model.entity.workspace.WorkspaceMember;
 import com.xxxx.dddd.domain.model.entity.workspace.WorkspaceRole;
 import com.xxxx.dddd.domain.model.enums.InvitationStatus;
 import com.xxxx.dddd.domain.model.enums.NotificationType;
+import com.xxxx.dddd.domain.model.enums.Permission;
 import com.xxxx.dddd.domain.model.enums.WorkspaceRoleType;
 import com.xxxx.dddd.domain.model.graph.GraphRebuildEvent;
+import com.xxxx.dddd.domain.model.permission.WorkspaceRoleFactory;
 import com.xxxx.dddd.domain.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
@@ -56,25 +59,8 @@ public class WorkspaceAppServiceImpl implements WorkspaceAppService {
     InvitationAsyncPort invitationAsyncPort;
     ProfileAppService profileAppService;
     GraphEventPort graphEventPort;
+    WorkspaceAccessService workspaceAccessService;
 
-
-    private WorkspaceMember requireAdmin(
-            String workspaceId,
-            Profile profile
-    ) {
-        WorkspaceMember member =
-                workspaceMemberRepository
-                        .findByWorkspace_IdAndProfile_UserId(
-                                workspaceId,
-                                profile.getUserId()
-                        )
-                        .orElseThrow(() -> new AppException(ErrorCode.NO_PERMISSION));
-
-        if (member.getWorkspaceRole().getRoleName() != WorkspaceRoleType.ADMIN) {
-            throw new AppException(ErrorCode.NO_PERMISSION);
-        }
-        return member;
-    }
 
     @Transactional
     public WorkspaceResponse createWorkspace(WorkspaceCreateRequest request) {
@@ -96,11 +82,10 @@ public class WorkspaceAppServiceImpl implements WorkspaceAppService {
         workspaceRepository.saveAndFlush(workspace);
 
         WorkspaceRole adminRole = workspaceRoleRepository.save(
-                WorkspaceRole.builder()
-                        .workspace(workspace)
-                        .roleName(WorkspaceRoleType.ADMIN)
-                        .build()
+                WorkspaceRoleFactory.seeded(workspace, WorkspaceRoleType.ADMIN)
         );
+        workspaceRoleRepository.save(WorkspaceRoleFactory.seeded(workspace, WorkspaceRoleType.MEMBER));
+        workspaceRoleRepository.save(WorkspaceRoleFactory.seeded(workspace, WorkspaceRoleType.VIEWER));
 
         workspaceMemberRepository.save(
                 WorkspaceMember.builder()
@@ -118,12 +103,10 @@ public class WorkspaceAppServiceImpl implements WorkspaceAppService {
             String workspaceId,
             WorkspaceUpdateRequest request) {
 
-        Profile profile = profileAppService.getOrCreateCurrentProfile();
-
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new AppException(ErrorCode.WORKSPACE_NOT_FOUND));
 
-        requireAdmin(workspaceId, profile);
+        workspaceAccessService.require(workspaceId, Permission.WORKSPACE_ADMINISTER);
 
         workspaceMapper.updateWorkspace(workspace, request);
 
@@ -138,7 +121,7 @@ public class WorkspaceAppServiceImpl implements WorkspaceAppService {
 
         Profile inviter = profileAppService.getOrCreateCurrentProfile();
 
-        WorkspaceMember admin = requireAdmin(workspaceId, inviter);
+        WorkspaceMember admin = workspaceAccessService.require(workspaceId, Permission.MEMBER_INVITE);
 
         Profile invitee = profileRepository
                 .findByEmail(request.getEmail())
@@ -161,12 +144,20 @@ public class WorkspaceAppServiceImpl implements WorkspaceAppService {
             throw new AppException(ErrorCode.INVITATION_ALREADY_SENT);
         }
 
+        WorkspaceRoleType invitedRole = request.getRole() == null
+                ? WorkspaceRoleType.MEMBER
+                : request.getRole();
+        if (invitedRole == WorkspaceRoleType.ADMIN) {
+            throw new AppException(ErrorCode.INVALID_ROLE);
+        }
+
         WorkspaceInvitation invitation = invitationRepository.save(
                 WorkspaceInvitation.builder()
                         .workspaceId(workspaceId)
                         .inviterId(inviter.getUserId())
                         .inviteeUserId(invitee.getUserId())
                         .email(invitee.getEmail())
+                        .roleName(invitedRole)
                         .status(InvitationStatus.PENDING)
                         .expiredAt(
                                 Instant.now().plus(INVITE_EXPIRE_DAYS, ChronoUnit.DAYS)
@@ -233,25 +224,18 @@ public class WorkspaceAppServiceImpl implements WorkspaceAppService {
     @Transactional
     public void deleteWorkspace(String workspaceId) {
 
-        Profile profile = profileAppService.getOrCreateCurrentProfile();
+        workspaceAccessService.require(workspaceId, Permission.WORKSPACE_DELETE);
 
-        WorkspaceMember admin = requireAdmin(workspaceId, profile);
-
-        workspaceRepository.delete(admin.getWorkspace());
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new AppException(ErrorCode.WORKSPACE_NOT_FOUND));
+        workspaceRepository.delete(workspace);
     }
 
 
 
     public List<WorkspaceMemberResponse> getMembers(String workspaceId) {
 
-        Profile profile = profileAppService.getOrCreateCurrentProfile();
-
-        workspaceMemberRepository
-                .findByWorkspace_IdAndProfile_UserId(
-                        workspaceId,
-                        profile.getUserId()
-                )
-                .orElseThrow(() -> new AppException(ErrorCode.NO_PERMISSION));
+        workspaceAccessService.require(workspaceId, Permission.MEMBER_VIEW);
 
         return workspaceMemberRepository
                 .findAllByWorkspace_Id(workspaceId)
@@ -266,6 +250,7 @@ public class WorkspaceAppServiceImpl implements WorkspaceAppService {
 
 
     public void triggerRebuildGraph(String workspaceId) {
+        workspaceAccessService.require(workspaceId, Permission.WORKSPACE_ADMINISTER);
         graphEventPort.sendRebuildEvent(workspaceId);
     }
 }

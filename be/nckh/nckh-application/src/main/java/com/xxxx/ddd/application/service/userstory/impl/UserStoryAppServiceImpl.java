@@ -5,16 +5,20 @@ import com.xxxx.ddd.application.model.dto.request.UserStoryCreateRequest;
 import com.xxxx.ddd.application.model.dto.request.UserStoryStatusUpdateRequest;
 import com.xxxx.ddd.application.model.dto.response.UserStoryResponse;
 import com.xxxx.ddd.application.port.async.UserStoryEventPort;
+import com.xxxx.ddd.application.service.access.WorkspaceAccessService;
 import com.xxxx.ddd.application.service.userstory.UserStoryAppService;
 import com.xxxx.ddd.application.support.TransactionalEvents;
 import com.xxxx.ddd.common.exception.ErrorCode;
 import com.xxxx.dddd.domain.event.UserStoryCreatedEvent;
 import com.xxxx.dddd.domain.exception.AppException;
 import com.xxxx.dddd.domain.model.entity.Backlog;
+import com.xxxx.dddd.domain.model.entity.Sprint;
 import com.xxxx.dddd.domain.model.entity.UserStory;
 import com.xxxx.dddd.domain.model.entity.workspace.Workspace;
+import com.xxxx.dddd.domain.model.enums.Permission;
 import com.xxxx.dddd.domain.model.enums.SprintStatus;
 import com.xxxx.dddd.domain.model.enums.UserStoryStatus;
+import com.xxxx.dddd.domain.repository.SprintRepository;
 import com.xxxx.dddd.domain.repository.UserStoryRepository;
 import com.xxxx.dddd.domain.repository.WorkspaceRepository;
 import lombok.AccessLevel;
@@ -34,9 +38,11 @@ import java.util.List;
 public class UserStoryAppServiceImpl implements UserStoryAppService {
     UserStoryRepository userStoryRepository;
     WorkspaceRepository workspaceRepository;
+    SprintRepository sprintRepository;
     UserStoryMapper userStoryMapper;
 
     UserStoryEventPort userStoryEventPort;
+    WorkspaceAccessService workspaceAccessService;
 
     @Override
     @Transactional
@@ -44,6 +50,7 @@ public class UserStoryAppServiceImpl implements UserStoryAppService {
 
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new AppException(ErrorCode.WORKSPACE_NOT_FOUND));
+        workspaceAccessService.require(workspaceId, Permission.ISSUE_CREATE);
 
         Backlog backlog = workspace.getBacklog();
 
@@ -81,6 +88,8 @@ public class UserStoryAppServiceImpl implements UserStoryAppService {
     @Transactional(readOnly = true)
     public List<UserStoryResponse> getBacklog(String workspaceId) {
 
+        workspaceAccessService.require(workspaceId, Permission.ISSUE_VIEW);
+
         return userStoryMapper.toResponses(
                 userStoryRepository.findByWorkspace_IdAndSprintIsNull(workspaceId)
         );
@@ -89,6 +98,10 @@ public class UserStoryAppServiceImpl implements UserStoryAppService {
     @Override
     @Transactional(readOnly = true)
     public List<UserStoryResponse> getBySprint(String sprintId) {
+
+        Sprint sprint = sprintRepository.findById(sprintId)
+                .orElseThrow(() -> new AppException(ErrorCode.SPRINT_NOT_FOUND));
+        workspaceAccessService.requireSprint(sprint, Permission.ISSUE_VIEW);
 
         return userStoryMapper.toResponses(
                 userStoryRepository.findBySprint_Id(sprintId)
@@ -104,6 +117,7 @@ public class UserStoryAppServiceImpl implements UserStoryAppService {
 
         UserStory story = userStoryRepository.findById(userStoryId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_STORY_NOT_FOUND));
+        workspaceAccessService.requireUserStory(story, Permission.ISSUE_TRANSITION);
 
         if(story.getSprint() == null){
             throw new AppException(ErrorCode.USER_STORY_NOT_IN_SPRINT);
@@ -130,8 +144,9 @@ public class UserStoryAppServiceImpl implements UserStoryAppService {
     @Transactional
     public void delete(String userStoryId) {
 
-        userStoryRepository.findById(userStoryId)
+        UserStory story = userStoryRepository.findById(userStoryId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_STORY_NOT_FOUND));
+        workspaceAccessService.requireUserStory(story, Permission.ISSUE_DELETE);
 
         userStoryRepository.delete(userStoryId);
     }
@@ -142,6 +157,7 @@ public class UserStoryAppServiceImpl implements UserStoryAppService {
 
         UserStory story = userStoryRepository.findById(userStoryId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_STORY_NOT_FOUND));
+        workspaceAccessService.requireUserStory(story, Permission.ISSUE_VIEW);
 
         return userStoryMapper.toResponse(story);
     }

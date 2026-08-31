@@ -7,6 +7,7 @@ import com.xxxx.ddd.application.model.dto.request.SprintCreateRequest;
 import com.xxxx.ddd.application.model.dto.response.SprintResponse;
 import com.xxxx.ddd.application.model.dto.response.UserStoryResponse;
 import com.xxxx.ddd.application.port.async.UserStoryEventPort;
+import com.xxxx.ddd.application.service.access.WorkspaceAccessService;
 import com.xxxx.ddd.application.service.sprint.SprintAppService;
 import com.xxxx.ddd.application.support.TransactionalEvents;
 import com.xxxx.ddd.common.exception.ErrorCode;
@@ -16,6 +17,7 @@ import com.xxxx.dddd.domain.exception.AppException;
 import com.xxxx.dddd.domain.model.entity.Sprint;
 import com.xxxx.dddd.domain.model.entity.UserStory;
 import com.xxxx.dddd.domain.model.entity.workspace.Workspace;
+import com.xxxx.dddd.domain.model.enums.Permission;
 import com.xxxx.dddd.domain.model.enums.SprintStatus;
 import com.xxxx.dddd.domain.model.enums.UserStoryStatus;
 import com.xxxx.dddd.domain.repository.SprintRepository;
@@ -45,6 +47,7 @@ public class SprintAppServiceImpl implements SprintAppService {
     SprintMapper sprintMapper;
     UserStoryMapper userStoryMapper;
     UserStoryEventPort userStoryEventPort;
+    WorkspaceAccessService workspaceAccessService;
 
     //Create Sprint
     @Override
@@ -53,6 +56,7 @@ public class SprintAppServiceImpl implements SprintAppService {
 
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new AppException(ErrorCode.WORKSPACE_NOT_FOUND));
+        workspaceAccessService.require(workspaceId, Permission.SPRINT_CREATE);
 
         Sprint sprint = sprintMapper.toEntity(request);
         sprint.setWorkspace(workspace);
@@ -67,6 +71,8 @@ public class SprintAppServiceImpl implements SprintAppService {
     @Transactional(readOnly = true)
     public List<SprintResponse> getSprints(String workspaceId) {
 
+        workspaceAccessService.require(workspaceId, Permission.SPRINT_VIEW);
+
         return sprintMapper.toResponses(
                 sprintRepository.findByWorkspace_IdOrderByCreatedAtDesc(workspaceId)
         );
@@ -79,6 +85,7 @@ public class SprintAppServiceImpl implements SprintAppService {
 
         Sprint sprint = sprintRepository.findById(sprintId)
                 .orElseThrow(() -> new AppException(ErrorCode.SPRINT_NOT_FOUND));
+        workspaceAccessService.requireSprint(sprint, Permission.SPRINT_MANAGE);
 
         if (sprint.getStatus() != SprintStatus.ToDo) {
             throw new AppException(ErrorCode.SPRINT_INVALID_STATE);
@@ -127,6 +134,7 @@ public class SprintAppServiceImpl implements SprintAppService {
 
         Sprint sprint = sprintRepository.findById(sprintId)
                 .orElseThrow(() -> new AppException(ErrorCode.SPRINT_NOT_FOUND));
+        workspaceAccessService.requireSprint(sprint, Permission.SPRINT_MANAGE);
 
         if (sprint.getStatus() != SprintStatus.InProgress) {
             throw new AppException(ErrorCode.SPRINT_INVALID_STATE);
@@ -181,6 +189,7 @@ public class SprintAppServiceImpl implements SprintAppService {
 
         Sprint sprint = sprintRepository.findById(sprintId)
                 .orElseThrow(() -> new AppException(ErrorCode.SPRINT_NOT_FOUND));
+        workspaceAccessService.requireSprint(sprint, Permission.SPRINT_EDIT);
 
         if (sprint.getStatus() != SprintStatus.ToDo) {
             throw new AppException(ErrorCode.SPRINT_INVALID_STATE);
@@ -216,6 +225,7 @@ public class SprintAppServiceImpl implements SprintAppService {
 
         UserStory story = userStoryRepository.findById(userStoryId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_STORY_NOT_FOUND));
+        workspaceAccessService.requireUserStory(story, Permission.SPRINT_EDIT);
 
         story.setSprint(null);
     }
@@ -224,6 +234,8 @@ public class SprintAppServiceImpl implements SprintAppService {
     @Override
     @Transactional(readOnly = true)
     public List<UserStoryResponse> getBacklog(String workspaceId) {
+
+        workspaceAccessService.require(workspaceId, Permission.ISSUE_VIEW);
 
         return userStoryMapper.toResponses(
                 userStoryRepository.findByWorkspace_IdAndSprintIsNull(workspaceId)
@@ -234,6 +246,10 @@ public class SprintAppServiceImpl implements SprintAppService {
     @Override
     @Transactional(readOnly = true)
     public List<UserStoryResponse> getUserStoriesOfSprint(String sprintId) {
+
+        Sprint sprint = sprintRepository.findById(sprintId)
+                .orElseThrow(() -> new AppException(ErrorCode.SPRINT_NOT_FOUND));
+        workspaceAccessService.requireSprint(sprint, Permission.ISSUE_VIEW);
 
         return userStoryMapper.toResponses(
                 userStoryRepository.findBySprint_Id(sprintId)
