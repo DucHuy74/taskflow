@@ -17,8 +17,9 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { UserStoryCard, UserStoryCardStatic } from '@/components/backlog';
-import { getSprintStories, startSprint as startSprintApi, getSprints } from '@/services/sprintService';
+import { sprintService } from '@/services/sprintService';
 import { getBacklogStories } from '@/services/backlogService';
+import { updateStoryStatus } from '@/services/backlogService';
 import type { UserStory } from '@/types/userStory';
 
 const columns = [
@@ -52,7 +53,7 @@ export function SprintPage() {
   // Fetch all sprints to find the current one
   const { data: sprints = [] } = useQuery({
     queryKey: ['sprints', workspaceId],
-    queryFn: () => getSprints(workspaceId),
+    queryFn: () => sprintService.getSprints(workspaceId),
   });
 
   const sprint = sprintId ? sprints.find((s) => s.id === sprintId) : sprints[0];
@@ -70,7 +71,7 @@ export function SprintPage() {
   // Queries
   const { data: sprintStories = [], isLoading: storiesLoading } = useQuery({
     queryKey: ['sprint-stories', sprint?.id],
-    queryFn: () => getSprintStories(sprint!.id),
+    queryFn: () => sprintService.getSprintStories(sprint!.id),
     enabled: !!sprint?.id,
   });
 
@@ -82,9 +83,8 @@ export function SprintPage() {
   // Mutations
   const updateStatusMutation = useMutation({
     mutationFn: async ({ storyId, status }: { storyId: string; status: ColumnId }) => {
-      // This would call an API to update status
-      // For now, we update locally
-      return { storyId, status };
+      // Backend expects: ToDo, InProgress, Done
+      return updateStoryStatus(storyId, status);
     },
     onMutate: async ({ storyId, status }) => {
       if (!sprint) return;
@@ -111,7 +111,7 @@ export function SprintPage() {
   // const addToSprintMutation = useMutation({ ... });
 
   const startSprintMutation = useMutation({
-    mutationFn: () => startSprintApi(sprint!.id),
+    mutationFn: () => sprintService.startSprint(sprint!.id),
   });
 
   // Group stories by status

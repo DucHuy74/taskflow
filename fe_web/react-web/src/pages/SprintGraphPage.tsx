@@ -1,14 +1,10 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { graphService } from '@/services/graphService';
-import { getSprints } from '@/services/sprintService';
-import { getSprintStories } from '@/services/sprintService';
+import { sprintService } from '@/services/sprintService';
 import { cn } from '@/lib/utils';
-import { ANIMATION_DURATION } from '@/lib/animations';
-import type { Sprint } from '@/types/sprint';
-import type { UserStory } from '@/types/userStory';
 
 // SVO Graph component for React
 interface NodePosition {
@@ -26,7 +22,7 @@ const NODE_COLORS = {
   object: { light: '#00B8D9', dark: '#22D3EE' },
 };
 
-const STATUS_COLORS = {
+const STATUS_COLORS: Record<string, string> = {
   ToDo: '#6B778C',
   InProgress: '#FFC400',
   Done: '#36B37E',
@@ -46,14 +42,14 @@ export function SprintGraphPage() {
   // Fetch sprint info
   const { data: sprints = [] } = useQuery({
     queryKey: ['sprints', workspaceId],
-    queryFn: () => getSprints(workspaceId!),
+    queryFn: () => sprintService.getSprints(workspaceId!),
     enabled: !!workspaceId,
   });
 
   const sprint = sprints.find((s) => s.id === sprintId) || sprints[0];
 
   // Fetch graph data from Neo4j
-  const { data: graphData, isLoading } = useQuery({
+  const { isLoading } = useQuery({
     queryKey: ['sprint-graph', workspaceId, sprintId],
     queryFn: () => graphService.getSprintGraph(workspaceId!, sprintId!),
     enabled: !!workspaceId && !!sprintId,
@@ -62,7 +58,7 @@ export function SprintGraphPage() {
   // Fetch stories for SVO parsing
   const { data: stories = [] } = useQuery({
     queryKey: ['sprint-stories', sprintId],
-    queryFn: () => getSprintStories(sprintId!),
+    queryFn: () => sprintService.getSprintStories(sprintId!),
     enabled: !!sprintId,
   });
 
@@ -136,13 +132,13 @@ export function SprintGraphPage() {
 
     // Verb nodes (center)
     let yVerb = 100;
-    Array.from(verbs.keys()).forEach((verb) => {
+    Array.from(verbs.keys()).forEach((v) => {
       nodes.push({
-        id: `verb_${verb}`,
+        id: `verb_${v}`,
         x: xVerb,
         y: yVerb,
         type: 'verb',
-        label: verb,
+        label: v,
       });
       yVerb += spacing;
     });
@@ -332,7 +328,7 @@ export function SprintGraphPage() {
                     y1={fromNode.y}
                     x2={toNode.x}
                     y2={toNode.y}
-                    stroke={STATUS_COLORS[edge.status as keyof typeof STATUS_COLORS] || '#DFE1E6'}
+                    stroke={STATUS_COLORS[edge.status] || '#DFE1E6'}
                     strokeWidth={2}
                     initial={{ pathLength: 0 }}
                     animate={{ pathLength: 1 }}

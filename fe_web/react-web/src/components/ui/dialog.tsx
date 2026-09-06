@@ -1,5 +1,6 @@
 import * as React from "react"
 import { motion, AnimatePresence, type HTMLMotionProps } from "framer-motion"
+import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ANIMATION_DURATION, EASING } from "@/lib/animations"
 
@@ -27,6 +28,27 @@ interface DialogProps {
 const Dialog = ({ open: controlledOpen, onOpenChange, children }: DialogProps) => {
   const [internalOpen, setInternalOpen] = React.useState(false);
   const open = controlledOpen ?? internalOpen;
+
+  // Handle ESC key for accessibility
+  React.useEffect(() => {
+    if (!open) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onOpenChange?.(false);
+        setInternalOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    // Prevent body scroll when dialog is open
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    };
+  }, [open, onOpenChange]);
 
   const handleOpenChange = React.useCallback((newOpen: boolean) => {
     setInternalOpen(newOpen);
@@ -76,29 +98,43 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
           <>
             {/* Backdrop */}
             <motion.div
-              className="fixed inset-0 z-50 bg-black/50"
+              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: ANIMATION_DURATION.fast }}
               onClick={() => setOpen(false)}
+              aria-hidden="true"
             />
             {/* Dialog */}
             <motion.div
               ref={ref}
               className={cn(
-                "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-gray-200 bg-white p-6 shadow-lg w-full max-w-lg",
+                "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-6 shadow-xl",
+                "w-full max-w-lg max-h-[90vh] overflow-y-auto",
+                "dark:bg-gray-900 dark:border-gray-800",
                 className
               )}
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{
-                duration: ANIMATION_DURATION.slow,
+                duration: ANIMATION_DURATION.normal,
                 ease: EASING.easeOut,
               }}
+              role="dialog"
+              aria-modal="true"
               {...(props as HTMLMotionProps<"div">)}
             >
+              {/* Close button - UX: Always accessible */}
+              <button
+                type="button"
+                className="absolute right-4 top-4 p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer dark:hover:text-gray-300 dark:hover:bg-gray-800"
+                onClick={() => setOpen(false)}
+                aria-label="Close dialog"
+              >
+                <X className="h-5 w-5" />
+              </button>
               {children}
             </motion.div>
           </>
@@ -115,10 +151,10 @@ const DialogHeader = React.forwardRef<HTMLDivElement, DialogHeaderProps>(
   ({ className, ...props }, ref) => (
     <motion.div
       ref={ref}
-      className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)}
+      className={cn("flex flex-col space-y-1.5 pr-8", className)}
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: ANIMATION_DURATION.normal, delay: 0.1 }}
+      transition={{ duration: ANIMATION_DURATION.normal, delay: 0.05 }}
       {...(props as HTMLMotionProps<"div">)}
     />
   )
@@ -131,10 +167,10 @@ const DialogFooter = React.forwardRef<HTMLDivElement, DialogFooterProps>(
   ({ className, ...props }, ref) => (
     <motion.div
       ref={ref}
-      className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)}
+      className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-6", className)}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: ANIMATION_DURATION.normal, delay: 0.15 }}
+      transition={{ duration: ANIMATION_DURATION.normal, delay: 0.1 }}
       {...(props as HTMLMotionProps<"div">)}
     />
   )
@@ -145,7 +181,7 @@ const DialogTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HT
   ({ className, ...props }, ref) => (
     <h2
       ref={ref}
-      className={cn("text-lg font-semibold leading-none tracking-tight", className)}
+      className={cn("text-lg font-semibold text-gray-900 dark:text-gray-100", className)}
       {...props}
     />
   )
@@ -156,7 +192,7 @@ const DialogDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttri
   ({ className, ...props }, ref) => (
     <p
       ref={ref}
-      className={cn("text-sm text-muted-foreground", className)}
+      className={cn("text-sm text-gray-500 dark:text-gray-400", className)}
       {...props}
     />
   )
@@ -172,10 +208,11 @@ const DialogClose = React.forwardRef<HTMLButtonElement, DialogCloseProps>(
       <motion.button
         ref={ref}
         type="button"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         transition={{ duration: ANIMATION_DURATION.fast }}
         onClick={() => setOpen(false)}
+        className="cursor-pointer"
         {...(props as HTMLMotionProps<"button">)}
       />
     );

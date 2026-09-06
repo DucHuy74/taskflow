@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { workspaceService } from '@/services/workspaceService';
 import { ANIMATION_DURATION } from '@/lib/animations';
-import type { Workspace } from '@/types/workspace';
+import { WorkspaceType, WorkspaceAccess } from '@/types/workspace';
 
 interface Template {
   id: string;
@@ -46,8 +46,8 @@ export function CreateWorkspace() {
   const navigate = useNavigate();
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [workspaceName, setWorkspaceName] = useState('');
-  const [managementType, setManagementType] = useState<'TEAM_MANAGED' | 'COMPANY_MANAGED'>('TEAM_MANAGED');
-  const [accessType, setAccessType] = useState<'OPEN' | 'PRIVATE' | 'LIMITED'>('OPEN');
+  const [managementType, setManagementType] = useState<typeof WorkspaceType[keyof typeof WorkspaceType]>(WorkspaceType.TEAM_MANAGED);
+  const [accessType, setAccessType] = useState<typeof WorkspaceAccess[keyof typeof WorkspaceAccess]>(WorkspaceAccess.OPEN);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -189,8 +189,8 @@ export function CreateWorkspace() {
               <div className="space-y-2">
                 <Label htmlFor="management">How your space is managed</Label>
                 <Select value={managementType} onValueChange={(v) => setManagementType(v as typeof managementType)}>
-                  <option value="TEAM_MANAGED">Team-managed</option>
-                  <option value="COMPANY_MANAGED">Company-managed</option>
+                  <option value={WorkspaceType.TEAM_MANAGED}>Team-managed</option>
+                  <option value={WorkspaceType.COMPANY_MANAGED}>Company-managed</option>
                 </Select>
               </div>
 
@@ -198,9 +198,9 @@ export function CreateWorkspace() {
               <div className="space-y-2">
                 <Label htmlFor="access">Access</Label>
                 <Select value={accessType} onValueChange={(v) => setAccessType(v as typeof accessType)}>
-                  <option value="OPEN">Open</option>
-                  <option value="PRIVATE">Private</option>
-                  <option value="LIMITED">Limited</option>
+                  <option value={WorkspaceAccess.OPEN}>Open</option>
+                  <option value={WorkspaceAccess.PRIVATE}>Private</option>
+                  <option value={WorkspaceAccess.LIMITED}>Limited</option>
                 </Select>
               </div>
 
@@ -218,7 +218,7 @@ export function CreateWorkspace() {
                       {workspaceName.trim() || 'Untitled space'}
                     </p>
                     <p className="text-sm text-[#5E6C84]">
-                      {managementType === 'TEAM_MANAGED' ? 'Team-managed' : 'Company-managed'} space
+                      {managementType === WorkspaceType.TEAM_MANAGED ? 'Team-managed' : 'Company-managed'} space
                     </p>
                   </div>
                 </div>

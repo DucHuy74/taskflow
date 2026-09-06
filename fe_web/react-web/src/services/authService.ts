@@ -131,12 +131,22 @@ const authService = {
   },
 
   /**
-   * Register a new user via Keycloak Admin API
+   * Register a new user via backend API
    */
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    // First create user in Keycloak
-    const response = await api.post('/auth/register', data);
-    return response.data;
+    // Backend expects username, password, email, firstName, lastName, dob
+    const response = await api.post('/register', data);
+
+    if (response.data.code === 1000) {
+      // After registration, automatically login
+      const loginResult = await this.login({
+        username: data.username,
+        password: data.password,
+      });
+      return loginResult;
+    }
+
+    throw new Error('Registration failed');
   },
 
   /**

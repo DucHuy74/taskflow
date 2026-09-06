@@ -62,6 +62,17 @@ export async function addStoryToSprint(sprintId: string, storyId: string): Promi
   }
 }
 
+// Add multiple stories to sprint
+export async function addStoriesToSprint(sprintId: string, storyIds: string[]): Promise<boolean> {
+  try {
+    await api.post(`/sprints/${sprintId}/user-stories`, { userStoryIds: storyIds });
+    return true;
+  } catch (error) {
+    console.error('Error adding stories to sprint:', error);
+    return false;
+  }
+}
+
 // Start a sprint
 export async function startSprint(sprintId: string): Promise<boolean> {
   try {
@@ -94,3 +105,15 @@ export async function removeStoryFromSprint(userStoryId: string): Promise<boolea
     return false;
   }
 }
+
+// Export as service object for consistency
+export const sprintService = {
+  getSprints,
+  createSprint,
+  getSprintStories,
+  addStoryToSprint,
+  addStoriesToSprint,
+  startSprint,
+  completeSprint,
+  removeStoryFromSprint,
+};

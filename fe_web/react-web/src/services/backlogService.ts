@@ -68,10 +68,22 @@ export async function deleteUserStory(storyId: string): Promise<boolean> {
 // Get user story by ID
 export async function getUserStory(storyId: string): Promise<UserStory | null> {
   try {
-    const response = await api.get<UserStory>(`/user-stories/${storyId}`);
-    return response.data;
+    const response = await api.get<ApiResponse<UserStory>>(`/user-stories/${storyId}`);
+    if (response.data.code === 1000 && response.data.result) {
+      return response.data.result;
+    }
+    return null;
   } catch (error) {
     console.error('Error fetching user story:', error);
     return null;
   }
 }
+
+// Export as service object
+export const backlogService = {
+  getBacklogStories,
+  createUserStory,
+  updateStoryStatus,
+  deleteUserStory,
+  getUserStory,
+};

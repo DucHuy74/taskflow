@@ -33,13 +33,15 @@ function formatDate(dateStr?: string): string {
 function KanbanColumn({
   column,
   stories,
+  sprintId,
 }: {
   column: (typeof columns)[number];
   stories: UserStory[];
+  sprintId: string;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `sprint-${column.id}`,
-    data: { type: 'sprint-column', status: column.id, sprintId: sprint.id },
+    data: { type: 'sprint-column', status: column.id, sprintId },
   });
 
   return (
@@ -173,6 +175,7 @@ export function SprintBoard({ sprint, stories, isLoading, onStartSprint, onViewG
                 key={column.id}
                 column={column}
                 stories={storiesByStatus[column.id]}
+                sprintId={sprint.id}
               />
             ))}
           </div>

@@ -35,11 +35,11 @@ interface SidebarProps {
 }
 
 const avatarColors = [
-  '#0052CC',
-  '#DE350B',
-  '#008DA6',
-  '#403294',
-  '#FF991F',
+  '#6366F1', // Indigo primary
+  '#8B5CF6', // Violet
+  '#0EA5E9', // Sky blue
+  '#10B981', // Emerald
+  '#F59E0B', // Amber
 ];
 
 const getAvatarColor = (name: string): string => {
@@ -117,7 +117,7 @@ export function Sidebar({ workspaces = [], onWorkspaceSelect, onCreateWorkspace 
         transition={{ duration: ANIMATION_DURATION.slow }}
       >
         <motion.h1
-          className={cn('text-xl font-bold text-[#0052CC]')}
+          className={cn('text-xl font-bold text-indigo-600')}
           animate={{ opacity: isCollapsed ? 0 : 1, scale: isCollapsed ? 0.8 : 1 }}
           transition={{ duration: ANIMATION_DURATION.fast }}
         >
@@ -125,7 +125,7 @@ export function Sidebar({ workspaces = [], onWorkspaceSelect, onCreateWorkspace 
         </motion.h1>
         {isCollapsed && (
           <motion.span
-            className="text-xl font-bold text-[#0052CC]"
+            className="text-xl font-bold text-indigo-600"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: ANIMATION_DURATION.fast }}
@@ -166,10 +166,10 @@ export function Sidebar({ workspaces = [], onWorkspaceSelect, onCreateWorkspace 
               to={item.id === 'foryou' ? '/' : `/${item.id}`}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150',
                   isActive || selectedMenuId === item.id
-                    ? 'bg-[#DEEBFF] text-[#0052CC] font-semibold'
-                    : 'text-[#172B4D] hover:bg-gray-100',
+                    ? 'bg-indigo-100 text-indigo-700 font-semibold dark:bg-indigo-900/50 dark:text-indigo-300'
+                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800',
                   isCollapsed && 'justify-center px-0'
                 )
               }
@@ -254,10 +254,10 @@ export function Sidebar({ workspaces = [], onWorkspaceSelect, onCreateWorkspace 
                       key={ws.id}
                       onClick={() => onWorkspaceSelect?.(ws.id)}
                       className={cn(
-                        'w-full flex items-center gap-3 px-4 py-1.5 text-sm text-left rounded-md transition-colors',
+                        'w-full flex items-center gap-3 px-4 py-1.5 text-sm text-left rounded-lg transition-all duration-150 cursor-pointer',
                         selectedMenuId === ws.id
-                          ? 'bg-[#DEEBFF] text-[#0052CC] font-semibold'
-                          : 'text-[#172B4D] hover:bg-gray-100'
+                          ? 'bg-indigo-100 text-indigo-700 font-semibold dark:bg-indigo-900/50 dark:text-indigo-300'
+                          : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
                       )}
                       whileHover={{ x: 4 }}
                       transition={{ duration: ANIMATION_DURATION.fast }}
@@ -327,10 +327,10 @@ export function Sidebar({ workspaces = [], onWorkspaceSelect, onCreateWorkspace 
                     to={`/recommended/${item.id}`}
                     className={({ isActive }) =>
                       cn(
-                        'w-full flex items-center gap-3 px-4 py-1.5 text-sm rounded-md transition-colors',
+                        'w-full flex items-center gap-3 px-4 py-1.5 text-sm rounded-lg transition-all duration-150',
                         isActive
-                          ? 'bg-[#DEEBFF] text-[#0052CC] font-semibold'
-                          : 'text-[#172B4D] hover:bg-gray-100'
+                          ? 'bg-indigo-100 text-indigo-700 font-semibold dark:bg-indigo-900/50 dark:text-indigo-300'
+                          : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
                       )
                     }
                   >
@@ -338,7 +338,7 @@ export function Sidebar({ workspaces = [], onWorkspaceSelect, onCreateWorkspace 
                     <span className="flex-1">{item.label}</span>
                     {item.badge && (
                       <motion.span
-                        className="px-1.5 py-0.5 bg-[#0052CC] text-white text-[10px] font-semibold rounded"
+                        className="px-1.5 py-0.5 bg-indigo-600 text-white text-[10px] font-semibold rounded"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ duration: ANIMATION_DURATION.fast, delay: 0.2 }}

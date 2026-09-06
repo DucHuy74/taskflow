@@ -181,9 +181,9 @@ Kết quả xác minh:
 | --- | --- |
 | Domain + application Maven tests | **Passed** |
 | `git diff --check` | **Passed** |
-| Full Maven reactor trên máy hiện tại | Dừng ở code dùng `List.getFirst()` vì môi trường là JDK 17, project yêu cầu JDK 21 |
+| Full Maven reactor từ terminal Codex | Dừng ở code dùng `List.getFirst()` vì Maven CLI đang chạy bằng JDK 17; IntelliJ Project SDK của máy là OpenJDK 23.0.2 và project target là Java 21 |
 
-Lỗi full reactor không nằm trong RBAC. Domain và application chứa toàn bộ thay đổi RBAC đã compile và test thành công.
+Lỗi full reactor không nằm trong RBAC. Đây là chênh lệch giữa JDK của Maven CLI (`JAVA_HOME` đang trỏ tới JDK 17) và SDK IntelliJ. Domain và application chứa toàn bộ thay đổi RBAC đã compile và test thành công.
 
 ## 6. Files liên quan
 

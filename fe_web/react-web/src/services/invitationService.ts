@@ -1,12 +1,6 @@
 import { api } from './api';
 import type { Invitation, SendInvitationRequest } from '@/types/invitation';
 
-interface ApiResponse<T> {
-  code: number;
-  result?: T;
-  message?: string;
-}
-
 export const invitationService = {
   /**
    * Send invitation to join workspace
@@ -23,7 +17,7 @@ export const invitationService = {
       );
 
       return results.every(
-        (res) => res.data?.code === 1000 || res.status === 200 || res.status === 201
+        (res) => res.status === 200 || res.status === 201
       );
     } catch (error) {
       console.error('Error sending invitations:', error);
@@ -36,6 +30,7 @@ export const invitationService = {
    */
   async getPendingInvitations(): Promise<Invitation[]> {
     try {
+      // Backend returns ResponseEntity<List<InvitationResponse>> directly
       const response = await api.get<Invitation[]>('/invitations/pending');
       if (response.data && Array.isArray(response.data)) {
         return response.data;
@@ -52,8 +47,8 @@ export const invitationService = {
    */
   async acceptInvitation(invitationId: string): Promise<boolean> {
     try {
-      const response = await api.post(`/invitations/${invitationId}/accept`);
-      return response.status === 200 || response.data?.code === 1000;
+      await api.post(`/invitations/${invitationId}/accept`);
+      return true;
     } catch (error) {
       console.error('Error accepting invitation:', error);
       return false;
@@ -65,8 +60,8 @@ export const invitationService = {
    */
   async denyInvitation(invitationId: string): Promise<boolean> {
     try {
-      const response = await api.post(`/invitations/${invitationId}/deny`);
-      return response.status === 200 || response.data?.code === 1000;
+      await api.post(`/invitations/${invitationId}/deny`);
+      return true;
     } catch (error) {
       console.error('Error denying invitation:', error);
       return false;

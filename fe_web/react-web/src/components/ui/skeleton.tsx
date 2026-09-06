@@ -1,70 +1,156 @@
-import * as React from "react"
-import { motion, type HTMLMotionProps } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
 
-interface SkeletonProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onDrag' | 'onDragStart' | 'onDragEnd'> {}
+interface SkeletonProps {
+  className?: string
+  /** Number of skeleton lines to show */
+  lines?: number
+  /** Show avatar skeleton */
+  showAvatar?: boolean
+  /** Show card skeleton */
+  showCard?: boolean
+}
 
-const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
-  ({ className, ...props }, ref) => (
-    <motion.div
-      ref={ref}
-      className={cn("rounded-md bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%]", className)}
-      animate={{
-        backgroundPosition: ["200% 0", "-200% 0"],
-      }}
-      transition={{
-        duration: 1.4,
-        ease: "easeInOut",
-        repeat: Infinity,
-        repeatType: "loop",
-      }}
-      style={{ backgroundSize: "200% 100%" }}
-      {...(props as HTMLMotionProps<"div">)}
-    />
-  )
-)
-Skeleton.displayName = "Skeleton"
-
-// Preset skeleton patterns for common use cases
-const SkeletonCard = ({ className }: { className?: string }) => (
-  <div className={cn("p-4 space-y-3", className)}>
-    <Skeleton className="h-4 w-3/4" />
-    <Skeleton className="h-4 w-1/2" />
-    <Skeleton className="h-20 w-full" />
-  </div>
-)
-
-const SkeletonText = ({ lines = 3, className }: { lines?: number; className?: string }) => (
-  <div className={cn("space-y-2", className)}>
-    {Array.from({ length: lines }).map((_, i) => (
-      <Skeleton
-        key={i}
-        className="h-4"
-        style={{ width: `${100 - (i * 15)}%` }}
-      />
-    ))}
-  </div>
-)
-
-const SkeletonAvatar = ({ size = "md", className }: { size?: "sm" | "md" | "lg"; className?: string }) => {
-  const sizes = {
-    sm: "h-8 w-8",
-    md: "h-10 w-10",
-    lg: "h-12 w-12",
+/**
+ * Skeleton loading component with pulse animation
+ * UX: Provides visual feedback during loading states
+ */
+export function Skeleton({ className, lines = 3, showAvatar = false, showCard = false }: SkeletonProps) {
+  if (showCard) {
+    return (
+      <div className={cn("rounded-xl border border-gray-200 bg-white p-4 space-y-4", className)}>
+        <div className="flex items-center gap-3">
+          <motion.div
+            className="h-10 w-10 rounded-full bg-gray-200"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <div className="flex-1 space-y-2">
+            <motion.div
+              className="h-4 w-1/3 rounded bg-gray-200"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+              className="h-3 w-1/4 rounded bg-gray-100"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.1 }}
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          {Array.from({ length: lines }).map((_, i) => (
+            <motion.div
+              key={i}
+              className={cn(
+                "h-3 rounded bg-gray-100",
+                i === lines - 1 ? "w-3/4" : "w-full"
+              )}
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: i * 0.1,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    )
   }
+
+  if (showAvatar) {
+    return (
+      <div className={cn("flex items-center gap-3", className)}>
+        <motion.div
+          className="h-10 w-10 rounded-full bg-gray-200"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <div className="flex-1 space-y-2">
+          <motion.div
+            className="h-4 w-1/3 rounded bg-gray-200"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div
+            className="h-3 w-1/4 rounded bg-gray-100"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.1 }}
+          />
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <Skeleton
-      className={cn("rounded-full", sizes[size], className)}
+    <motion.div
+      className={cn("space-y-2", className)}
+      animate={{ opacity: [0.5, 1, 0.5] }}
+      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+    >
+      {Array.from({ length: lines }).map((_, i) => (
+        <motion.div
+          key={i}
+          className={cn(
+            "h-4 rounded bg-gray-200",
+            i === lines - 1 ? "w-3/4" : "w-full"
+          )}
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: i * 0.1,
+          }}
+        />
+      ))}
+    </motion.div>
+  )
+}
+
+/**
+ * Text skeleton for inline loading
+ */
+export function SkeletonText({ className, width = "w-full" }: { className?: string; width?: string }) {
+  return (
+    <motion.div
+      className={cn("h-4 rounded bg-gray-200", width, className)}
+      animate={{ opacity: [0.5, 1, 0.5] }}
+      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
     />
   )
 }
 
-const SkeletonButton = ({ className }: { className?: string }) => (
-  <Skeleton className={cn("h-9 w-24 rounded-md", className)} />
-)
+/**
+ * Avatar skeleton
+ */
+export function SkeletonAvatar({ size = "md", className }: { size?: "sm" | "md" | "lg"; className?: string }) {
+  const sizeClasses = {
+    sm: "h-8 w-8",
+    md: "h-10 w-10",
+    lg: "h-12 w-12",
+  }
 
-const SkeletonBadge = ({ className }: { className?: string }) => (
-  <Skeleton className={cn("h-5 w-16 rounded-full", className)} />
-)
+  return (
+    <motion.div
+      className={cn("rounded-full bg-gray-200", sizeClasses[size], className)}
+      animate={{ opacity: [0.5, 1, 0.5] }}
+      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+    />
+  )
+}
 
-export { Skeleton, SkeletonCard, SkeletonText, SkeletonAvatar, SkeletonButton, SkeletonBadge }
+/**
+ * Button skeleton
+ */
+export function SkeletonButton({ className }: { className?: string }) {
+  return (
+    <motion.div
+      className={cn("h-10 w-24 rounded-lg bg-gray-200", className)}
+      animate={{ opacity: [0.5, 1, 0.5] }}
+      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+    />
+  )
+}

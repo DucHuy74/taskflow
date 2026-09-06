@@ -1,5 +1,6 @@
 import { api } from './api';
 import type { Workspace, CreateWorkspaceRequest } from '@/types/workspace';
+import type { WorkspaceMemberResponse } from '@/types';
 
 // Backend API response wrapper
 interface ApiResponse<T> {
@@ -58,6 +59,22 @@ export const workspaceService = {
   },
 
   /**
+   * Update workspace
+   */
+  async updateWorkspace(id: string, data: Partial<CreateWorkspaceRequest>): Promise<Workspace | null> {
+    try {
+      const response = await api.put<ApiResponse<Workspace>>(`/workspace/${id}`, data);
+      if (response.data.code === 1000 && response.data.result) {
+        return response.data.result;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error updating workspace:', error);
+      return null;
+    }
+  },
+
+  /**
    * Delete workspace
    */
   async deleteWorkspace(id: string): Promise<boolean> {
@@ -73,9 +90,9 @@ export const workspaceService = {
   /**
    * Get workspace members
    */
-  async getWorkspaceMembers(workspaceId: string): Promise<unknown[]> {
+  async getWorkspaceMembers(workspaceId: string): Promise<WorkspaceMemberResponse[]> {
     try {
-      const response = await api.get<ApiResponse<unknown[]>>(`/workspace/${workspaceId}/members`);
+      const response = await api.get<ApiResponse<WorkspaceMemberResponse[]>>(`/workspace/${workspaceId}/members`);
       if (response.data.code === 1000 && response.data.result) {
         return response.data.result;
       }
@@ -83,6 +100,19 @@ export const workspaceService = {
     } catch (error) {
       console.error('Error fetching workspace members:', error);
       return [];
+    }
+  },
+
+  /**
+   * Rebuild workspace graph in Neo4j
+   */
+  async rebuildGraph(workspaceId: string): Promise<boolean> {
+    try {
+      await api.post(`/workspace/${workspaceId}/rebuild-graph`);
+      return true;
+    } catch (error) {
+      console.error('Error rebuilding graph:', error);
+      return false;
     }
   },
 };

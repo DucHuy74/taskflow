@@ -14,7 +14,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { BacklogList, SprintBoard, SprintBoardEmpty, CreateSprintDialog, UserStoryCardStatic } from '@/components/backlog';
 import { getBacklogStories, createUserStory } from '@/services/backlogService';
-import { getSprints, createSprint, addStoryToSprint, getSprintStories, startSprint, removeStoryFromSprint } from '@/services/sprintService';
+import { sprintService } from '@/services/sprintService';
 import type { UserStory } from '@/types/userStory';
 import type { CreateSprintRequest, Sprint } from '@/types/sprint';
 
@@ -47,7 +47,7 @@ export function BacklogPage() {
 
   const { data: sprints = [], isLoading: sprintsLoading } = useQuery({
     queryKey: ['sprints', workspaceId],
-    queryFn: () => getSprints(workspaceId),
+    queryFn: () => sprintService.getSprints(workspaceId),
   });
 
   // Sprint stories query - fetch for each sprint
@@ -57,7 +57,7 @@ export function BacklogPage() {
       const map: Record<string, UserStory[]> = {};
       await Promise.all(
         sprints.map(async (sprint) => {
-          map[sprint.id] = await getSprintStories(sprint.id);
+          map[sprint.id] = await sprintService.getSprintStories(sprint.id);
         })
       );
       return map;
@@ -74,7 +74,7 @@ export function BacklogPage() {
   });
 
   const createSprintMutation = useMutation({
-    mutationFn: (data: CreateSprintRequest) => createSprint(workspaceId, data),
+    mutationFn: (data: CreateSprintRequest) => sprintService.createSprint(workspaceId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sprints', workspaceId] });
     },
@@ -82,7 +82,7 @@ export function BacklogPage() {
 
   const addToSprintMutation = useMutation({
     mutationFn: ({ sprintId, storyId }: { sprintId: string; storyId: string }) =>
-      addStoryToSprint(sprintId, storyId),
+      sprintService.addStoryToSprint(sprintId, storyId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['backlog-stories', workspaceId] });
       queryClient.invalidateQueries({ queryKey: ['sprint-stories'] });
@@ -90,7 +90,7 @@ export function BacklogPage() {
   });
 
   const startSprintMutation = useMutation({
-    mutationFn: (sprintId: string) => startSprint(sprintId),
+    mutationFn: (sprintId: string) => sprintService.startSprint(sprintId),
     onSuccess: (_data, sprintId) => {
       // Navigate to sprint graph after starting
       navigate(`/workspace/${workspaceId}/sprint/${sprintId}/graph`);
@@ -152,7 +152,7 @@ export function BacklogPage() {
 
       if (overData?.type === 'backlog') {
         if (story.sprintId) {
-          await removeStoryFromSprint(storyId);
+          await sprintService.removeStoryFromSprint(storyId);
           queryClient.invalidateQueries({ queryKey: ['backlog-stories', workspaceId] });
           queryClient.invalidateQueries({ queryKey: ['sprint-stories'] });
         }

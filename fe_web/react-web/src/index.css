@@ -1,11 +1,168 @@
 @import "tailwindcss";
+@import "./styles/theme.css";
 
 @theme {
   --radius: 0.5rem;
 }
 
+/* Dark mode support */
 @layer base {
   :root {
     --radius: 0.5rem;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+}
+
+/* ========================================
+   Global Base Styles
+   ======================================== */
+
+@layer base {
+  /* Typography */
+  body {
+    @apply bg-white dark:bg-[#0F172A] text-gray-900 dark:text-gray-100;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Heading styles */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-gray-900 dark:text-gray-100;
+  }
+
+  /* Link styles */
+  a {
+    @apply text-indigo-600 dark:text-indigo-400;
+    @apply hover:underline;
+    @apply transition-colors duration-150;
+  }
+
+  /* Focus visible for accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-indigo-500 ring-offset-2;
+    @apply dark:ring-offset-gray-900;
+  }
+}
+
+/* ========================================
+   Scrollbar Styling
+   ======================================== */
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme("colors.gray.300") transparent;
+  }
+
+  .dark .scrollbar-thin {
+    scrollbar-color: theme("colors.gray.600") transparent;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ========================================
+   Animation Utilities
+   ======================================== */
+
+@layer utilities {
+  /* Stagger animation for lists */
+  .stagger-animate {
+    animation: stagger-in 0.4s ease-out forwards;
+  }
+
+  @keyframes stagger-in {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Skeleton loading animation */
+  .skeleton-pulse {
+    @apply bg-gray-200 dark:bg-gray-700;
+    background-size: 200% 100%;
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-pulse {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Fade in animation */
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out forwards;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Slide up animation */
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out forwards;
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* ========================================
+   Custom Selection
+   ======================================== */
+
+::selection {
+  background-color: rgba(99, 102, 241, 0.2);
+}
+
+.dark ::selection {
+  background-color: rgba(99, 102, 241, 0.3);
+}
+
+/* ========================================
+   Reduced Motion
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

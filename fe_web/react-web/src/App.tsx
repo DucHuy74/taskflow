@@ -4,6 +4,8 @@ import { store } from '@/store';
 import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router } from '@/router';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ToastProvider } from '@/components/ui/toast';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,9 +20,13 @@ function App() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <AnimatePresence mode="wait">
-          <RouterProvider router={router} />
-        </AnimatePresence>
+        <ThemeProvider defaultTheme="system">
+          <ToastProvider>
+            <AnimatePresence mode="wait">
+              <RouterProvider router={router} />
+            </AnimatePresence>
+          </ToastProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </Provider>
   );

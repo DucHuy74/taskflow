@@ -1,6 +1,5 @@
-import axios from 'axios';
+import { api } from './api';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 const API_KEY = import.meta.env.VITE_API_KEY || '';
 
 export interface GraphNode {
@@ -91,10 +90,8 @@ export const graphService = {
     `;
 
     try {
-      const token = localStorage.getItem('accessToken');
-
-      const response = await axios.post<GraphQLResponse>(
-        `${API_BASE_URL}/graphql`,
+      const response = await api.post<GraphQLResponse>(
+        '/graphql',
         {
           query,
           variables: {
@@ -106,7 +103,6 @@ export const graphService = {
         {
           headers: {
             'Content-Type': 'application/json; charset=UTF-8',
-            'Authorization': token ? `Bearer ${token}` : '',
             'x-api-key': API_KEY,
           },
         }

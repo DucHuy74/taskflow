@@ -1,11 +1,15 @@
 // Sprint types
-export type { Sprint, CreateSprintRequest } from './sprint';
+export { type Sprint, type CreateSprintRequest, SprintStatus } from './sprint';
 
 // User Story types
-export type { UserStory, CreateUserStoryRequest } from './userStory';
+export { type UserStory, type CreateUserStoryRequest, UserStoryStatus } from './userStory';
 
 // Workspace types
+export { WorkspaceType, WorkspaceAccess } from './workspace';
 export type { Workspace, CreateWorkspaceRequest } from './workspace';
+
+// Invitation types
+export type { Invitation, SendInvitationRequest } from './invitation';
 
 // Auth types
 export interface User {
@@ -20,6 +24,20 @@ export interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+}
+
+// Workspace Member Response
+export interface WorkspaceMemberResponse {
+  userId: string;
+  workspaceId: string;
+  role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
+  joinedAt: string;
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+    avatar?: string;
+  };
 }
 
 // API Response types
