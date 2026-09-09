@@ -1,34 +1,57 @@
-import { useState, useCallback } from 'react';
-import { useParams, Navigate, useNavigate } from 'react-router-dom';
+import { useState, useCallback, useMemo } from 'react';
+import { useParams, Navigate, useNavigate, NavLink } from 'react-router-dom';
 import {
   DndContext,
   DragOverlay,
   closestCenter,
+  pointerWithin,
+  rectIntersection,
   PointerSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
   type DragStartEvent,
   type DragEndEvent,
+  type CollisionDetection,
 } from '@dnd-kit/core';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { cn } from '@/lib/utils';
 import { BacklogList, SprintBoard, SprintBoardEmpty, CreateSprintDialog, UserStoryCardStatic } from '@/components/backlog';
-import { getBacklogStories, createUserStory } from '@/services/backlogService';
+import { getBacklogStories, createUserStories } from '@/services/backlogService';
 import { sprintService } from '@/services/sprintService';
+import { workspaceService } from '@/services/workspaceService';
+import { useToastMessage } from '@/components/ui/toast';
+import { Button } from '@/components/ui/button';
+import { GitBranch, Layers3, Search, Sparkles } from 'lucide-react';
 import type { UserStory } from '@/types/userStory';
 import type { CreateSprintRequest, Sprint } from '@/types/sprint';
 
 export function BacklogPage() {
-  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const { workspaceId: workspaceIdParam } = useParams<{ workspaceId: string }>();
+  const workspaceId = workspaceIdParam || '';
   const navigate = useNavigate();
 
-  if (!workspaceId) {
-    return <Navigate to="/" replace />;
-  }
-
   const queryClient = useQueryClient();
+  const showToast = useToastMessage();
   const [activeStory, setActiveStory] = useState<UserStory | null>(null);
   const [createSprintOpen, setCreateSprintOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const collisionDetectionStrategy = useCallback<CollisionDetection>((args) => {
+    const pointerCollisions = pointerWithin(args);
+    const validPointerTargets = pointerCollisions.filter((collision) => {
+      const type = args.droppableContainers.find((container) => container.id === collision.id)?.data.current?.type;
+      return type === 'sprint-column' || type === 'sprint' || type === 'backlog';
+    });
+    if (validPointerTargets.length > 0) return validPointerTargets;
+
+    const intersections = rectIntersection(args);
+    const validIntersections = intersections.filter((collision) => {
+      const type = args.droppableContainers.find((container) => container.id === collision.id)?.data.current?.type;
+      return type === 'sprint-column' || type === 'sprint' || type === 'backlog';
+    });
+    return validIntersections.length > 0 ? validIntersections : closestCenter(args);
+  }, []);
 
   // DnD Sensors
   const sensors = useSensors(
@@ -36,14 +59,26 @@ export function BacklogPage() {
       activationConstraint: {
         distance: 8,
       },
-    })
+    }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   // Queries
   const { data: backlogStories = [], isLoading: backlogLoading } = useQuery({
     queryKey: ['backlog-stories', workspaceId],
     queryFn: () => getBacklogStories(workspaceId),
+    refetchInterval: (query) => query.state.data?.some((story) => story.analysisStatus === 'QUEUED' || story.analysisStatus === 'PROCESSING') ? 5000 : false,
   });
+
+  const { data: workspace } = useQuery({
+    queryKey: ['workspace', workspaceId],
+    queryFn: () => workspaceService.getWorkspace(workspaceId),
+  });
+
+  const filteredBacklogStories = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return query ? backlogStories.filter((story) => story.storyText.toLowerCase().includes(query)) : backlogStories;
+  }, [backlogStories, searchQuery]);
 
   const { data: sprints = [], isLoading: sprintsLoading } = useQuery({
     queryKey: ['sprints', workspaceId],
@@ -67,9 +102,10 @@ export function BacklogPage() {
 
   // Mutations
   const createStoryMutation = useMutation({
-    mutationFn: (text: string) => createUserStory(workspaceId, { storyText: text }),
-    onSuccess: () => {
+    mutationFn: (texts: string[]) => createUserStories(workspaceId, texts.map((storyText) => ({ storyText }))),
+    onSuccess: (createdStories) => {
       queryClient.invalidateQueries({ queryKey: ['backlog-stories', workspaceId] });
+      showToast(`${createdStories.length} ${createdStories.length === 1 ? 'story' : 'stories'} saved and queued for analysis.`, 'success', 'Backlog updated');
     },
   });
 
@@ -81,9 +117,35 @@ export function BacklogPage() {
   });
 
   const addToSprintMutation = useMutation({
-    mutationFn: ({ sprintId, storyId }: { sprintId: string; storyId: string }) =>
-      sprintService.addStoryToSprint(sprintId, storyId),
-    onSuccess: () => {
+    mutationFn: async ({ sprintId, storyId }: { sprintId: string; storyId: string; story: UserStory }) => {
+      const success = await sprintService.addStoryToSprint(sprintId, storyId);
+      if (!success) throw new Error('Unable to add story to sprint');
+    },
+    onMutate: async ({ sprintId, story }) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['backlog-stories', workspaceId] }),
+        queryClient.cancelQueries({ queryKey: ['sprint-stories'] }),
+      ]);
+      const previousBacklog = queryClient.getQueryData<UserStory[]>(['backlog-stories', workspaceId]);
+      const previousSprintMaps = queryClient.getQueriesData<Record<string, UserStory[]>>({ queryKey: ['sprint-stories'] });
+
+      queryClient.setQueryData<UserStory[]>(['backlog-stories', workspaceId], (current = []) => current.filter((item) => item.id !== story.id));
+      queryClient.setQueriesData<Record<string, UserStory[]>>({ queryKey: ['sprint-stories'] }, (current = {}) => ({
+        ...current,
+        [sprintId]: [...(current[sprintId] || []).filter((item) => item.id !== story.id), { ...story, sprintId }],
+      }));
+      return { previousBacklog, previousSprintMaps };
+    },
+    onSuccess: (_data, { sprintId }) => {
+      const sprintName = sprints.find((sprint) => sprint.id === sprintId)?.name || 'sprint';
+      showToast(`Story moved to ${sprintName}.`, 'success', 'Sprint updated');
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousBacklog) queryClient.setQueryData(['backlog-stories', workspaceId], context.previousBacklog);
+      context?.previousSprintMaps.forEach(([key, value]) => queryClient.setQueryData(key, value));
+      showToast('The story could not be moved. It has been restored to the backlog.', 'error', 'Move failed');
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['backlog-stories', workspaceId] });
       queryClient.invalidateQueries({ queryKey: ['sprint-stories'] });
     },
@@ -99,8 +161,8 @@ export function BacklogPage() {
 
   // Handlers
   const handleCreateStory = useCallback(
-    async (text: string) => {
-      await createStoryMutation.mutateAsync(text);
+    async (texts: string[]) => {
+      await createStoryMutation.mutateAsync(texts);
     },
     [createStoryMutation]
   );
@@ -121,8 +183,8 @@ export function BacklogPage() {
   }, [navigate, workspaceId]);
 
   const handleMoveStoryToSprint = useCallback(
-    async (sprintId: string, storyId: string) => {
-      await addToSprintMutation.mutateAsync({ sprintId, storyId });
+    async (sprintId: string, story: UserStory) => {
+      await addToSprintMutation.mutateAsync({ sprintId, storyId: story.id, story });
     },
     [addToSprintMutation]
   );
@@ -167,71 +229,40 @@ export function BacklogPage() {
 
         // Don't add if already in this sprint
         if (story.sprintId !== targetSprintId) {
-          await handleMoveStoryToSprint(targetSprintId, storyId);
+          await handleMoveStoryToSprint(targetSprintId, story);
         }
       }
     },
     [handleMoveStoryToSprint, queryClient, workspaceId]
   );
 
+  if (!workspaceIdParam) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={collisionDetectionStrategy}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="min-h-screen bg-gray-50">
-        {/* Search Bar */}
-        <div className="mb-6 flex items-center gap-4">
-          <div className="flex-1 relative">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search backlog"
-              className={cn(
-                'w-full h-10 pl-10 pr-4 text-sm border border-gray-200 rounded',
-                'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                'placeholder:text-gray-400'
-              )}
-            />
+      <div className="min-h-full bg-slate-50 px-4 py-6 dark:bg-slate-950 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1480px]">
+          <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div><nav className="mb-1 text-xs font-medium text-slate-500" aria-label="Breadcrumb">Workspaces / {workspace?.name || 'Workspace'}</nav><h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">Backlog</h1><p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Plan stories, prepare sprints, and turn analyzed requirements into a connected map.</p></div>
+            <Button onClick={() => navigate(`/workspace/${workspaceId}/graph`)}><GitBranch className="h-4 w-4" aria-hidden="true" /> Open story map</Button>
           </div>
 
-          {/* Filter Button */}
-          <button
-            className={cn(
-              'h-10 px-4 flex items-center gap-2 text-sm font-medium rounded border border-gray-200',
-              'bg-white text-gray-700 hover:bg-gray-50 transition-colors'
-            )}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-              />
-            </svg>
-            Filter
-          </button>
-
-          {/* Avatar */}
-          <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs font-bold">
-            U
+          <div className="mb-5 flex flex-col gap-3 border-b border-slate-200 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-5">
+              <NavLink to={`/workspace/${workspaceId}/backlog`} className="flex min-h-11 items-center gap-2 border-b-2 border-indigo-600 text-sm font-semibold text-indigo-700 no-underline dark:text-indigo-300"><Layers3 className="h-4 w-4" aria-hidden="true" /> Backlog</NavLink>
+              <NavLink to={`/workspace/${workspaceId}/graph`} className="flex min-h-11 items-center gap-2 border-b-2 border-transparent text-sm font-medium text-slate-600 no-underline hover:border-slate-300 dark:text-slate-300"><GitBranch className="h-4 w-4" aria-hidden="true" /> Story map</NavLink>
+            </div>
+            <div className="relative mb-3 w-full sm:w-72"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" /><label htmlFor="backlog-search" className="sr-only">Search backlog</label><input id="backlog-search" type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search backlog" className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900 dark:text-white" /></div>
           </div>
-        </div>
+
+          <div className="mb-5 flex items-start gap-3 rounded-lg border border-violet-100 bg-violet-50 px-4 py-3 text-sm text-violet-900 dark:border-violet-900 dark:bg-violet-950/50 dark:text-violet-200"><Sparkles className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><p>New stories are analyzed by a background worker. When the batch is ready, rebuild the story map to refresh workspace relationships.</p></div>
 
         {/* Sprints Section */}
         {!sprintsLoading && sprints.length > 0 && (
@@ -258,9 +289,10 @@ export function BacklogPage() {
 
         {/* Backlog Section */}
         <BacklogList
-          stories={backlogStories}
+          stories={filteredBacklogStories}
           isLoading={backlogLoading}
-          onCreateStory={handleCreateStory}
+          isCreating={createStoryMutation.isPending}
+          onCreateStories={handleCreateStory}
           onStartSprint={() => setCreateSprintOpen(true)}
         />
 
@@ -279,6 +311,7 @@ export function BacklogPage() {
             </div>
           ) : null}
         </DragOverlay>
+        </div>
       </div>
     </DndContext>
   );

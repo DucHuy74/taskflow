@@ -138,6 +138,16 @@
       transform: translateY(0);
     }
   }
+
+  /* DALN 4.3.5.7: 2-second pulse used to keep selected graph nodes visible. */
+  .graph-glow {
+    animation: graph-glow-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes graph-glow-pulse {
+    0%, 100% { opacity: 0.15; }
+    50% { opacity: 0.25; }
+  }
 }
 
 /* ========================================

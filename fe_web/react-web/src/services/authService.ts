@@ -92,6 +92,7 @@ const authService = {
       client_secret: CLIENT_SECRET,
       username: data.username,
       password: data.password,
+      scope: 'openid',
     });
 
     const response = await fetch(

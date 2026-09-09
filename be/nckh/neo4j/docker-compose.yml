@@ -1,0 +1,30 @@
+services:
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: taskflow-neo4j
+
+    ports:
+      - "7474:7474" # Neo4j Browser
+      - "7687:7687" # Bolt connection
+
+    environment:
+      NEO4J_AUTH: neo4j/12345678
+
+      # Cài Graph Data Science
+      NEO4J_PLUGINS: '["graph-data-science"]'
+
+      # Cho phép gọi các procedure của GDS
+      NEO4J_dbms_security_procedures_unrestricted: "gds.*"
+      NEO4J_dbms_security_procedures_allowlist: "gds.*"
+
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_plugins:/plugins
+
+    restart: unless-stopped
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_plugins:

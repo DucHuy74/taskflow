@@ -83,6 +83,32 @@ describe('backlogService', () => {
     });
   });
 
+  describe('createUserStories', () => {
+    it('should send all stories in one array request', async () => {
+      const { api } = await import('@/services/api');
+      const requests = [
+        { storyText: 'As a user, I want search' },
+        { storyText: 'As an admin, I want reports' },
+      ];
+      const created = requests.map((story, index) => ({ id: String(index + 1), ...story, status: 'ToDo' }));
+      vi.mocked(api.post).mockResolvedValue({ data: { code: 1000, result: created } });
+
+      const result = await backlogService.createUserStories('workspace-1', requests);
+
+      expect(api.post).toHaveBeenCalledWith('/user-stories/workspace/workspace-1', requests);
+      expect(result).toEqual(created);
+    });
+
+    it('should reject a non-success response so the composer can retain input', async () => {
+      const { api } = await import('@/services/api');
+      vi.mocked(api.post).mockResolvedValue({ data: { code: 1400, message: 'Invalid story' } });
+
+      await expect(
+        backlogService.createUserStories('workspace-1', [{ storyText: 'Invalid' }])
+      ).rejects.toThrow('Invalid story');
+    });
+  });
+
   describe('updateStoryStatus', () => {
     it('should return true on success', async () => {
       const { api } = await import('@/services/api');

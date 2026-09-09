@@ -6,7 +6,9 @@ export interface GraphNode {
   id: string;
   label: string;
   type: string;
-  priority?: string;
+  priority?: number | string;
+  degree?: number;
+  betweenness?: number;
 }
 
 export interface GraphEdge {

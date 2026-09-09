@@ -28,16 +28,31 @@ export async function createUserStory(
   data: CreateUserStoryRequest
 ): Promise<UserStory | null> {
   try {
-    // Backend expects an array of requests
-    const response = await api.post<ApiResponse<UserStory[]>>(`/user-stories/workspace/${workspaceId}`, [data]);
-    if (response.data.code === 1000 && response.data.result && response.data.result.length > 0) {
-      return response.data.result[0];
-    }
-    return null;
+    const stories = await createUserStories(workspaceId, [data]);
+    return stories[0] || null;
   } catch (error) {
     console.error('Error creating user story:', error);
     return null;
   }
+}
+
+// Create one or many stories. The backend contract expects an array even for one item.
+export async function createUserStories(
+  workspaceId: string,
+  data: CreateUserStoryRequest[]
+): Promise<UserStory[]> {
+  if (data.length === 0) return [];
+
+  const response = await api.post<ApiResponse<UserStory[]>>(
+    `/user-stories/workspace/${workspaceId}`,
+    data
+  );
+
+  if (response.data.code !== 1000 || !response.data.result) {
+    throw new Error(response.data.message || 'Unable to create user stories');
+  }
+
+  return response.data.result;
 }
 
 // Update user story status
@@ -83,6 +98,7 @@ export async function getUserStory(storyId: string): Promise<UserStory | null> {
 export const backlogService = {
   getBacklogStories,
   createUserStory,
+  createUserStories,
   updateStoryStatus,
   deleteUserStory,
   getUserStory,

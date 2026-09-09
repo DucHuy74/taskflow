@@ -19,6 +19,7 @@ const BacklogPage = lazy(() => import('@/pages/BacklogPage').then(m => ({ defaul
 const SprintPage = lazy(() => import('@/pages/SprintPage').then(m => ({ default: m.SprintPage })));
 const InviteToProject = lazy(() => import('@/pages/InviteToProject').then(m => ({ default: m.InviteToProject })));
 const SprintGraphPage = lazy(() => import('@/pages/SprintGraphPage').then(m => ({ default: m.SprintGraphPage })));
+const WorkspaceGraphPage = lazy(() => import('@/pages/WorkspaceGraphPage').then(m => ({ default: m.WorkspaceGraphPage })));
 
 // Loading fallback component
 function PageLoader() {
@@ -153,11 +154,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'workspace/:workspaceId',
-        element: (
-          <LazyRoute>
-            <DashboardPage />
-          </LazyRoute>
-        ),
+        element: <Navigate to="backlog" replace />,
       },
       {
         path: 'workspace/:workspaceId/invite',
@@ -172,6 +169,14 @@ export const router = createBrowserRouter([
         element: (
           <LazyRoute>
             <BacklogPage />
+          </LazyRoute>
+        ),
+      },
+      {
+        path: 'workspace/:workspaceId/graph',
+        element: (
+          <LazyRoute>
+            <WorkspaceGraphPage />
           </LazyRoute>
         ),
       },

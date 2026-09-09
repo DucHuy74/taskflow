@@ -65,7 +65,7 @@ export function LoginPage() {
     try {
       const response = await authService.login({
         username: email.trim(),
-        password: password.trim(),
+        password,
       });
 
       dispatch(

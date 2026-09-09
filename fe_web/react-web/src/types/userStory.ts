@@ -22,6 +22,9 @@ export interface UserStory {
   backlogId?: string;
   createdAt?: string;
   updatedAt?: string;
+  analysisStatus?: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | string;
+  parseMethod?: string;
+  confidence?: number;
 }
 
 export interface CreateUserStoryRequest {
