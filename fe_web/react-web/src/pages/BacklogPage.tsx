@@ -87,7 +87,7 @@ export function BacklogPage() {
 
   // Sprint stories query - fetch for each sprint
   const { data: sprintStoriesMap = {} } = useQuery({
-    queryKey: ['sprint-stories', sprints.map((s) => s.id).join(',')],
+    queryKey: ['sprint-stories-map', workspaceId, sprints.map((s) => s.id).join(',')],
     queryFn: async () => {
       const map: Record<string, UserStory[]> = {};
       await Promise.all(
@@ -124,13 +124,13 @@ export function BacklogPage() {
     onMutate: async ({ sprintId, story }) => {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['backlog-stories', workspaceId] }),
-        queryClient.cancelQueries({ queryKey: ['sprint-stories'] }),
+        queryClient.cancelQueries({ queryKey: ['sprint-stories-map', workspaceId] }),
       ]);
       const previousBacklog = queryClient.getQueryData<UserStory[]>(['backlog-stories', workspaceId]);
-      const previousSprintMaps = queryClient.getQueriesData<Record<string, UserStory[]>>({ queryKey: ['sprint-stories'] });
+      const previousSprintMaps = queryClient.getQueriesData<Record<string, UserStory[]>>({ queryKey: ['sprint-stories-map', workspaceId] });
 
       queryClient.setQueryData<UserStory[]>(['backlog-stories', workspaceId], (current = []) => current.filter((item) => item.id !== story.id));
-      queryClient.setQueriesData<Record<string, UserStory[]>>({ queryKey: ['sprint-stories'] }, (current = {}) => ({
+      queryClient.setQueriesData<Record<string, UserStory[]>>({ queryKey: ['sprint-stories-map', workspaceId] }, (current = {}) => ({
         ...current,
         [sprintId]: [...(current[sprintId] || []).filter((item) => item.id !== story.id), { ...story, sprintId }],
       }));
@@ -147,16 +147,22 @@ export function BacklogPage() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['backlog-stories', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['sprint-stories-map', workspaceId] });
       queryClient.invalidateQueries({ queryKey: ['sprint-stories'] });
     },
   });
 
   const startSprintMutation = useMutation({
-    mutationFn: (sprintId: string) => sprintService.startSprint(sprintId),
+    mutationFn: async (sprintId: string) => {
+      if (!await sprintService.startSprint(sprintId)) throw new Error('Unable to start sprint');
+      return sprintId;
+    },
     onSuccess: (_data, sprintId) => {
-      // Navigate to sprint graph after starting
+      void queryClient.invalidateQueries({ queryKey: ['sprints', workspaceId] });
+      showToast('Sprint started successfully.', 'success', 'Sprint started');
       navigate(`/workspace/${workspaceId}/sprint/${sprintId}/graph`);
     },
+    onError: () => showToast('The sprint could not be started. Please try again.', 'error', 'Start failed'),
   });
 
   // Handlers
@@ -216,6 +222,7 @@ export function BacklogPage() {
         if (story.sprintId) {
           await sprintService.removeStoryFromSprint(storyId);
           queryClient.invalidateQueries({ queryKey: ['backlog-stories', workspaceId] });
+          queryClient.invalidateQueries({ queryKey: ['sprint-stories-map', workspaceId] });
           queryClient.invalidateQueries({ queryKey: ['sprint-stories'] });
         }
         return;
@@ -275,6 +282,7 @@ export function BacklogPage() {
                 isLoading={sprintsLoading}
                 onStartSprint={() => handleStartSprint(sprint.id)}
                 onViewGraph={() => handleViewSprintGraph(sprint)}
+                isStarting={startSprintMutation.isPending && startSprintMutation.variables === sprint.id}
               />
             ))}
           </div>

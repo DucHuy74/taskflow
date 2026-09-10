@@ -11,6 +11,7 @@ interface SprintBoardProps {
   isLoading?: boolean;
   onStartSprint: () => void;
   onViewGraph?: () => void;
+  isStarting?: boolean;
 }
 
 const columns = [
@@ -77,7 +78,7 @@ function KanbanColumn({
   );
 }
 
-export function SprintBoard({ sprint, stories, isLoading, onStartSprint, onViewGraph }: SprintBoardProps) {
+export function SprintBoard({ sprint, stories, isLoading, onStartSprint, onViewGraph, isStarting = false }: SprintBoardProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `sprint-${sprint.id}`,
     data: { type: 'sprint', sprint },
@@ -143,13 +144,14 @@ export function SprintBoard({ sprint, stories, isLoading, onStartSprint, onViewG
           </button>
           <button
             onClick={onStartSprint}
+            disabled={isStarting}
             className={cn(
               'px-3 py-1.5 text-sm font-medium rounded border border-gray-200',
               'bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors',
               'disabled:opacity-50 disabled:cursor-not-allowed'
             )}
           >
-            Start sprint
+            {isStarting ? 'Starting…' : 'Start sprint'}
           </button>
           <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

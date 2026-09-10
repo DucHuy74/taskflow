@@ -13,7 +13,7 @@ interface ApiResponse<T> {
 export async function getSprints(workspaceId: string): Promise<Sprint[]> {
   try {
     const response = await api.get<ApiResponse<Sprint[]>>(`/sprints/workspace/${workspaceId}`);
-    if (response.data.code === 1000 && response.data.result) {
+    if (response.data.code === 1000 && Array.isArray(response.data.result)) {
       return response.data.result;
     }
     return [];
@@ -41,7 +41,7 @@ export async function createSprint(workspaceId: string, data: CreateSprintReques
 export async function getSprintStories(sprintId: string): Promise<UserStory[]> {
   try {
     const response = await api.get<ApiResponse<UserStory[]>>(`/sprints/${sprintId}/user-stories`);
-    if (response.data.code === 1000 && response.data.result) {
+    if (response.data.code === 1000 && Array.isArray(response.data.result)) {
       return response.data.result;
     }
     return [];

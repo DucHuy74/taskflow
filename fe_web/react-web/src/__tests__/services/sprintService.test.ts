@@ -98,6 +98,13 @@ describe('sprintService', () => {
 
       expect(result).toEqual(mockStories);
     });
+
+    it('should reject a non-array result instead of poisoning the story cache', async () => {
+      const { api } = await import('@/services/api');
+      vi.mocked(api.get).mockResolvedValue({ data: { code: 1000, result: { unexpected: [] } } });
+
+      await expect(sprintService.getSprintStories('sprint-1')).resolves.toEqual([]);
+    });
   });
 
   describe('addStoryToSprint', () => {

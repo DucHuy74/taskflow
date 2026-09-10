@@ -135,7 +135,7 @@ export const graphService = {
   ): Promise<GraphData | null> {
     return this.getBacklogGraph(workspaceId, {
       sprintId,
-      source: 'REALTIME',
+      source: 'BATCH',
     });
   },
 };

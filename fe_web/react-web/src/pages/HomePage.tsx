@@ -46,6 +46,7 @@ const itemVariants = {
 
 export function HomePage({ onCreateWorkspace }: HomePageProps) {
   const navigate = useNavigate();
+  const handleCreateWorkspace = () => onCreateWorkspace?.() ?? navigate('/workspace/create');
 
   const { data: workspaces = [], isLoading } = useQuery({
     queryKey: ['workspaces'],
@@ -75,7 +76,7 @@ export function HomePage({ onCreateWorkspace }: HomePageProps) {
             whileTap={{ scale: 0.98 }}
             transition={{ duration: ANIMATION_DURATION.fast }}
           >
-            <Button onClick={onCreateWorkspace}>
+            <Button onClick={handleCreateWorkspace}>
               <Plus className="h-4 w-4 mr-2" />
               Create Workspace
             </Button>
@@ -218,7 +219,7 @@ export function HomePage({ onCreateWorkspace }: HomePageProps) {
                     whileTap={{ scale: 0.98 }}
                     transition={{ duration: ANIMATION_DURATION.fast }}
                   >
-                    <Button onClick={onCreateWorkspace}>
+                    <Button onClick={handleCreateWorkspace}>
                       <Plus className="h-4 w-4 mr-2" />
                       Create Workspace
                     </Button>
