@@ -11,6 +11,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run --config vitest.config.ts",
+    "screenshots": "node screenshot-react.cjs",
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
@@ -52,6 +53,7 @@
     "oxlint": "^1.75.0",
     "playwright": "^1.62.1",
     "postcss": "^8.5.26",
+    "puppeteer-core": "^25.10.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
