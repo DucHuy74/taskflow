@@ -41,6 +41,8 @@ spring:
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO}
     show-sql: ${JPA_SHOW_SQL}
+    properties:
+      hibernate.hibernate.format_sql: true
 
   mail:
     host: ${MAIL_HOST}
@@ -93,3 +95,5 @@ logging:
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
     com.xxxx.backend_mvc: DEBUG
+    org.hibernate.sql: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
