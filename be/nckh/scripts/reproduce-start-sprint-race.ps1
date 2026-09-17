@@ -18,13 +18,13 @@ param(
     [string]$BaseUrl = "http://localhost:8080/api",
 
     [string]$WorkspaceId =
-    "e6c30f81-6f48-4998-9c0e-df8f487a05b3",
+    "082d1ae6-5b81-406b-b650-f9a2bff340fb",
 
     [string]$SprintAId =
-    "9acd687f-aad8-4c1a-aefd-c49fa34fe3d6",
+    "083d3f27-ac7c-40aa-b947-aa0d8dc88134",
 
     [string]$SprintBId =
-    "f561af96-da59-4c6e-8319-30e3baf04c6f",
+    "edd7ae61-2063-4106-ad08-a235e5b3ddaf",
 
     [string]$AccessToken = $env:TASKFLOW_ACCESS_TOKEN,
 
