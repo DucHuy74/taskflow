@@ -33,4 +33,9 @@ public class WorkspaceInfrasRepositoryImpl implements WorkspaceRepository {
     public void delete(Workspace workspace) {
         jpa.delete(workspace);
     }
+
+    @Override
+    public Optional<Workspace> findByIdForUpdate(String workspaceId) {
+        return jpa.findByIdForUpdate(workspaceId);
+    }
 }

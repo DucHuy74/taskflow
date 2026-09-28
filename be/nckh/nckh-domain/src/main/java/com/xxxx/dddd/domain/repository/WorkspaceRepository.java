@@ -11,4 +11,5 @@ public interface WorkspaceRepository {
     Optional<Workspace> findById(String workspaceId);
 
     void delete(Workspace workspace);
+    Optional<Workspace> findByIdForUpdate(String workspaceId);
 }

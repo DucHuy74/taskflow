@@ -29,7 +29,9 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -43,6 +45,7 @@ import java.util.Set;
 public class SprintAppServiceImpl implements SprintAppService {
     WorkspaceRepository workspaceRepository;
     SprintRepository sprintRepository;
+    EntityManager entityManager;
     UserStoryRepository userStoryRepository;
     SprintMapper sprintMapper;
     UserStoryMapper userStoryMapper;
@@ -80,23 +83,26 @@ public class SprintAppServiceImpl implements SprintAppService {
 
     //Start Sprint
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void startSprint(String sprintId) {
-
         Sprint sprint = sprintRepository.findById(sprintId)
                 .orElseThrow(() -> new AppException(ErrorCode.SPRINT_NOT_FOUND));
+
+        String workspaceId = sprint.getWorkspace().getId();
+
+        workspaceRepository.findByIdForUpdate(workspaceId)
+                .orElseThrow(() -> new AppException(ErrorCode.WORKSPACE_NOT_FOUND));
+
+        entityManager.refresh(sprint);
         workspaceAccessService.requireSprint(sprint, Permission.SPRINT_MANAGE);
 
         if (sprint.getStatus() != SprintStatus.ToDo) {
             throw new AppException(ErrorCode.SPRINT_INVALID_STATE);
         }
 
-        //1 workspace chỉ có 1 sprint ACTIVE
         boolean existsActiveSprint =
                 sprintRepository.existsByWorkspace_IdAndStatus(
-                        sprint.getWorkspace().getId(),
-                        SprintStatus.InProgress
-                );
+                        workspaceId, SprintStatus.InProgress);
 
         if (existsActiveSprint) {
             throw new AppException(ErrorCode.SPRINT_ALREADY_ACTIVE);
@@ -106,7 +112,6 @@ public class SprintAppServiceImpl implements SprintAppService {
         sprintRepository.save(sprint);
 
         List<UserStory> stories = userStoryRepository.findBySprint_Id(sprintId);
-        String workspaceId = sprint.getWorkspace().getId();
 
         if (stories.isEmpty()) {
             log.warn("Sprint {} started with no user stories — no USER_STORY_MOVED events", sprintId);
