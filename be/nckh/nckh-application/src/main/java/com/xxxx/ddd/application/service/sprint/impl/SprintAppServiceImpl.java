@@ -200,14 +200,27 @@ public class SprintAppServiceImpl implements SprintAppService {
             throw new AppException(ErrorCode.SPRINT_INVALID_STATE);
         }
 
-        Set<String> uniqueIds = new HashSet<>(userStoryIds);
-        List<UserStory> stories = userStoryRepository.findAllById(uniqueIds);
+        List<String> sortedIds = userStoryIds.stream()
+                .distinct()
+                .sorted()
+                .toList();
 
-        if (stories.size() != uniqueIds.size()) {
-            throw new AppException(ErrorCode.USER_STORY_NOT_FOUND);
+        List<UserStory> stories = new ArrayList<>(sortedIds.size());
+
+        // Lấy đủ khóa theo thứ tự cố định trước khi cập nhật.
+        for (String userStoryId : sortedIds) {
+            UserStory story = userStoryRepository
+                    .findByIdForUpdate(userStoryId)
+                    .orElseThrow(() ->
+                            new AppException(ErrorCode.USER_STORY_NOT_FOUND));
+
+            stories.add(story);
         }
 
         for (UserStory story : stories) {
+            log.info("Assign story: sprintId={}, storyId={}",
+                    sprintId, story.getId());
+
             assignStoryToSprint(sprint, story);
         }
     }

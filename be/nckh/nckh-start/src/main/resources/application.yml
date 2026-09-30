@@ -96,4 +96,4 @@ logging:
     org.springframework.web: DEBUG
     com.xxxx.backend_mvc: DEBUG
     org.hibernate.sql: DEBUG
-    org.hibernate.orm.jdbc.bind: INFO
+    org.hibernate.orm.jdbc.bind: TRACE

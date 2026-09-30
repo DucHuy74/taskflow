@@ -19,4 +19,6 @@ public interface UserStoryRepository {
     List<UserStory> findAllById(Collection<String> userStoryIds);
 
     void delete(String userStoryId);
+
+    Optional<UserStory> findByIdForUpdate(String userStoryId);
 }

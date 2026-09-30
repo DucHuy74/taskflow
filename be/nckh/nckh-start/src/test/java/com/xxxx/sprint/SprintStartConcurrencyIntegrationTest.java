@@ -2,6 +2,9 @@ package com.xxxx.sprint;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 
 import com.xxxx.ddd.application.mapper.SprintMapper;
 import com.xxxx.ddd.application.mapper.UserStoryMapper;
@@ -11,14 +14,18 @@ import com.xxxx.ddd.application.service.sprint.SprintAppService;
 import com.xxxx.ddd.application.service.sprint.impl.SprintAppServiceImpl;
 import com.xxxx.ddd.common.exception.ErrorCode;
 import com.xxxx.ddd.infrastructure.persistence.mapper.SprintJpaMapper;
+import com.xxxx.ddd.infrastructure.persistence.mapper.UserStoryJpaMapper;
 import com.xxxx.ddd.infrastructure.persistence.mapper.WorkspaceJpaMapper;
 import com.xxxx.ddd.infrastructure.persistence.repository.SprintInfrasRepositoryImpl;
 import com.xxxx.ddd.infrastructure.persistence.repository.UserStoryInfrasRepositoryImpl;
 import com.xxxx.ddd.infrastructure.persistence.repository.WorkspaceInfrasRepositoryImpl;
 import com.xxxx.dddd.domain.exception.AppException;
 import com.xxxx.dddd.domain.model.entity.Sprint;
+import com.xxxx.dddd.domain.model.entity.UserStory;
 import com.xxxx.dddd.domain.model.entity.workspace.Workspace;
+import com.xxxx.dddd.domain.model.enums.Permission;
 import com.xxxx.dddd.domain.model.enums.SprintStatus;
+import com.xxxx.dddd.domain.model.enums.UserStoryStatus;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -78,6 +85,7 @@ class SprintStartConcurrencyIntegrationTest {
 
     @Autowired SprintAppService sprintAppService;
     @Autowired SprintJpaMapper sprintJpaMapper;
+    @Autowired UserStoryJpaMapper userStoryJpaMapper;
     @Autowired WorkspaceJpaMapper workspaceJpaMapper;
     @Autowired TransactionTemplate transactionTemplate;
 
@@ -166,6 +174,60 @@ class SprintStartConcurrencyIntegrationTest {
         assertThat(persistedSprints)
                 .filteredOn(sprint -> sprint.getStatus() == SprintStatus.ToDo)
                 .hasSize(1);
+    }
+
+    @Test
+    @Timeout(20)
+    void concurrentAdds_withReversedStoryOrder_bothSucceedAndKeepStoriesInSameSprint() throws Exception {
+        List<String> storyIds = transactionTemplate.execute(ignored -> {
+            Workspace workspace = workspaceJpaMapper.findById(workspaceId).orElseThrow();
+            List<UserStory> stories = userStoryJpaMapper.saveAllAndFlush(List.of(
+                    UserStory.builder()
+                            .storyText("Story A")
+                            .status(UserStoryStatus.ToDo)
+                            .workspace(workspace)
+                            .build(),
+                    UserStory.builder()
+                            .storyText("Story B")
+                            .status(UserStoryStatus.ToDo)
+                            .workspace(workspace)
+                            .build()));
+            return stories.stream().map(UserStory::getId).toList();
+        });
+        assertThat(storyIds).hasSize(2);
+
+        // Both service transactions reach the point before acquiring story locks together.
+        CountDownLatch callersReady = new CountDownLatch(2);
+        doAnswer(invocation -> {
+            callersReady.countDown();
+            await(callersReady, Duration.ofSeconds(5));
+            return null;
+        }).when(workspaceAccessService).requireSprint(any(Sprint.class), eq(Permission.SPRINT_EDIT));
+
+        Future<?> firstAdd = executor.submit(() ->
+                sprintAppService.addUserStoriesToSprint(sprintOneId, storyIds));
+        Future<?> secondAdd = executor.submit(() ->
+                sprintAppService.addUserStoriesToSprint(
+                        sprintTwoId, List.of(storyIds.get(1), storyIds.get(0))));
+
+        // get() propagates failures (including deadlocks) and waits for transaction commit.
+        assertThat(firstAdd.get(10, TimeUnit.SECONDS)).isNull();
+        assertThat(secondAdd.get(10, TimeUnit.SECONDS)).isNull();
+
+        // A fresh transaction reads committed database state, not either caller's persistence context.
+        transactionTemplate.executeWithoutResult(ignored -> {
+            List<UserStory> persistedStories = userStoryJpaMapper.findAllById(storyIds);
+            assertThat(persistedStories).extracting(UserStory::getId)
+                    .containsExactlyInAnyOrderElementsOf(storyIds);
+            assertThat(persistedStories).allSatisfy(story -> {
+                assertThat(story.getSprint()).isNotNull();
+                assertThat(story.getSprint().getId()).isIn(sprintOneId, sprintTwoId);
+                assertThat(story.getBacklog()).isNull();
+            });
+            assertThat(persistedStories)
+                    .extracting(story -> story.getSprint().getId())
+                    .containsOnly(persistedStories.get(0).getSprint().getId());
+        });
     }
 
     private Callable<Throwable> startAttempt(

@@ -50,4 +50,9 @@ public class UserStoryInfrasRepositoryImpl implements UserStoryRepository {
     public void delete(String userStoryId) {
         jpa.deleteById(userStoryId);
     }
+
+    @Override
+    public Optional<UserStory> findByIdForUpdate(String userStoryId) {
+        return jpa.findByIdForUpdate(userStoryId);
+    }
 }
