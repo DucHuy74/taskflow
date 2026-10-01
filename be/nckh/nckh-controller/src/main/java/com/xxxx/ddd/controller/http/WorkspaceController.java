@@ -87,5 +87,12 @@ public class WorkspaceController {
                 .build();
     }
 
+    @PostMapping("/{workspaceId}/rebuild-graph")
+    public ResponseEntity<String> rebuildGraph(@PathVariable("workspaceId") String workspaceId) {
+
+        workspaceService.triggerRebuildGraph(workspaceId);
+
+        return ResponseEntity.ok("Rebuild triggered");
+    }
 }
 

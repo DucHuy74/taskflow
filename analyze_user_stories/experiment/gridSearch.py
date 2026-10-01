@@ -47,17 +47,29 @@ class GridSearchConfig:
             
             try:
                 # Pearson
-                if np.std(fusion_scores) == 0: p_r = 0.0
-                else: p_r, _ = pearsonr(fusion_scores, human)
+                if np.std(fusion_scores) == 0: 
+                    p_r = 0.0
+                    p_r_pvalue = 1.0
+                else: 
+                    p_r, p_r_pvalue = pearsonr(fusion_scores, human)
                 
                 # Spearman
-                if np.std(fusion_scores) == 0: s_rho = 0.0
-                else: s_rho, _ = spearmanr(fusion_scores, human)
+                if np.std(fusion_scores) == 0: 
+                    s_rho = 0.0
+                    s_rho_pvalue = 1.0
+                else: 
+                    s_rho, s_rho_pvalue = spearmanr(fusion_scores, human)
                 
             except Exception:
                 p_r, s_rho = 0.0, 0.0
+                p_r_pvalue, s_rho_pvalue = 1.0, 1.0
                 
-            results[ds_name] = {"Pearson_r": p_r, "Spearman_rho": s_rho}
+            results[ds_name] = {
+                "Pearson_r": p_r, 
+                "Pearson_pvalue": p_r_pvalue,
+                "Spearman_rho": s_rho,
+                "Spearman_pvalue": s_rho_pvalue
+            }
 
         total_score = results["RG65"]["Pearson_r"] + results["RG65"]["Spearman_rho"] + \
                     results["MC30"]["Pearson_r"] + results["MC30"]["Spearman_rho"] + \
@@ -97,7 +109,11 @@ class GridSearchConfig:
         print(f"HOÀN THÀNH TÌM KIẾM.")
         print(f"   Max Total Score: {max_total:.4f}")
         print(f"   Tham số Tối ưu: Beta1={best_params[0]:.2f}, Beta2={best_params[1]:.2f}, Bias={best_params[2]:.2f}")
-        print(f"Best result details: {best_result}")
+        print("\nKết quả chi tiết:")
+        for ds_name, metrics in best_result.items():
+            print(f"\n   {ds_name}:")
+            print(f"      Pearson_r: {metrics['Pearson_r']:.4f} (p-value: {metrics['Pearson_pvalue']:.4e})")
+            print(f"      Spearman_rho: {metrics['Spearman_rho']:.4f} (p-value: {metrics['Spearman_pvalue']:.4e})")
         print("=" * 50)
         
         return best_result

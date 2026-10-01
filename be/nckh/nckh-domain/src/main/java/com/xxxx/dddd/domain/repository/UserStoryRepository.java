@@ -2,6 +2,7 @@ package com.xxxx.dddd.domain.repository;
 
 import com.xxxx.dddd.domain.model.entity.UserStory;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,5 +16,9 @@ public interface UserStoryRepository {
 
     Optional<UserStory> findById(String userStoryId);
 
+    List<UserStory> findAllById(Collection<String> userStoryIds);
+
     void delete(String userStoryId);
+
+    Optional<UserStory> findByIdForUpdate(String userStoryId);
 }

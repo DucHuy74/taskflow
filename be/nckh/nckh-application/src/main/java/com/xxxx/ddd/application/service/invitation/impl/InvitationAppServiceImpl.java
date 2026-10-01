@@ -13,6 +13,7 @@ import com.xxxx.dddd.domain.model.entity.workspace.WorkspaceRole;
 import com.xxxx.dddd.domain.model.enums.InvitationStatus;
 import com.xxxx.dddd.domain.model.enums.NotificationType;
 import com.xxxx.dddd.domain.model.enums.WorkspaceRoleType;
+import com.xxxx.dddd.domain.model.permission.WorkspaceRoleFactory;
 import com.xxxx.dddd.domain.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -67,20 +68,25 @@ public class InvitationAppServiceImpl implements InvitationAppService {
             throw new AppException(ErrorCode.MEMBER_EXISTED);
         }
 
-        WorkspaceRole memberRole = workspaceRoleRepository
-                .findByWorkspaceAndRoleName(workspace, WorkspaceRoleType.MEMBER)
+        WorkspaceRoleType requestedRole = invitation.getRoleName() == null
+                ? WorkspaceRoleType.MEMBER
+                : invitation.getRoleName();
+        WorkspaceRoleType roleType = requestedRole == WorkspaceRoleType.ADMIN
+                ? WorkspaceRoleType.MEMBER
+                : requestedRole;
+
+        WorkspaceRole assignedRole = workspaceRoleRepository
+                .findByWorkspaceAndRoleName(workspace, roleType)
                 .orElseGet(() -> workspaceRoleRepository.save(
-                        WorkspaceRole.builder()
-                                .workspace(workspace)
-                                .roleName(WorkspaceRoleType.MEMBER)
-                                .build()
+                        WorkspaceRoleFactory.seeded(workspace, roleType)
                 ));
+        WorkspaceRoleFactory.ensurePermissions(assignedRole);
 
         workspaceMemberRepository.save(
                 WorkspaceMember.builder()
                         .workspace(workspace)
                         .profile(profile)
-                        .workspaceRole(memberRole)
+                        .workspaceRole(assignedRole)
                         .build()
         );
 

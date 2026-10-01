@@ -2,7 +2,7 @@
 from interface.interface import AlgorithmsStrategy
 from experiment.gridSearch import GridSearchConfig
 from experiment.measureSimilarity import WordSimilarity
-from experiment.similatiryStrategies import Calc_w2v_similarity, Calc_wordnet_similarity, Calculate_assm, Calculate_nonlinear_fusion, Calculate_with_adaptive_weighting
+from experiment.similatiryStrategies import Calc_bert_similarity, Calc_sbert_similarity, Calc_w2v_similarity, Calc_wordnet_similarity, Calculate_assm, Calculate_nonlinear_fusion, Calculate_with_adaptive_weighting
 
 class RunExperiment:
     def __init__(self, word2Vec, algorithms: AlgorithmsStrategy):

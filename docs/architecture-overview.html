@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaskFlow architecture overview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--paper:#f9fafb;--ink:#111827;--muted:#6b7280;--soft:#9ca3af;--accent:#6366f1;--link:#4338ca;--rule:rgba(17,24,39,.12);--sans:'Geist',system-ui,sans-serif;--serif:'Instrument Serif',Georgia,serif;--mono:'Geist Mono',ui-monospace,monospace}
+    body{min-height:100vh;padding:48px 32px;background:var(--paper);color:var(--ink);font-family:var(--sans)}
+    main{width:min(1200px,100%);margin:0 auto}.eyebrow{margin-bottom:8px;color:var(--muted);font:500 12px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase}
+    h1{margin-bottom:8px;font:400 clamp(28px,4vw,40px)/1.1 var(--serif);letter-spacing:-.02em}.intro{max-width:760px;color:var(--muted);font-size:16px;line-height:1.6}
+    .diagram{margin-top:32px;overflow-x:auto}svg{display:block;width:100%;min-width:960px;height:auto}.zone{fill:rgba(17,24,39,.02);stroke:rgba(17,24,39,.10);stroke-width:.8}
+    .zone-mask,.label-mask,.node-mask{fill:var(--paper)}.node{fill:#fff;stroke:var(--ink);stroke-width:1}.node.input{fill:rgba(107,114,128,.10);stroke:var(--soft)}.node.store{fill:rgba(17,24,39,.05);stroke:var(--muted)}.node.external{fill:rgba(17,24,39,.03);stroke:rgba(17,24,39,.30)}.node.focal{fill:rgba(99,102,241,.08);stroke:var(--accent);stroke-width:1.2}
+    .name{fill:var(--ink);font:600 12px var(--sans);text-anchor:middle}.meta,.tag,.arrow-label,.legend{fill:var(--muted);font:8px var(--mono);text-anchor:middle}.tag,.arrow-label{letter-spacing:.06em}.zone-label{fill:var(--muted);font:8px var(--mono);text-anchor:middle;letter-spacing:.14em}.tag-box{fill:transparent;stroke:rgba(17,24,39,.32);stroke-width:.8}.tag-box.accent{stroke:rgba(99,102,241,.50)}
+    footer{margin-top:24px;padding-top:16px;border-top:1px solid var(--rule);color:var(--muted);font:12px/1.5 var(--mono)}
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Architecture · TaskFlow</p>
+    <h1>From planning work to understanding it</h1>
+    <p class="intro">TaskFlow keeps transactional planning in MySQL while an asynchronous NLP pipeline turns user stories into an explorable Neo4j knowledge graph.</p>
+    <div class="diagram">
+      <svg viewBox="0 0 1200 680" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="taskflow-architecture-title taskflow-architecture-desc">
+        <title id="taskflow-architecture-title">TaskFlow architecture overview</title>
+        <desc id="taskflow-architecture-desc">React and Flutter clients call a Spring Boot API secured by Keycloak. The API stores work in MySQL, publishes events through RabbitMQ to a Python NLP worker, and serves a knowledge graph stored in Neo4j.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6b7280"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4338ca"/></marker>
+        </defs>
+        <rect width="1200" height="680" fill="#f9fafb"/>
+
+        <!-- Zones -->
+        <rect class="zone" x="32" y="80" width="248" height="464" rx="8"/><rect class="zone-mask" x="48" y="84" width="64" height="16" rx="2"/><text class="zone-label" x="80" y="96">CLIENTS</text>
+        <rect class="zone" x="312" y="80" width="504" height="464" rx="8"/><rect class="zone-mask" x="328" y="84" width="80" height="16" rx="2"/><text class="zone-label" x="368" y="96">SERVICES</text>
+        <rect class="zone" x="848" y="80" width="320" height="464" rx="8"/><rect class="zone-mask" x="864" y="84" width="88" height="16" rx="2"/><text class="zone-label" x="908" y="96">DATA PLANE</text>
+
+        <!-- Connectors: zones, then arrows, then nodes -->
+        <path d="M232 204H288Q296 204 296 212V268Q296 276 304 276H360" fill="none" stroke="#4338ca" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <path d="M232 396H280Q288 396 288 388V316Q288 308 296 308H360" fill="none" stroke="#4338ca" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <path d="M480 236V188Q480 180 488 180H688Q696 180 696 172" fill="none" stroke="#6b7280" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+        <path d="M560 264H824Q832 264 832 256V236Q832 228 840 228H920" fill="none" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M416 316V376" fill="none" stroke="#6366f1" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+        <path d="M560 408H624" fill="none" stroke="#6366f1" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+        <path d="M784 400H920" fill="none" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M560 300H872Q880 300 880 308V392a8 8 0 0 0 0 16V416Q880 424 888 424H920" fill="none" stroke="#4338ca" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+
+        <!-- Labels stay off their connector by at least 8px -->
+        <rect class="label-mask" x="240" y="184" width="72" height="12" rx="2"/><text class="arrow-label" x="276" y="192">REST / GQL</text>
+        <rect class="label-mask" x="240" y="368" width="72" height="12" rx="2"/><text class="arrow-label" x="276" y="376">REST / GQL</text>
+        <rect class="label-mask" x="568" y="244" width="80" height="12" rx="2"/><text class="arrow-label" x="608" y="252">READ / WRITE</text>
+        <rect class="label-mask" x="428" y="340" width="80" height="12" rx="2"/><text class="arrow-label" x="468" y="348" fill="#6366f1">DOMAIN EVENT</text>
+        <rect class="label-mask" x="568" y="388" width="48" height="12" rx="2"/><text class="arrow-label" x="592" y="396" fill="#6366f1">AMQP</text>
+        <rect class="label-mask" x="816" y="380" width="72" height="12" rx="2"/><text class="arrow-label" x="852" y="388">GRAPH WRITE</text>
+
+        <!-- React client -->
+        <rect class="node-mask" x="72" y="172" width="160" height="64" rx="6"/><rect class="node input" x="72" y="172" width="160" height="64" rx="6"/>
+        <rect class="tag-box" x="84" y="180" width="32" height="12" rx="2"/><text class="tag" x="100" y="188">WEB</text><text class="name" x="152" y="208">React client</text><text class="meta" x="152" y="224">VITE · CYTOSCAPE</text>
+
+        <!-- Flutter client -->
+        <rect class="node-mask" x="72" y="364" width="160" height="64" rx="6"/><rect class="node input" x="72" y="364" width="160" height="64" rx="6"/>
+        <rect class="tag-box" x="84" y="372" width="48" height="12" rx="2"/><text class="tag" x="108" y="380">MOBILE</text><text class="name" x="152" y="400">Flutter client</text><text class="meta" x="152" y="416">MVVM · PROVIDER</text>
+
+        <!-- Spring core -->
+        <rect class="node-mask" x="360" y="236" width="200" height="80" rx="6"/><rect class="node focal" x="360" y="236" width="200" height="80" rx="6"/>
+        <rect class="tag-box accent" x="372" y="244" width="32" height="12" rx="2"/><text class="tag" x="388" y="252" fill="#6366f1">API</text><text class="name" x="460" y="276">Spring Boot core</text><text class="meta" x="460" y="292">REST · GRAPHQL · DDD</text>
+
+        <!-- Keycloak -->
+        <rect class="node-mask" x="616" y="108" width="160" height="64" rx="6"/><rect class="node external" x="616" y="108" width="160" height="64" rx="6"/>
+        <rect class="tag-box" x="628" y="116" width="40" height="12" rx="2"/><text class="tag" x="648" y="124">OIDC</text><text class="name" x="696" y="144">Keycloak</text><text class="meta" x="696" y="160">JWT · IDENTITY</text>
+
+        <!-- Event pipeline -->
+        <rect class="node-mask" x="360" y="376" width="200" height="64" rx="6"/><rect class="node" x="360" y="376" width="200" height="64" rx="6"/>
+        <rect class="tag-box" x="372" y="384" width="48" height="12" rx="2"/><text class="tag" x="396" y="392">QUEUE</text><text class="name" x="460" y="412">RabbitMQ</text><text class="meta" x="460" y="428">STORY EVENTS</text>
+        <rect class="node-mask" x="624" y="376" width="160" height="64" rx="6"/><rect class="node" x="624" y="376" width="160" height="64" rx="6"/>
+        <rect class="tag-box" x="636" y="384" width="48" height="12" rx="2"/><text class="tag" x="660" y="392">WORKER</text><text class="name" x="704" y="412">Python NLP</text><text class="meta" x="704" y="428">SVO · SIMILARITY</text>
+
+        <!-- Data stores -->
+        <rect class="node-mask" x="920" y="196" width="200" height="64" rx="6"/><rect class="node store" x="920" y="196" width="200" height="64" rx="6"/>
+        <rect class="tag-box" x="932" y="204" width="40" height="12" rx="2"/><text class="tag" x="952" y="212">STORE</text><text class="name" x="1020" y="232">MySQL</text><text class="meta" x="1020" y="248">PRIMARY · REPLICA</text>
+        <rect class="node-mask" x="920" y="376" width="200" height="72" rx="6"/><rect class="node focal" x="920" y="376" width="200" height="72" rx="6"/>
+        <rect class="tag-box accent" x="932" y="384" width="48" height="12" rx="2"/><text class="tag" x="956" y="392" fill="#6366f1">GRAPH</text><text class="name" x="1020" y="416">Neo4j</text><text class="meta" x="1020" y="432">KNOWLEDGE GRAPH</text>
+
+        <!-- Legend -->
+        <line x1="32" y1="584" x2="1168" y2="584" stroke="rgba(17,24,39,.12)" stroke-width=".8"/><text x="32" y="608" fill="#6b7280" font-size="8" font-family="'Geist Mono',monospace" letter-spacing=".14em">LEGEND</text>
+        <rect x="112" y="596" width="16" height="12" rx="2" fill="rgba(99,102,241,.08)" stroke="#6366f1"/><text class="legend" x="192" y="608">FOCAL COMPONENT</text>
+        <rect x="280" y="596" width="16" height="12" rx="2" fill="#fff" stroke="#111827"/><text class="legend" x="336" y="608">SERVICE</text>
+        <rect x="392" y="596" width="16" height="12" rx="2" fill="rgba(17,24,39,.05)" stroke="#6b7280"/><text class="legend" x="448" y="608">STORE</text>
+        <line x1="504" y1="604" x2="544" y2="604" stroke="#4338ca" stroke-width="1.2" marker-end="url(#arrow-link)"/><text class="legend" x="608" y="608">API / QUERY</text>
+        <line x1="680" y1="604" x2="720" y2="604" stroke="#6366f1" stroke-width="1.2" marker-end="url(#arrow-accent)"/><text class="legend" x="784" y="608">EVENT PIPELINE</text>
+        <line x1="888" y1="604" x2="928" y2="604" stroke="#6b7280" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/><text class="legend" x="956" y="608">AUTH</text>
+      </svg>
+    </div>
+    <footer>Overview only · Redis caching, JobRunr jobs, mail delivery, and internal backend modules are intentionally omitted.</footer>
+  </main>
+</body>
+</html>

@@ -8,6 +8,7 @@ import com.xxxx.dddd.domain.repository.WorkspaceRoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -24,5 +25,10 @@ public class WorkspaceRoleInfrasRepositoryImpl implements WorkspaceRoleRepositor
     @Override
     public Optional<WorkspaceRole> findByWorkspaceAndRoleName(Workspace workspace, WorkspaceRoleType roleName) {
         return jpa.findByWorkspaceAndRoleName(workspace, roleName);
+    }
+
+    @Override
+    public List<WorkspaceRole> findAllByWorkspace_Id(String workspaceId) {
+        return jpa.findAllByWorkspace_Id(workspaceId);
     }
 }

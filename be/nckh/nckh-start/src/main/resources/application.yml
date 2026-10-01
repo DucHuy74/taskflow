@@ -6,6 +6,10 @@ server:
 spring:
   config:
     import: optional:file:.env
+
+  graphql:
+    path: /graphql
+
   data:
     redis:
       host: ${REDIS_HOST}
@@ -15,10 +19,16 @@ spring:
       timeout: ${REDIS_TIMEOUT}
 
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-    driver-class-name: ${DB_DRIVER}
+    master:
+      url: ${DB_MASTER_URL}
+      username: ${DB_MASTER_USERNAME}
+      password: ${DB_MASTER_PASSWORD}
+
+    slave:
+      url: ${DB_SLAVE_URL}
+      username: ${DB_SLAVE_USERNAME}
+      password: ${DB_SLAVE_PASSWORD}
+
     hikari:
       max-lifetime: ${DB_MAX_LIFETIME}
       idle-timeout: ${DB_IDLE_TIMEOUT}
@@ -31,6 +41,8 @@ spring:
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO}
     show-sql: ${JPA_SHOW_SQL}
+    properties:
+      hibernate.hibernate.format_sql: true
 
   mail:
     host: ${MAIL_HOST}
@@ -51,13 +63,18 @@ spring:
           issuer-uri: ${KEYCLOAK_ISSUER_URI}
 
   neo4j:
-    uri: neo4j+s://d64a682c.databases.neo4j.io
+    uri: ${NEO4J_URI}
     authentication:
-      username: neo4j
-      password: HdwlHzHdYhAqaJYfEPhhIPWWNtoilzXPfI4gWvYQNME
-    data:
-      neo4j:
-        database: neo4j
+      username: ${NEO4J_USERNAME}
+      password: ${NEO4J_PASSWORD}
+    database: ${NEO4J_DATABASE}
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+
 
 jobrunr:
   background-job-server:
@@ -66,13 +83,17 @@ jobrunr:
     enabled: true
     port: ${JOBRUNR_DASHBOARD_PORT}
 
+
 idp:
   url: ${KEYCLOAK_URL}
   client-id: ${KEYCLOAK_CLIENT_ID}
   client-secret: ${KEYCLOAK_CLIENT_SECRET}
+
 
 logging:
   level:
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
     com.xxxx.backend_mvc: DEBUG
+    org.hibernate.sql: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE

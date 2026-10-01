@@ -1,0 +1,24 @@
+services:
+  mysql-analyze-us:
+    image: mysql:8.0
+    container_name: mysql-analyze-us
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: analyze_us
+    ports:
+      - "3306:3306"
+    volumes:
+      - analyze_us_mysql_data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+volumes:
+  analyze_us_mysql_data:

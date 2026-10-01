@@ -1,0 +1,145 @@
+name: taskflow
+
+services:
+  mysql-master:
+    image: mysql:8.0
+    container_name: mysql-master
+    restart: unless-stopped
+    command: --server-id=1 --log-bin=mysql-bin --binlog-do-db=nckh
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_REPLICATION_ROOT_PASSWORD:-root}
+    ports:
+      - "3307:3306"
+    volumes:
+      - ../be/nckh/mysql-replication/master-data:/var/lib/mysql
+      - ../be/nckh/mysql-replication/master.cnf:/etc/mysql/conf.d/replication.cnf:ro
+    networks:
+      - taskflow-network
+
+  mysql-slave:
+      image: mysql:8.0
+      container_name: mysql-slave
+      restart: unless-stopped
+      command: --server-id=2 --relay-log=relay-log --log-bin=mysql-bin
+      environment:
+        MYSQL_ROOT_PASSWORD: ${MYSQL_REPLICATION_ROOT_PASSWORD:-root}
+      ports:
+        - "3308:3306"
+      depends_on:
+        - mysql-master
+      volumes:
+        - ../be/nckh/mysql-replication/slave-data:/var/lib/mysql
+        - ../be/nckh/mysql-replication/slave.cnf:/etc/mysql/conf.d/replication.cnf:ro
+      networks:
+        - taskflow-network
+
+  mysql-analyze-us:
+    image: mysql:8.0
+    container_name: mysql-analyze-us
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ANALYZE_MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_DATABASE: analyze_us
+    ports:
+      - "3306:3306"
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - analyze-us-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks:
+      - taskflow-network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0.0
+    container_name: keycloak-25.0.0
+    restart: unless-stopped
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    ports:
+      - "8180:8080"
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+    networks:
+      - taskflow-network
+
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: taskflow-neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/12345678}
+      NEO4J_PLUGINS: '["graph-data-science"]'
+      NEO4J_dbms_security_procedures_unrestricted: "gds.*"
+      NEO4J_dbms_security_procedures_allowlist: "gds.*"
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+      - neo4j-plugins:/plugins
+    networks:
+      - taskflow-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: taskflow-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-123456}
+    volumes:
+      - redis-data:/data
+    networks:
+      - taskflow-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - taskflow-network
+
+networks:
+  taskflow-network:
+    name: taskflow-network
+
+volumes:
+  # Existing volumes created by the old per-folder Compose projects.
+  analyze-us-data:
+    external: true
+    name: analyze_us_db_analyze_us_mysql_data
+  neo4j-data:
+    external: true
+    name: neo4j_neo4j_data
+  neo4j-logs:
+    external: true
+    name: neo4j_neo4j_logs
+  neo4j-plugins:
+    external: true
+    name: neo4j_neo4j_plugins
+  redis-data:
+    external: true
+    name: redis_redis_data
+  keycloak-data:
+    external: true
+    name: taskflow_keycloak_data
+  rabbitmq-data:
+    name: taskflow_rabbitmq_data

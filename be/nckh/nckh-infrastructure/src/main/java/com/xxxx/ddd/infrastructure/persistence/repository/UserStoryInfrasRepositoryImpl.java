@@ -6,6 +6,7 @@ import com.xxxx.dddd.domain.repository.UserStoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,7 +42,17 @@ public class UserStoryInfrasRepositoryImpl implements UserStoryRepository {
     }
 
     @Override
+    public List<UserStory> findAllById(Collection<String> userStoryIds) {
+        return jpa.findAllById(userStoryIds);
+    }
+
+    @Override
     public void delete(String userStoryId) {
         jpa.deleteById(userStoryId);
+    }
+
+    @Override
+    public Optional<UserStory> findByIdForUpdate(String userStoryId) {
+        return jpa.findByIdForUpdate(userStoryId);
     }
 }

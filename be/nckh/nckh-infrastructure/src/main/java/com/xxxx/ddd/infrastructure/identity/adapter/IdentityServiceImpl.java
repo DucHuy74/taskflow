@@ -68,7 +68,7 @@ public class IdentityServiceImpl implements IdentityService {
                             .build()
             );
 
-            // 3️⃣ Extract userId (GIỐNG)
+            // Extract userId
             return extractUserId(response);
 
         } catch (FeignException ex) {

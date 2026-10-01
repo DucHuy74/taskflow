@@ -33,6 +33,4 @@ public class ProfileInfrasRepositoryImpl implements ProfileRepository {
     public List<Profile> findAll() {
         return jpa.findAll();
     }
-
-
 }

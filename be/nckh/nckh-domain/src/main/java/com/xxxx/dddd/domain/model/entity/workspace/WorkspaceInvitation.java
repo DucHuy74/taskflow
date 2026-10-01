@@ -1,6 +1,7 @@
 package com.xxxx.dddd.domain.model.entity.workspace;
 
 import com.xxxx.dddd.domain.model.enums.InvitationStatus;
+import com.xxxx.dddd.domain.model.enums.WorkspaceRoleType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -28,6 +29,9 @@ public class WorkspaceInvitation {
 
     @Enumerated(EnumType.STRING)
     private InvitationStatus status;
+
+    @Enumerated(EnumType.STRING)
+    private WorkspaceRoleType roleName;
 
     private Instant expiredAt;
 }

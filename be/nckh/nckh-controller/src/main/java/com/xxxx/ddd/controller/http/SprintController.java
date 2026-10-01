@@ -1,9 +1,11 @@
 package com.xxxx.ddd.controller.http;
 
+import com.xxxx.ddd.application.model.dto.request.SprintAddUserStoriesRequest;
 import com.xxxx.ddd.application.model.dto.request.SprintCreateRequest;
 import com.xxxx.ddd.application.model.dto.response.SprintResponse;
 import com.xxxx.ddd.application.model.dto.response.UserStoryResponse;
 import com.xxxx.ddd.application.service.sprint.SprintAppService;
+import com.xxxx.ddd.application.service.sprint.SprintStoryRetryService;
 import com.xxxx.ddd.common.dto.ApiResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import java.util.List;
 public class SprintController {
 
     SprintAppService sprintService;
+    SprintStoryRetryService sprintStoryRetryService;
 
     // Create sprint in workspace
     @PostMapping("/workspace/{workspaceId}")
@@ -86,6 +89,21 @@ public class SprintController {
         return ResponseEntity.ok(
                 ApiResponse.<Void>builder()
                         .message("User story added to sprint")
+                        .build()
+        );
+    }
+
+    // Add multiple user stories to sprint
+    @PostMapping("/{sprintId}/user-stories")
+    public ResponseEntity<ApiResponse<Void>> addUserStoriesToSprint(
+            @PathVariable("sprintId") String sprintId,
+            @RequestBody SprintAddUserStoriesRequest request
+    ) {
+        sprintStoryRetryService.addUserStoriesToSprint(
+                sprintId, request.getUserStoryIds());
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .message("User stories added to sprint")
                         .build()
         );
     }

@@ -93,3 +93,4 @@ Thumbs.db
 # model
 word2vec-google-news-300.kv.vectors.npy
 word2vec-google-news-300.kv
+/models/
