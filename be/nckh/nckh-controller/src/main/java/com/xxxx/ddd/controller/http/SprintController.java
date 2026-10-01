@@ -5,6 +5,7 @@ import com.xxxx.ddd.application.model.dto.request.SprintCreateRequest;
 import com.xxxx.ddd.application.model.dto.response.SprintResponse;
 import com.xxxx.ddd.application.model.dto.response.UserStoryResponse;
 import com.xxxx.ddd.application.service.sprint.SprintAppService;
+import com.xxxx.ddd.application.service.sprint.SprintStoryRetryService;
 import com.xxxx.ddd.common.dto.ApiResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.util.List;
 public class SprintController {
 
     SprintAppService sprintService;
+    SprintStoryRetryService sprintStoryRetryService;
 
     // Create sprint in workspace
     @PostMapping("/workspace/{workspaceId}")
@@ -97,7 +99,8 @@ public class SprintController {
             @PathVariable("sprintId") String sprintId,
             @RequestBody SprintAddUserStoriesRequest request
     ) {
-        sprintService.addUserStoriesToSprint(sprintId, request.getUserStoryIds());
+        sprintStoryRetryService.addUserStoriesToSprint(
+                sprintId, request.getUserStoryIds());
         return ResponseEntity.ok(
                 ApiResponse.<Void>builder()
                         .message("User stories added to sprint")
