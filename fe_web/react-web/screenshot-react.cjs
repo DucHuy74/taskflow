@@ -36,9 +36,60 @@ const graph = {
   ],
 };
 
+const recommendations = {
+  data: [
+    {
+      id: 'rec-1',
+      type: 'POSSIBLE_DUPLICATE',
+      status: 'OPEN',
+      confidence: { band: 'HIGH', score: 0.91, calibrated: false },
+      title: 'These stories may describe the same backlog outcome',
+      stories: [
+        { id: 'US-142', text: 'As a product manager, I want to prioritize backlog items by customer value.', graphRelevanceScore: 0.93, parseConfidence: 0.96 },
+        { id: 'US-187', text: 'As a product owner, I want to rank stories by business value so the team builds the most valuable work first.', graphRelevanceScore: 0.9, parseConfidence: 0.94 },
+      ],
+      evidence: [
+        { code: 'SEMANTIC', label: 'Strong semantic overlap', value: 0.91 },
+        { code: 'SAME_OBJECT', label: 'Shared backlog concept' },
+        { code: 'SAME_INTENT', label: 'Matching prioritization intent' },
+      ],
+      suggestedAction: { type: 'MERGE_REVIEW', representativeStoryId: 'US-142' },
+      modelVersion: 'readme-fixture-v1',
+      policyVersion: 'v1',
+      generatedAt: '2026-10-04T08:30:00Z',
+      version: 1,
+    },
+    {
+      id: 'rec-2',
+      type: 'POSSIBLE_DUPLICATE',
+      status: 'OPEN',
+      confidence: { band: 'MEDIUM', score: 0.74, calibrated: false },
+      title: 'Review this pair before sprint planning',
+      stories: [
+        { id: 'US-203', text: 'As a delivery lead, I want to plan sprint capacity with the team.', graphRelevanceScore: 0.81, parseConfidence: 0.89 },
+        { id: 'US-219', text: 'As a scrum master, I want to estimate team capacity for the next sprint.', graphRelevanceScore: 0.79, parseConfidence: 0.87 },
+      ],
+      evidence: [
+        { code: 'SEMANTIC', label: 'Related sprint-planning intent', value: 0.74 },
+        { code: 'SHARED_CONTEXT', label: 'Same workspace context' },
+      ],
+      suggestedAction: { type: 'MERGE_REVIEW', representativeStoryId: 'US-203' },
+      modelVersion: 'readme-fixture-v1',
+      policyVersion: 'v1',
+      generatedAt: '2026-10-04T08:30:00Z',
+      version: 1,
+    },
+  ],
+  page: { nextCursor: null, hasMore: false },
+  summary: { open: 2, high: 1, medium: 1 },
+};
+
 function apiResult(url) {
   const pathname = new URL(url).pathname;
   if (pathname.endsWith('/graphql')) return { data: { workspaceGraph: graph } };
+  if (pathname.endsWith('/workspaces/ws/recommendations')) return { code: 1000, result: recommendations };
+  if (pathname.endsWith('/workspaces/ws/recommendation-jobs/latest')) return { code: 1000, result: { id: 'job-1', status: 'SUCCEEDED', progress: 100, candidateCount: 2, completedAt: '2026-10-04T08:30:00Z' } };
+  if (pathname.endsWith('/workspace/ws/my-access')) return { code: 1000, result: { role: 'ADMIN', permissions: ['RECOMMENDATION_REVIEW', 'RECOMMENDATION_ACCEPT'] } };
   if (pathname.endsWith('/workspace/ws')) return { code: 1000, result: workspaces[0] };
   if (pathname.endsWith('/workspace')) return { code: 1000, result: workspaces };
   if (pathname.endsWith('/user-stories/workspace/ws/backlog')) return { code: 1000, result: [
@@ -113,6 +164,9 @@ async function takeScreenshots() {
     const knowledgeGraph = await configurePage(browser, true);
     await capture(knowledgeGraph, '/workspace/ws/graph', '[role="img"] canvas', 'react-knowledge-graph.png', 4000);
     await knowledgeGraph.close();
+    const recommendationReview = await configurePage(browser, true);
+    await capture(recommendationReview, '/workspace/ws/recommendations', 'article', 'react-recommendations.png', 1200);
+    await recommendationReview.close();
   } finally {
     await browser.close();
   }

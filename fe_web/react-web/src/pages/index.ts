@@ -9,3 +9,4 @@ export { BacklogPage } from './BacklogPage';
 export { SprintPage } from './SprintPage';
 export { InviteToProject } from './InviteToProject';
 export { SprintGraphPage } from './SprintGraphPage';
+export { RecommendationReviewPage } from './RecommendationReviewPage';

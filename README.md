@@ -1,13 +1,13 @@
 # TaskFlow
 
-> An open research prototype for planning Agile work, understanding dependencies between user stories, and keeping teams aligned in real time.
+> An open research prototype for planning Agile work, uncovering relationships between user stories, and reviewing evidence-backed recommendations as a team.
 
 ![Java 21](https://img.shields.io/badge/Java-21-6366F1?style=flat-square)
 ![Spring Boot 3](https://img.shields.io/badge/Spring%20Boot-3.3-6366F1?style=flat-square)
 ![React 19](https://img.shields.io/badge/React-19-6366F1?style=flat-square)
 ![Python](https://img.shields.io/badge/Python-NLP%20worker-16A34A?style=flat-square)
 
-TaskFlow combines familiar workspace, backlog, and sprint workflows with a knowledge graph built from user-story language. Teams can organize delivery work while exploring subject–verb–object relationships, potential redundancy, and dependencies across stories.
+TaskFlow combines familiar workspace, backlog, and sprint workflows with a knowledge graph built from user-story language. Teams can organize delivery work, explore subject–verb–object relationships, and review possible duplicate stories without letting automation silently change the backlog.
 
 This repository is under active development. It is a good fit for contributors interested in Agile tooling, domain-driven design, graph visualization, event-driven systems, or applied NLP.
 
@@ -17,12 +17,12 @@ This repository is under active development. It is a good fit for contributors i
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/images/react-login.png" alt="TaskFlow login page with password and social sign-in options"></td>
     <td width="50%"><img src="docs/images/react-workspaces.png" alt="TaskFlow workspace home with activity metrics and recent workspaces"></td>
+    <td width="50%"><img src="docs/images/react-recommendations.png" alt="TaskFlow recommendation review queue comparing possible duplicate user stories and their evidence"></td>
   </tr>
   <tr>
-    <td align="center"><strong>Secure sign-in</strong></td>
     <td align="center"><strong>Workspace overview</strong></td>
+    <td align="center"><strong>Human-in-the-loop recommendations</strong></td>
   </tr>
 </table>
 
@@ -32,13 +32,14 @@ This repository is under active development. It is a good fit for contributors i
 
 - **Plan together** — create workspaces, invite members, manage backlogs, and run sprints.
 - **See hidden relationships** — turn user stories into an interactive S–V–O knowledge graph.
+- **Review, do not blindly automate** — compare duplicate-story evidence and explicitly merge, separate, or defer each recommendation.
 - **Keep analysis off the request path** — publish story events through RabbitMQ and process them asynchronously.
 - **Model access explicitly** — combine workspace roles with resource-level grants.
 - **Build on multiple clients** — use the React web app or the Flutter client against the same API.
 
 ## Architecture at a glance
 
-The main request path runs through the modular Spring Boot API. User-story changes are persisted in MySQL and published to RabbitMQ; the Python worker performs NLP analysis and updates Neo4j. Clients query the resulting graph through the backend GraphQL endpoint.
+The main request path runs through the modular Spring Boot API. User-story changes are persisted in MySQL and published to RabbitMQ; the Python worker performs semantic analysis, produces recommendation candidates, and updates Neo4j. Clients query the resulting graph through GraphQL and review recommendations through REST.
 
 ![TaskFlow system architecture](docs/images/architecture-overview.png)
 
@@ -46,13 +47,13 @@ The main request path runs through the modular Spring Boot API. User-story chang
 
 | Area | Technology | Responsibility |
 | --- | --- | --- |
-| Web client | React 19, TypeScript, Vite, Cytoscape | Workspace UI, sprint/backlog flows, interactive graph exploration |
+| Web client | React 19, TypeScript, Vite, Cytoscape | Workspace UI, sprint/backlog flows, recommendation review, interactive graph exploration |
 | Cross-platform client | Flutter, Provider/MVVM | Mobile and desktop client experiments |
 | Core API | Java 21, Spring Boot, Maven | REST/GraphQL APIs, domain rules, authorization, events, background jobs |
 | Identity | Keycloak, OAuth 2.0/OIDC | Authentication and JWT issuance |
 | Operational data | MySQL primary/replica, Redis | Transactional storage, read routing, and caching |
 | Knowledge graph | Neo4j + Graph Data Science | Story concepts, relationships, and graph queries |
-| Analysis pipeline | FastAPI, spaCy, Gensim, sentence-transformers | Parsing, semantic normalization, similarity, and graph construction |
+| Analysis pipeline | FastAPI, spaCy, Gensim, sentence-transformers | Parsing, semantic normalization, duplicate candidates, and graph construction |
 | Messaging | RabbitMQ | Durable handoff of story-created and story-moved events |
 
 The backend follows a modular DDD-style dependency direction:
@@ -105,6 +106,7 @@ Useful frontend commands:
 npm run build       # Type-check and create a production build
 npm run lint        # Run Oxlint
 npm run test:run    # Run unit tests once
+npm run screenshots # Refresh the README gallery with local Chrome
 npx playwright test # Run end-to-end tests
 ```
 
@@ -172,8 +174,9 @@ Large NLP model files are intentionally not stored in Git. Configure or download
 1. A user signs in through Keycloak and opens a workspace.
 2. The client manages workspace members, backlog items, and sprint state through REST endpoints.
 3. The backend persists transactional data and emits domain events after a successful commit.
-4. The Python worker consumes story events, extracts semantic relationships, and writes the knowledge graph.
+4. The Python worker consumes story events, extracts semantic relationships, writes the knowledge graph, and proposes likely duplicate pairs.
 5. The client requests graph data through GraphQL and renders it with Cytoscape.
+6. Reviewers inspect evidence and record a merge-review, keep-separate, or defer decision; TaskFlow does not mutate stories automatically.
 
 ## Testing
 
