@@ -12,4 +12,6 @@ import lombok.NoArgsConstructor;
 public class GraphRebuildEvent {
     private String type;
     private String workspaceId;
+    private String jobId;
+    private String sourceRevision;
 }

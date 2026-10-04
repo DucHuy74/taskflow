@@ -10,6 +10,9 @@ public enum Permission {
     WORKSPACE_BROWSE("workspace:Browse"),
     WORKSPACE_ADMINISTER("workspace:Administer"),
     WORKSPACE_DELETE("workspace:Delete"),
+    RECOMMENDATION_VIEW("recommendation:View"),
+    RECOMMENDATION_REVIEW("recommendation:Review"),
+    RECOMMENDATION_ACCEPT("recommendation:Accept"),
 
     MEMBER_VIEW("member:View"),
     MEMBER_INVITE("member:Invite"),

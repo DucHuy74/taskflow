@@ -15,18 +15,22 @@ public class GraphEventPublisher implements GraphEventPort {
     private final RabbitTemplate rabbitTemplate;
 
     @Override
-    public void sendRebuildEvent(String workspaceId) {
+    public void sendRebuildEvent(String workspaceId, String jobId, String sourceRevision) {
 
         GraphRebuildEvent payload = GraphRebuildEvent.builder()
                 .workspaceId(workspaceId)
+                .jobId(jobId)
+                .sourceRevision(sourceRevision)
                 .build();
 
         BaseEventMessage<GraphRebuildEvent> message =
                 new BaseEventMessage<>(
                         "REBUILD_GRAPH",
-                        "v1",
+                        "v2",
                         payload
                 );
+        message.setJobId(jobId);
+        message.setWorkspaceId(workspaceId);
 
         rabbitTemplate.convertAndSend(
                 RabbitConfig.USERSTORY_EXCHANGE,

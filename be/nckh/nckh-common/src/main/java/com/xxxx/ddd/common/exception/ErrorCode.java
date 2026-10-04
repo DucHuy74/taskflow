@@ -37,6 +37,12 @@ public enum ErrorCode {
     GRANT_NOT_FOUND(1030, "Resource grant not found", HttpStatus.NOT_FOUND),
     CANNOT_DEMOTE_LAST_ADMIN(1031, "Cannot change the last admin of this workspace", HttpStatus.BAD_REQUEST),
     INVALID_ROLE(1032, "Invalid workspace role", HttpStatus.BAD_REQUEST),
+    RECOMMENDATION_NOT_FOUND(1033, "Recommendation not found", HttpStatus.NOT_FOUND),
+    RECOMMENDATION_VERSION_CONFLICT(1034, "Recommendation was updated by another user", HttpStatus.CONFLICT),
+    RECOMMENDATION_ALREADY_RESOLVED(1035, "Recommendation is no longer open", HttpStatus.CONFLICT),
+    RECOMMENDATION_IDEMPOTENCY_CONFLICT(1036, "Idempotency key was reused with a different request", HttpStatus.CONFLICT),
+    RECOMMENDATION_JOB_NOT_FOUND(1037, "Recommendation job not found", HttpStatus.NOT_FOUND),
+    INVALID_RECOMMENDATION_CURSOR(1038, "Invalid recommendation cursor", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
