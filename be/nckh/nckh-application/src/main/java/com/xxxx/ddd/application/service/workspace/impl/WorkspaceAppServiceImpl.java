@@ -16,6 +16,7 @@ import com.xxxx.ddd.common.exception.ErrorCode;
 import com.xxxx.dddd.domain.exception.AppException;
 import com.xxxx.dddd.domain.model.entity.Backlog;
 import com.xxxx.dddd.domain.model.entity.Profile;
+import com.xxxx.dddd.domain.model.entity.RecommendationJob;
 import com.xxxx.dddd.domain.model.entity.workspace.Workspace;
 import com.xxxx.dddd.domain.model.entity.workspace.WorkspaceInvitation;
 import com.xxxx.dddd.domain.model.entity.workspace.WorkspaceMember;
@@ -23,6 +24,7 @@ import com.xxxx.dddd.domain.model.entity.workspace.WorkspaceRole;
 import com.xxxx.dddd.domain.model.enums.InvitationStatus;
 import com.xxxx.dddd.domain.model.enums.NotificationType;
 import com.xxxx.dddd.domain.model.enums.Permission;
+import com.xxxx.dddd.domain.model.enums.RecommendationJobStatus;
 import com.xxxx.dddd.domain.model.enums.WorkspaceRoleType;
 import com.xxxx.dddd.domain.model.graph.GraphRebuildEvent;
 import com.xxxx.dddd.domain.model.permission.WorkspaceRoleFactory;
@@ -41,6 +43,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -60,6 +63,7 @@ public class WorkspaceAppServiceImpl implements WorkspaceAppService {
     ProfileAppService profileAppService;
     GraphEventPort graphEventPort;
     WorkspaceAccessService workspaceAccessService;
+    RecommendationJobRepository recommendationJobRepository;
 
 
     @Transactional
@@ -251,6 +255,19 @@ public class WorkspaceAppServiceImpl implements WorkspaceAppService {
 
     public void triggerRebuildGraph(String workspaceId) {
         workspaceAccessService.require(workspaceId, Permission.WORKSPACE_ADMINISTER);
-        graphEventPort.sendRebuildEvent(workspaceId);
+        String jobId = UUID.randomUUID().toString();
+        String sourceRevision = UUID.randomUUID().toString().replace("-", "");
+        recommendationJobRepository.save(RecommendationJob.builder()
+                .id(jobId)
+                .workspaceId(workspaceId)
+                .sourceRevision(sourceRevision)
+                .status(RecommendationJobStatus.QUEUED)
+                .progress(0)
+                .candidateCount(0)
+                .expectedChunks(0)
+                .receivedChunks(0)
+                .createdAt(Instant.now())
+                .build());
+        graphEventPort.sendRebuildEvent(workspaceId, jobId, sourceRevision);
     }
 }

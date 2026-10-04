@@ -79,7 +79,7 @@ public class IdentityServiceImpl implements IdentityService {
     private String extractUserId(ResponseEntity<?> response) {
         String location = response.getHeaders()
                 .get("Location")
-                .getFirst();
+                .get(0);
 
         String[] parts = location.split("/");
         return parts[parts.length - 1];

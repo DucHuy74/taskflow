@@ -22,10 +22,13 @@ class DefaultPermissionMatrixTest {
                         Permission.COMMENT_ADD,
                         Permission.ATTACHMENT_ADD,
                         Permission.WORKLOG_ADD,
+                        Permission.RECOMMENDATION_VIEW,
+                        Permission.RECOMMENDATION_REVIEW,
                         Permission.DEVELOPMENT_TOOLS_VIEW)
                 .doesNotContain(
                         Permission.WORKSPACE_ADMINISTER,
                         Permission.ISSUE_DELETE,
+                        Permission.RECOMMENDATION_ACCEPT,
                         Permission.ISSUE_REPORTER_EDIT,
                         Permission.ISSUE_DUE_DATE_EDIT);
     }
@@ -36,10 +39,13 @@ class DefaultPermissionMatrixTest {
                 .contains(
                         Permission.WORKSPACE_BROWSE,
                         Permission.ISSUE_VIEW,
+                        Permission.RECOMMENDATION_VIEW,
                         Permission.COMMENT_ADD,
                         Permission.ATTACHMENT_ADD)
                 .doesNotContain(
                         Permission.ISSUE_CREATE,
+                        Permission.RECOMMENDATION_REVIEW,
+                        Permission.RECOMMENDATION_ACCEPT,
                         Permission.ISSUE_EDIT,
                         Permission.ISSUE_TRANSITION);
     }

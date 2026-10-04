@@ -20,6 +20,8 @@ public final class DefaultPermissionMatrix {
             case ADMIN -> EnumSet.allOf(Permission.class);
             case MEMBER -> EnumSet.of(
                     Permission.WORKSPACE_BROWSE,
+                    Permission.RECOMMENDATION_VIEW,
+                    Permission.RECOMMENDATION_REVIEW,
                     Permission.MEMBER_VIEW,
                     Permission.SPRINT_VIEW,
                     Permission.SPRINT_CREATE,
@@ -46,6 +48,7 @@ public final class DefaultPermissionMatrix {
             );
             case VIEWER -> EnumSet.of(
                     Permission.WORKSPACE_BROWSE,
+                    Permission.RECOMMENDATION_VIEW,
                     Permission.MEMBER_VIEW,
                     Permission.SPRINT_VIEW,
                     Permission.ISSUE_VIEW,
