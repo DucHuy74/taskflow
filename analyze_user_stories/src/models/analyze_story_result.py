@@ -11,6 +11,7 @@ class AnalyzeStoryResult(Base):
     asr_user_story_id = Column(String(36))  
     asr_workspace_id = Column(String(36))
     asr_sprint_id = Column(String(36))
+    asr_backlog_id = Column(String(36))
 
     asr_subject = Column(String(100))
     asr_action = Column(String(100))

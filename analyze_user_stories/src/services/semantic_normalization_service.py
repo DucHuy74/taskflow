@@ -1,182 +1,136 @@
-class SemanticNormalizationService:
+import logging
 
-    AUTO_MERGE_THRESHOLD = 0.8
-    REVIEW_THRESHOLD = 0.5
+from constant import (
+    SEMANTIC_AUTO_MERGE_THRESHOLD,
+    SEMANTIC_CONTEXT_THRESHOLD,
+    SEMANTIC_REVIEW_THRESHOLD,
+)
+
+
+logger = logging.getLogger(__name__)
+
+
+class SemanticNormalizationService:
+    """Normalize SVO terms while retaining every computed similarity as evidence."""
 
     def __init__(self, similarity_calculator):
         self.similarity_calculator = similarity_calculator
 
-
     def process(self, svo_list):
-
         valid_svo, error_svo = self._split_svo(svo_list)
-
         similarity_results = self._compute_similarity(valid_svo)
-
         auto_merge, ambiguous = self._classify_similarity(similarity_results)
-
         canonical_map = self._build_canonical(auto_merge)
-
-        frequency = self._analyze_frequency(valid_svo, canonical_map)
-
         return {
             "valid_svo": valid_svo,
             "error_svo": error_svo,
+            "similarity_results": similarity_results,
             "auto_merge": auto_merge,
             "ambiguous": ambiguous,
             "canonical_map": canonical_map,
-            "frequency": frequency
+            "frequency": self._analyze_frequency(valid_svo, canonical_map),
         }
 
-
-    def _split_svo(self, svo_list):
-
-        valid = []
-        error = []
-
-        for item in svo_list:
-            if item.get("status") == "VALID":
-                valid.append(item)
-            else:
-                error.append(item)
-
+    @staticmethod
+    def _split_svo(svo_list):
+        valid = [item for item in svo_list if item.get("status") == "VALID"]
+        error = [item for item in svo_list if item.get("status") != "VALID"]
         return valid, error
 
-
     def _compute_similarity(self, valid_svo):
+        # Action context is its objects; object context is its actions. Comparing both
+        # prevents object_similarity from silently collapsing to zero downstream.
+        contexts = {"ACTION": {}, "OBJECT": {}}
+        for item in valid_svo:
+            action = (item.get("action") or "").strip().lower()
+            object_name = (item.get("object") or "").strip().lower()
+            if action:
+                contexts["ACTION"].setdefault(action, set())
+                if object_name:
+                    contexts["ACTION"][action].add(object_name)
+            if object_name:
+                contexts["OBJECT"].setdefault(object_name, set())
+                if action:
+                    contexts["OBJECT"][object_name].add(action)
 
         results = []
-
-        # 1. build context map
-        action_context = {}
-
-        for item in valid_svo:
-            action = item.get("action")
-            obj = item.get("object")
-
-            if not action:
-                continue
-
-            action = action.lower()
-            obj = obj.lower() if obj else None
-
-            action_context.setdefault(action, set())
-            if obj:
-                action_context[action].add(obj)
-
-        words = list(action_context.keys())
-
-        print("\n===== ACTION CONTEXT =====")
-        for k, v in action_context.items():
-            print(k, "->", v)
-
-        # 2. compare
-        for i in range(len(words)):
-            for j in range(i + 1, len(words)):
-
-                w1 = words[i]
-                w2 = words[j]
-
-                try:
-                    sim = float(
-                        self.similarity_calculator.calculate(
-                            w1, w2,
-                            beta1=5.0,
-                            beta2=1.3,
-                            bias_b=-2.0
+        for term_type, context_map in contexts.items():
+            terms = sorted(context_map)
+            for index, left in enumerate(terms):
+                for right in terms[index + 1:]:
+                    try:
+                        similarity = float(self.similarity_calculator.calculate(
+                            left, right, beta1=5.0, beta2=1.3, bias_b=-2.0
+                        ))
+                    except (KeyError, TypeError, ValueError, ZeroDivisionError) as exc:
+                        logger.warning(
+                            "semantic_similarity_failed",
+                            extra={"left": left, "right": right, "term_type": term_type, "error": str(exc)},
                         )
-                    )
-                except:
-                    continue
+                        continue
 
-                # context similarity
-                ctx1 = action_context[w1]
-                ctx2 = action_context[w2]
-
-                if not ctx1 or not ctx2:
-                    continue
-
-                overlap = len(ctx1 & ctx2) / len(ctx1 | ctx2)
-
-                print(f"[SIM] {w1} ~ {w2} = {sim:.3f} | ctx = {overlap:.2f}")
-
-                results.append({
-                    "w1": w1,
-                    "w2": w2,
-                    "similarity": sim,
-                    "context_score": overlap
-                })
-
+                    left_context = context_map[left]
+                    right_context = context_map[right]
+                    union = left_context | right_context
+                    context_score = len(left_context & right_context) / len(union) if union else 0.0
+                    results.append({
+                        "w1": left,
+                        "w2": right,
+                        "term_type": term_type,
+                        "similarity": max(0.0, min(similarity, 1.0)),
+                        "context_score": context_score,
+                    })
         return results
 
-
-    def _classify_similarity(self, similarity_results):
-
+    @staticmethod
+    def _classify_similarity(similarity_results):
         auto_merge = []
         ambiguous = []
-
         for item in similarity_results:
-
-            sim = item["similarity"]
-            ctx = item["context_score"]
-
-            # KEY LOGIC
-            if sim >= 0.75 and ctx >= 0.5:
+            similarity = item["similarity"]
+            context_score = item["context_score"]
+            if similarity >= SEMANTIC_AUTO_MERGE_THRESHOLD and context_score >= SEMANTIC_CONTEXT_THRESHOLD:
                 auto_merge.append(item)
-
-            elif sim >= 0.6:
+            elif similarity >= SEMANTIC_REVIEW_THRESHOLD:
                 ambiguous.append(item)
-
         return auto_merge, ambiguous
 
-
-    def _build_canonical(self, auto_merge):
-
+    @staticmethod
+    def _build_canonical(auto_merge):
         parent = {}
 
-        def find(x):
-            parent.setdefault(x, x)
-            if parent[x] != x:
-                parent[x] = find(parent[x])
-            return parent[x]
+        def find(value):
+            parent.setdefault(value, value)
+            if parent[value] != value:
+                parent[value] = find(parent[value])
+            return parent[value]
 
-        def union(x, y):
+        def union(left, right):
+            left_root = find(left)
+            right_root = find(right)
+            if left_root != right_root:
+                root = min(left_root, right_root, key=lambda value: (len(value), value))
+                parent[left_root] = root
+                parent[right_root] = root
 
-            px = find(x)
-            py = find(y)
+        # Keep action and object equivalence classes separate.
+        for term_type in ("ACTION", "OBJECT"):
+            for item in (candidate for candidate in auto_merge if candidate.get("term_type") == term_type):
+                union(f"{term_type}:{item['w1']}", f"{term_type}:{item['w2']}")
 
-            if px != py:
-                # chọn root ổn định hơn
-                root = px if len(px) <= len(py) else py
-                parent[px] = root
-                parent[py] = root
+        canonical = {}
+        for typed_term in parent:
+            _, term = typed_term.split(":", 1)
+            _, root = find(typed_term).split(":", 1)
+            canonical[term] = root
+        return canonical
 
-        for item in auto_merge:
-            union(item["w1"], item["w2"])
-
-        
-        all_words = set()
-        for item in auto_merge:
-            all_words.add(item["w1"])
-            all_words.add(item["w2"])
-
-        return {word: find(word) for word in all_words}
-
-
-    def _analyze_frequency(self, valid_svo, canonical_map):
-
-        freq = {}
-
+    @staticmethod
+    def _analyze_frequency(valid_svo, canonical_map):
+        frequency = {}
         for item in valid_svo:
-
-            obj = item.get("object")
-
-            if not obj:
-                continue
-
-            obj = obj.lower()
-            obj = canonical_map.get(obj, obj)
-
-            freq[obj] = freq.get(obj, 0) + 1
-
-        return freq
+            object_name = (item.get("object") or "").lower()
+            if object_name:
+                canonical = canonical_map.get(object_name, object_name)
+                frequency[canonical] = frequency.get(canonical, 0) + 1
+        return frequency

@@ -1,0 +1,302 @@
+[
+  {
+    "storyText": "As a user, I want to reset my password by email so that I can regain access to my account."
+  },
+  {
+    "storyText": "As a registered user, I want to receive a password reset link through email so that I can access my account again."
+  },
+  {
+    "storyText": "As a user, I want to recover a forgotten password using my email address so that I can sign in again."
+  },
+  {
+    "storyText": "As a user, I want to change my password from profile settings so that I can keep my account secure."
+  },
+  {
+    "storyText": "As a workspace administrator, I want to invite members by email so that they can join my workspace."
+  },
+  {
+    "storyText": "As an admin, I want to send email invitations to new team members so that they can access the workspace."
+  },
+  {
+    "storyText": "As a workspace administrator, I want to resend an expired invitation so that a member can still join the team."
+  },
+  {
+    "storyText": "As a workspace administrator, I want to remove a member from the workspace so that former collaborators lose access."
+  },
+  {
+    "storyText": "As a product owner, I want to create a user story in the backlog so that the team can review a new requirement."
+  },
+  {
+    "storyText": "As a product owner, I want to add a new story to the product backlog so that it can be planned by the team."
+  },
+  {
+    "storyText": "As a product owner, I want to edit a backlog story so that its acceptance criteria remain accurate."
+  },
+  {
+    "storyText": "As a product owner, I want to delete an obsolete backlog story so that the backlog stays relevant."
+  },
+  {
+    "storyText": "As a scrum master, I want to move a user story from the backlog into a sprint so that the team can start working on it."
+  },
+  {
+    "storyText": "As a scrum master, I want to add a backlog story to the current sprint so that developers can implement it."
+  },
+  {
+    "storyText": "As a scrum master, I want to remove a story from a sprint so that unfinished work can return to the backlog."
+  },
+  {
+    "storyText": "As a scrum master, I want to start a planned sprint so that the team can begin its committed work."
+  },
+  {
+    "storyText": "As a scrum master, I want to activate a scheduled sprint so that team members can work on the selected stories."
+  },
+  {
+    "storyText": "As a scrum master, I want to complete an active sprint so that its results can be reviewed."
+  },
+  {
+    "storyText": "As a team member, I want to update a story status to in progress so that everyone knows I have started working on it."
+  },
+  {
+    "storyText": "As a developer, I want to mark a user story as in progress so that the team can see its current state."
+  },
+  {
+    "storyText": "As a developer, I want to mark a completed story as done so that sprint progress is accurate."
+  },
+  {
+    "storyText": "As a team member, I want to add a comment to a user story so that I can share implementation details."
+  },
+  {
+    "storyText": "As a team member, I want to write comments on a story so that I can discuss requirements with the team."
+  },
+  {
+    "storyText": "As a team member, I want to mention another member in a comment so that they are notified about the discussion."
+  },
+  {
+    "storyText": "As a workspace member, I want to receive a notification when I am mentioned so that I can respond promptly."
+  },
+  {
+    "storyText": "As a user, I want to view all unread notifications so that I do not miss important updates."
+  },
+  {
+    "storyText": "As a user, I want to mark a notification as read so that my notification list remains organized."
+  },
+  {
+    "storyText": "As a workspace member, I want to search user stories by keyword so that I can quickly find relevant work."
+  },
+  {
+    "storyText": "As a team member, I want to find backlog stories using text search so that I can locate a specific requirement."
+  },
+  {
+    "storyText": "As a product owner, I want to filter stories by status and assignee so that I can review the current workload."
+  },
+  {
+    "storyText": "As a workspace administrator, I want to assign roles to members so that each person has appropriate permissions."
+  },
+  {
+    "storyText": "As an administrator, I want to change a workspace member's role so that their access matches their responsibilities."
+  },
+  {
+    "storyText": "As a viewer, I want to open the backlog in read-only mode so that I can follow project progress without changing data."
+  },
+  {
+    "storyText": "As a product owner, I want to review possible duplicate stories so that the backlog does not contain repeated requirements."
+  },
+  {
+    "storyText": "As an administrator, I want to approve a suggested duplicate pair for future merging so that the decision is recorded for audit."
+  },
+  {
+    "storyText": "As a team member, I want to keep two similar stories separate so that distinct business requirements are preserved."
+  },
+  {
+    "storyText": "As a user, I want to sign in with my email and password so that I can access my account."
+  },
+  {
+    "storyText": "As a registered user, I want to log in using my email credentials so that I can enter the application."
+  },
+  {
+    "storyText": "As a user, I want to sign out from all devices so that I can secure my account after suspicious activity."
+  },
+  {
+    "storyText": "As a user, I want to enable two-factor authentication so that unauthorized people cannot access my account."
+  },
+  {
+    "storyText": "As a user, I want to verify my email address so that my account can be activated."
+  },
+  {
+    "storyText": "As a new user, I want to confirm my email through a verification link so that I can activate my profile."
+  },
+  {
+    "storyText": "As a user, I want to update my display name so that other members can recognize me."
+  },
+  {
+    "storyText": "As a user, I want to upload a profile picture so that my account is easier to identify."
+  },
+  {
+    "storyText": "As a user, I want to remove my profile picture so that the default avatar is displayed."
+  },
+  {
+    "storyText": "As a workspace administrator, I want to create a workspace so that my team has a place to organize its projects."
+  },
+  {
+    "storyText": "As an administrator, I want to set up a new team workspace so that members can collaborate in one place."
+  },
+  {
+    "storyText": "As a workspace administrator, I want to rename a workspace so that its name reflects the current project."
+  },
+  {
+    "storyText": "As a workspace administrator, I want to archive an inactive workspace so that it no longer appears in active workspace lists."
+  },
+  {
+    "storyText": "As a workspace administrator, I want to restore an archived workspace so that the team can continue working in it."
+  },
+  {
+    "storyText": "As a workspace member, I want to leave a workspace so that I am no longer part of an irrelevant project."
+  },
+  {
+    "storyText": "As a product owner, I want to prioritize backlog stories so that the team works on the most valuable requirements first."
+  },
+  {
+    "storyText": "As a product owner, I want to reorder stories in the backlog so that their sequence reflects product priority."
+  },
+  {
+    "storyText": "As a product owner, I want to estimate story points so that sprint planning reflects the expected effort."
+  },
+  {
+    "storyText": "As a developer, I want to update the estimate of a story so that it reflects newly discovered complexity."
+  },
+  {
+    "storyText": "As a product owner, I want to define acceptance criteria for a story so that completion can be verified."
+  },
+  {
+    "storyText": "As a product owner, I want to add acceptance conditions to a user story so that the team knows when it is complete."
+  },
+  {
+    "storyText": "As a tester, I want to review acceptance criteria so that I can prepare relevant test cases."
+  },
+  {
+    "storyText": "As a scrum master, I want to create a sprint with a name and date range so that upcoming work can be planned."
+  },
+  {
+    "storyText": "As a scrum master, I want to schedule a new sprint so that the team can organize work for the next iteration."
+  },
+  {
+    "storyText": "As a scrum master, I want to change a sprint goal so that it reflects the team's updated commitment."
+  },
+  {
+    "storyText": "As a scrum master, I want to cancel a planned sprint so that work is not started under an obsolete plan."
+  },
+  {
+    "storyText": "As a team member, I want to view the sprint board so that I can understand the current flow of work."
+  },
+  {
+    "storyText": "As a developer, I want to see all sprint stories grouped by status so that I can choose my next task."
+  },
+  {
+    "storyText": "As a developer, I want to assign a story to myself so that the team knows who is responsible for it."
+  },
+  {
+    "storyText": "As a team member, I want to assign a user story to another member so that ownership is clear."
+  },
+  {
+    "storyText": "As a team member, I want to remove the assignee from a story so that it becomes available for someone else."
+  },
+  {
+    "storyText": "As a developer, I want to move a story to blocked status so that impediments are visible to the team."
+  },
+  {
+    "storyText": "As a developer, I want to record a reason when blocking a story so that the team understands the impediment."
+  },
+  {
+    "storyText": "As a team member, I want to attach a document to a story so that related specifications are easy to find."
+  },
+  {
+    "storyText": "As a team member, I want to upload files to a user story so that supporting materials are available to collaborators."
+  },
+  {
+    "storyText": "As a team member, I want to download an attachment from a story so that I can review it locally."
+  },
+  {
+    "storyText": "As a team member, I want to delete an outdated story attachment so that nobody uses the wrong document."
+  },
+  {
+    "storyText": "As a user, I want to receive an email when a story is assigned to me so that I notice new responsibilities."
+  },
+  {
+    "storyText": "As a team member, I want to be notified when I become the assignee of a story so that I can respond quickly."
+  },
+  {
+    "storyText": "As a user, I want to disable assignment emails so that I can reduce unnecessary messages."
+  },
+  {
+    "storyText": "As a user, I want to configure notification preferences so that I only receive relevant alerts."
+  },
+  {
+    "storyText": "As a user, I want to mark all notifications as read so that I can clear my unread count at once."
+  },
+  {
+    "storyText": "As a user, I want to delete old notifications so that my notification history remains manageable."
+  },
+  {
+    "storyText": "As a product owner, I want to search stories by story ID so that I can open a known requirement directly."
+  },
+  {
+    "storyText": "As a product owner, I want to filter backlog stories by priority so that I can focus on high-value work."
+  },
+  {
+    "storyText": "As a scrum master, I want to filter sprint stories by assignee so that I can review each member's workload."
+  },
+  {
+    "storyText": "As a team member, I want to save a story filter so that I can reuse the same view later."
+  },
+  {
+    "storyText": "As a project manager, I want to view sprint progress in a burndown chart so that I can identify delivery risk."
+  },
+  {
+    "storyText": "As a scrum master, I want to see a sprint burndown graph so that I can monitor remaining work over time."
+  },
+  {
+    "storyText": "As a product owner, I want to view completed story points by sprint so that I can understand team velocity."
+  },
+  {
+    "storyText": "As a project manager, I want to export sprint metrics to CSV so that I can analyze them in another tool."
+  },
+  {
+    "storyText": "As an administrator, I want to view an audit log of role changes so that permission updates can be reviewed."
+  },
+  {
+    "storyText": "As a workspace administrator, I want to inspect member permission history so that access changes are traceable."
+  },
+  {
+    "storyText": "As an administrator, I want to revoke a custom permission from a member so that access is reduced immediately."
+  },
+  {
+    "storyText": "As an administrator, I want to grant a member permission to manage sprints so that responsibilities can be delegated."
+  },
+  {
+    "storyText": "As a user, I want dates and times displayed in my timezone so that activity timestamps are meaningful to me."
+  },
+  {
+    "storyText": "As a user, I want to choose my preferred timezone so that all timestamps are converted correctly."
+  },
+  {
+    "storyText": "As a user, I want to switch between light and dark themes so that the interface is comfortable in different environments."
+  },
+  {
+    "storyText": "As a keyboard user, I want to navigate the backlog without a mouse so that I can use the application efficiently."
+  },
+  {
+    "storyText": "As a screen reader user, I want form errors to be announced so that I know how to correct invalid input."
+  },
+  {
+    "storyText": "As a mobile user, I want the sprint board to fit a small screen so that I can review work from my phone."
+  },
+  {
+    "storyText": "As a workspace administrator, I want to trigger a recommendation rebuild so that duplicate suggestions use the latest stories."
+  },
+  {
+    "storyText": "As an administrator, I want to rerun duplicate-story analysis so that the recommendation queue reflects recent backlog changes."
+  },
+  {
+    "storyText": "As a reviewer, I want to defer a duplicate recommendation so that I can decide after gathering more information."
+  }
+]

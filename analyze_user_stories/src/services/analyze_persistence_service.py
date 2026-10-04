@@ -6,7 +6,15 @@ class AnalyzePersistenceService:
     def __init__(self, db):
         self.db = db
 
-    def save_result(self, parsed_results, knowledge_result, sprint_id, workspace_id, creator_id):
+    def save_result(
+        self,
+        parsed_results,
+        knowledge_result,
+        sprint_id,
+        workspace_id,
+        creator_id,
+        backlog_id=None,
+    ):
 
         canonical_map = knowledge_result["canonical_map"]
 
@@ -20,6 +28,7 @@ class AnalyzePersistenceService:
                 asr_user_story_id=parsed["user_story_id"],
                 asr_workspace_id=workspace_id,
                 asr_sprint_id=sprint_id,
+                asr_backlog_id=backlog_id,
 
                 asr_subject=parsed["subject"],
                 asr_action=parsed["action"],

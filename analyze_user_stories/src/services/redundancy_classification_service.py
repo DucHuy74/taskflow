@@ -1,19 +1,26 @@
 from __future__ import annotations
 
+import hashlib
+import re
 from dataclasses import dataclass
 from itertools import combinations
 from typing import Dict, List, Tuple
 
+import pandas as pd
+
+from constant import (
+    REDUNDANCY_HIGH_THRESHOLD,
+    REDUNDANCY_SEMANTIC_HIGH_THRESHOLD,
+    REDUNDANCY_W_ACTION,
+    REDUNDANCY_W_OBJECT,
+    REDUNDANCY_W_SEMANTIC,
+    REDUNDANCY_W_SUBJECT,
+    REDUNDANCY_W_TOKEN,
+)
 from src.utils import sorted_term_pair
 
-import numpy as np
-import pandas as pd
-from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import average_precision_score, f1_score, recall_score
-from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+
+TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
 
 
 @dataclass
@@ -22,40 +29,44 @@ class StoryFeature:
     subject: str
     action: str
     object_name: str
+    story_text: str = ""
+    parse_confidence: float = 0.0
 
 
 class RedundancyClassificationService:
-    def __init__(self, threshold: float = 0.6):
+    """Explainable deterministic ranker used until human labels are sufficient."""
+
+    def __init__(self, threshold: float = 0.65):
         self.threshold = threshold
 
-    def build_story_schema(self, rows) -> List[StoryFeature]:
-        stories: List[StoryFeature] = []
-
+    def build_story_schema(self, rows, story_text_by_id=None) -> List[StoryFeature]:
+        story_text_by_id = story_text_by_id or {}
+        stories: Dict[str, StoryFeature] = {}
         for row in rows:
-            if not row.asr_user_story_id:
+            story_id = row.asr_user_story_id
+            if not story_id:
                 continue
-
             subject = (row.asr_subject_canonical or row.asr_subject or "").strip().lower()
             action = (row.asr_action_canonical or row.asr_action or "").strip().lower()
             object_name = (row.asr_object_canonical or row.asr_object or "").strip().lower()
-
             if not subject or not action or not object_name:
                 continue
-
-            stories.append(
-                StoryFeature(
-                    story_id=row.asr_user_story_id,
-                    subject=subject,
-                    action=action,
-                    object_name=object_name,
-                )
+            stories[story_id] = StoryFeature(
+                story_id=story_id,
+                subject=subject,
+                action=action,
+                object_name=object_name,
+                story_text=(story_text_by_id.get(story_id) or "").strip().lower(),
+                parse_confidence=float(row.asr_confidence or 0.0),
             )
+        return list(stories.values())
 
-        dedup: Dict[str, StoryFeature] = {}
-        for story in stories:
-            dedup[story.story_id] = story
-
-        return list(dedup.values())
+    @staticmethod
+    def _token_overlap(left: str, right: str) -> float:
+        left_tokens = set(TOKEN_PATTERN.findall(left))
+        right_tokens = set(TOKEN_PATTERN.findall(right))
+        union = left_tokens | right_tokens
+        return len(left_tokens & right_tokens) / len(union) if union else 0.0
 
     def build_pair_dataset(
         self,
@@ -63,212 +74,130 @@ class RedundancyClassificationService:
         similarity_map: Dict[Tuple[str, str], float],
         rule_map: Dict[Tuple[str, str], Dict[str, float]],
         priority_map: Dict[str, float],
+        text_similarity_map: Dict[Tuple[str, str], float] | None = None,
     ) -> pd.DataFrame:
+        text_similarity_map = text_similarity_map or {}
         rows = []
-
         for left, right in combinations(stories, 2):
             pair_key = sorted_term_pair(left.story_id, right.story_id)
             object_key = sorted_term_pair(left.object_name, right.object_name)
             action_key = sorted_term_pair(left.action, right.action)
-
-            object_similarity = similarity_map.get(object_key, 0.0)
-            action_similarity = similarity_map.get(action_key, 0.0)
-
             object_rule = rule_map.get(object_key, {})
             action_rule = rule_map.get(action_key, {})
-
-            rule_confidence = max(object_rule.get("confidence", 0.0), action_rule.get("confidence", 0.0))
-            rule_lift = max(object_rule.get("lift", 0.0), action_rule.get("lift", 0.0))
-
-            same_subject = 1.0 if left.subject == right.subject else 0.0
-            same_action = 1.0 if left.action == right.action else 0.0
-            same_object = 1.0 if left.object_name == right.object_name else 0.0
-            priority_gap = abs(priority_map.get(left.story_id, 0.0) - priority_map.get(right.story_id, 0.0))
-
-            rows.append(
-                {
-                    "pair_key": pair_key,
-                    "left_story_id": left.story_id,
-                    "right_story_id": right.story_id,
-                    "same_subject": same_subject,
-                    "same_action": same_action,
-                    "same_object": same_object,
-                    "action_similarity": action_similarity,
-                    "object_similarity": object_similarity,
-                    "rule_confidence": rule_confidence,
-                    "rule_lift": rule_lift,
-                    "priority_gap": priority_gap,
-                }
-            )
-
+            token_overlap = self._token_overlap(left.story_text, right.story_text)
+            rows.append({
+                "pair_key": "::".join(pair_key),
+                "left_story_id": left.story_id,
+                "right_story_id": right.story_id,
+                "same_subject": float(left.subject == right.subject),
+                "same_action": float(left.action == right.action),
+                "same_object": float(left.object_name == right.object_name),
+                "action_similarity": similarity_map.get(action_key, 0.0),
+                "object_similarity": similarity_map.get(object_key, 0.0),
+                "semantic_text_similarity": text_similarity_map.get(pair_key, token_overlap),
+                "token_overlap": token_overlap,
+                "parse_confidence": min(left.parse_confidence, right.parse_confidence),
+                "rule_confidence": max(object_rule.get("confidence", 0.0), action_rule.get("confidence", 0.0)),
+                "rule_lift": max(object_rule.get("lift", 0.0), action_rule.get("lift", 0.0)),
+                "priority_gap": abs(priority_map.get(left.story_id, 0.0) - priority_map.get(right.story_id, 0.0)),
+            })
         return pd.DataFrame(rows)
 
     def build_weak_labels(self, pair_df: pd.DataFrame) -> pd.DataFrame:
-        if pair_df.empty:
-            pair_df["weak_label"] = []
-            return pair_df
-
-        positive_mask = (
-            (
-                (pair_df["object_similarity"] >= 0.75)
-                | ((pair_df["same_object"] == 1.0) & (pair_df["action_similarity"] >= 0.5))
-            )
-            & (pair_df["rule_confidence"] >= 0.5)
-            & (pair_df["rule_lift"] >= 1.0)
-        )
-
-        negative_mask = (
-            (pair_df["object_similarity"] <= 0.25)
-            & (pair_df["action_similarity"] <= 0.25)
-            & (pair_df["same_object"] == 0.0)
-            & (pair_df["rule_confidence"] <= 0.3)
-        )
-
+        # Kept for experiment compatibility only. Production never trains on these labels.
+        pair_df = pair_df.copy()
         pair_df["weak_label"] = -1
-        pair_df.loc[positive_mask, "weak_label"] = 1
-        pair_df.loc[negative_mask, "weak_label"] = 0
         return pair_df
 
-    def train_baseline_models(self, labeled_df: pd.DataFrame):
-        feature_cols = [
-            "same_subject",
-            "same_action",
-            "same_object",
-            "action_similarity",
-            "object_similarity",
-            "rule_confidence",
-            "rule_lift",
-            "priority_gap",
-        ]
+    @staticmethod
+    def train_baseline_models(_labeled_df: pd.DataFrame):
+        return None, {"reason": "production_uses_deterministic_ranker"}
 
-        if labeled_df.empty:
-            return None, {"reason": "no_labeled_pairs"}
-
-        if labeled_df["weak_label"].nunique() < 2:
-            return None, {"reason": "single_class_labels"}
-
-        x = labeled_df[feature_cols]
-        y = labeled_df["weak_label"]
-
-        x_train, x_test, y_train, y_test = train_test_split(
-            x,
-            y,
-            test_size=0.3,
-            random_state=42,
-            stratify=y,
-        )
-
-        models = {
-            "logistic_regression": Pipeline(
-                steps=[
-                    ("scaler", StandardScaler()),
-                    ("clf", LogisticRegression(max_iter=200, class_weight="balanced")),
-                ]
-            ),
-            "random_forest": RandomForestClassifier(
-                n_estimators=250,
-                random_state=42,
-                class_weight="balanced_subsample",
-            ),
-            "hist_gradient_boosting": HistGradientBoostingClassifier(random_state=42),
-        }
-
-        scores = {}
-        fitted_models = {}
-
-        for name, model in models.items():
-            model.fit(x_train, y_train)
-            pred = model.predict(x_test)
-
-            if hasattr(model, "predict_proba"):
-                proba = model.predict_proba(x_test)[:, 1]
-            else:
-                decision = model.decision_function(x_test)
-                proba = 1 / (1 + np.exp(-decision))
-
-            scores[name] = {
-                "f1_redundant": float(f1_score(y_test, pred, pos_label=1)),
-                "recall_redundant": float(recall_score(y_test, pred, pos_label=1)),
-                "pr_auc": float(average_precision_score(y_test, proba)),
-            }
-            fitted_models[name] = model
-
-        best_name = max(scores.keys(), key=lambda model_name: scores[model_name]["f1_redundant"])
-        return fitted_models[best_name], {"best_model": best_name, "metrics": scores}
-
-    def predict_redundancy(self, model, pair_df: pd.DataFrame) -> pd.DataFrame:
-        feature_cols = [
-            "same_subject",
-            "same_action",
-            "same_object",
-            "action_similarity",
-            "object_similarity",
-            "rule_confidence",
-            "rule_lift",
-            "priority_gap",
-        ]
-
+    def predict_redundancy(self, _model, pair_df: pd.DataFrame) -> pd.DataFrame:
+        pair_df = pair_df.copy()
         if pair_df.empty:
-            pair_df["redundancy_prob"] = []
+            pair_df["duplicate_score"] = []
+            pair_df["redundancy_prob"] = []  # compatibility with the existing graph writer
+            pair_df["confidence_band"] = []
             pair_df["is_redundant"] = []
+            pair_df["reason_codes"] = []
             return pair_df
 
-        if model is None:
-            score = (
-                0.35 * pair_df["object_similarity"]
-                + 0.2 * pair_df["action_similarity"]
-                + 0.15 * pair_df["same_object"]
-                + 0.15 * pair_df["rule_confidence"]
-                + 0.15 * pair_df["same_action"]
-            )
-            pair_df["redundancy_prob"] = score.clip(0.0, 1.0)
-        else:
-            pair_df["redundancy_prob"] = model.predict_proba(pair_df[feature_cols])[:, 1]
-
-        pair_df["is_redundant"] = pair_df["redundancy_prob"] >= self.threshold
+        action_signal = pair_df[["same_action", "action_similarity"]].max(axis=1)
+        object_signal = pair_df[["same_object", "object_similarity"]].max(axis=1)
+        score = (
+            REDUNDANCY_W_SEMANTIC * pair_df["semantic_text_similarity"]
+            + REDUNDANCY_W_ACTION * action_signal
+            + REDUNDANCY_W_OBJECT * object_signal
+            + REDUNDANCY_W_SUBJECT * pair_df["same_subject"]
+            + REDUNDANCY_W_TOKEN * pair_df["token_overlap"]
+        ).clip(0.0, 1.0)
+        pair_df["duplicate_score"] = score
+        pair_df["redundancy_prob"] = score
+        pair_df["is_redundant"] = score >= self.threshold
+        high = (
+            (score >= REDUNDANCY_HIGH_THRESHOLD)
+            & (pair_df["semantic_text_similarity"] >= REDUNDANCY_SEMANTIC_HIGH_THRESHOLD)
+            & ((pair_df["same_action"] == 1.0) | (pair_df["same_object"] == 1.0))
+        )
+        pair_df["confidence_band"] = "LOW"
+        pair_df.loc[pair_df["is_redundant"], "confidence_band"] = "MEDIUM"
+        pair_df.loc[high, "confidence_band"] = "HIGH"
+        pair_df["reason_codes"] = pair_df.apply(self._reason_codes, axis=1)
         return pair_df
 
-    def build_groups(self, pair_df: pd.DataFrame, stories: List[StoryFeature]) -> Dict[str, str]:
-        parent = {story.story_id: story.story_id for story in stories}
+    @staticmethod
+    def _reason_codes(row):
+        reasons = []
+        if row["same_action"] == 1.0:
+            reasons.append("SAME_CANONICAL_ACTION")
+        if row["same_object"] == 1.0:
+            reasons.append("SAME_CANONICAL_OBJECT")
+        if row["semantic_text_similarity"] >= 0.65:
+            reasons.append("SEMANTIC_TEXT_SIMILARITY")
+        if row["same_subject"] == 1.0:
+            reasons.append("SUBJECT_COMPATIBILITY")
+        if row["token_overlap"] >= 0.5:
+            reasons.append("TOKEN_ENTITY_OVERLAP")
+        if row["parse_confidence"] < 0.5:
+            reasons.append("LOW_PARSE_CONFIDENCE")
+        return reasons
+
+    @staticmethod
+    def build_groups(pair_df: pd.DataFrame, _stories: List[StoryFeature]) -> Dict[str, str]:
+        parent = {}
 
         def find(node):
-            while parent[node] != node:
-                parent[node] = parent[parent[node]]
-                node = parent[node]
-            return node
+            parent.setdefault(node, node)
+            if parent[node] != node:
+                parent[node] = find(parent[node])
+            return parent[node]
 
         def union(left, right):
-            left_root = find(left)
-            right_root = find(right)
+            left_root, right_root = find(left), find(right)
             if left_root != right_root:
-                parent[right_root] = left_root
+                parent[max(left_root, right_root)] = min(left_root, right_root)
 
         for _, row in pair_df[pair_df["is_redundant"] == True].iterrows():
             union(row["left_story_id"], row["right_story_id"])
 
-        root_to_group = {}
-        group_map = {}
-        index = 1
+        components = {}
+        for story_id in parent:
+            components.setdefault(find(story_id), []).append(story_id)
+        result = {}
+        for members in components.values():
+            if len(members) < 2:
+                continue
+            stable_members = sorted(members)
+            group_key = "dup_" + hashlib.sha256("|".join(stable_members).encode()).hexdigest()[:16]
+            result.update({story_id: group_key for story_id in stable_members})
+        return result
 
-        for story in stories:
-            root = find(story.story_id)
-            if root not in root_to_group:
-                root_to_group[root] = f"group_{index}"
-                index += 1
-            group_map[story.story_id] = root_to_group[root]
-
-        return group_map
-
-    def aggregate_story_scores(self, pair_df: pd.DataFrame, stories: List[StoryFeature]) -> Dict[str, float]:
+    @staticmethod
+    def aggregate_story_scores(pair_df: pd.DataFrame, stories: List[StoryFeature]) -> Dict[str, float]:
         score_map = {story.story_id: 0.0 for story in stories}
-        if pair_df.empty:
-            return score_map
-
         for _, row in pair_df.iterrows():
-            left = row["left_story_id"]
-            right = row["right_story_id"]
-            prob = float(row["redundancy_prob"])
-            score_map[left] = max(score_map[left], prob)
-            score_map[right] = max(score_map[right], prob)
-
+            score = float(row["duplicate_score"])
+            score_map[row["left_story_id"]] = max(score_map[row["left_story_id"]], score)
+            score_map[row["right_story_id"]] = max(score_map[row["right_story_id"]], score)
         return score_map

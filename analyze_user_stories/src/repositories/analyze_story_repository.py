@@ -1,11 +1,11 @@
 from .base_repository import BaseRepository
-from models.analyze_story import AnalyzeStory
+from src.models.analyze_story_result import AnalyzeStoryResult
 
 class AnalyzeStoryRepository(BaseRepository):
 
     def get_by_story_and_sprint(self, session, story_id, sprint_id):
-        return session.query(AnalyzeStory).filter(
-            AnalyzeStory.as_user_story_id == story_id,
-            AnalyzeStory.as_sprint_id == sprint_id,
-            AnalyzeStory.as_is_deleted == False
+        return session.query(AnalyzeStoryResult).filter(
+            AnalyzeStoryResult.asr_user_story_id == story_id,
+            AnalyzeStoryResult.asr_sprint_id == sprint_id,
+            AnalyzeStoryResult.asr_is_deleted == False
         ).first()

@@ -65,7 +65,8 @@ class Neo4jService:
         FOREACH (ignoreMe IN CASE WHEN row.story_id IS NOT NULL THEN [1] ELSE [] END |
             MERGE (story:UserStory {id: row.story_id})
             // Hàm coalesce: nếu row.priority bị null, nó sẽ giữ nguyên priority cũ trong DB 
-            SET story.priority = coalesce(row.priority, story.priority) 
+            SET story.priority = coalesce(row.priority, story.priority),
+                story.workspace_id = $ws
         )
 
         // TẠO MỐI QUAN HỆ PERFORM & TARGET
@@ -231,17 +232,24 @@ class Neo4jService:
         query = """
         UNWIND $pairs AS row
         MERGE (a:UserStory {id: row.left_story_id})
-        SET a.workspace_id = coalesce(a.workspace_id, $ws)
+        SET a.workspace_id = $ws
         MERGE (b:UserStory {id: row.right_story_id})
-        SET b.workspace_id = coalesce(b.workspace_id, $ws)
+        SET b.workspace_id = $ws
         MERGE (a)-[r:REDUNDANT_WITH {workspace_id: $ws}]->(b)
         SET r.score = row.redundancy_prob,
             r.group_id = row.group_id,
             r.model = row.model_name,
-            r.is_redundant = coalesce(row.is_redundant, false)
+            r.is_redundant = coalesce(row.is_redundant, false),
+            r.confidence_band = row.confidence_band,
+            r.reason_codes_json = row.reason_codes_json,
+            r.policy_version = row.policy_version
         RETURN count(r) AS written
         """
-        rows = self._write(query, {"ws": workspace_id, "pairs": pairs})
+        serialized_pairs = [
+            {**pair, "reason_codes_json": json.dumps(pair.get("reason_codes", []), separators=(",", ":"))}
+            for pair in pairs
+        ]
+        rows = self._write(query, {"ws": workspace_id, "pairs": serialized_pairs})
         written = rows[0]["written"] if rows else len(pairs)
         print(f"[NEO4J] REDUNDANT_WITH saved: {written} edges workspace={workspace_id}")
         return written
@@ -261,11 +269,10 @@ class Neo4jService:
         query = """
         UNWIND $rows AS row
         MERGE (s:UserStory {id: row.story_id})
-        SET s.priority_refined = row.priority_refined,
-            s.redundancy_prob = row.redundancy_prob,
-            s.priority_final = row.priority_final,
+        SET s.graph_relevance_score = row.graph_relevance_score,
+            s.duplicate_score = row.duplicate_score,
             s.redundancy_group_id = row.redundancy_group_id,
-            s.workspace_id = coalesce(s.workspace_id, $ws)
+            s.workspace_id = $ws
         """
         self._write(query, {"ws": workspace_id, "rows": story_outputs})
 
@@ -290,8 +297,12 @@ class Neo4jService:
         RETURN a.id AS left_story_id,
                b.id AS right_story_id,
                coalesce(r.score, 0.0) AS redundancy_prob,
-               coalesce(r.group_id, "group_0") AS group_id,
-               coalesce(r.model, "unknown") AS model_name
+               r.group_id AS group_id,
+               coalesce(r.model, "unknown") AS model_name,
+               coalesce(r.is_redundant, false) AS is_redundant,
+               coalesce(r.confidence_band, "LOW") AS confidence_band,
+               coalesce(r.reason_codes_json, "[]") AS reason_codes_json,
+               r.policy_version AS policy_version
         ORDER BY redundancy_prob DESC
         LIMIT $top_k
         """
@@ -299,4 +310,4 @@ class Neo4jService:
         
     def run_query(self, query, params=None):
         result = self._read(query, params or {})
-        return list(result) 
+        return list(result)
