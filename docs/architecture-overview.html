@@ -11,7 +11,7 @@
     body{min-height:100vh;padding:48px 32px;background:var(--paper);color:var(--ink);font-family:var(--sans)}
     main{width:min(1200px,100%);margin:0 auto}.eyebrow{margin-bottom:8px;color:var(--muted);font:500 12px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase}
     h1{margin-bottom:8px;font:400 clamp(28px,4vw,40px)/1.1 var(--serif);letter-spacing:-.02em}.intro{max-width:760px;color:var(--muted);font-size:16px;line-height:1.6}
-    .diagram{margin-top:32px;overflow-x:auto}svg{display:block;width:100%;min-width:960px;height:auto}.zone{fill:rgba(17,24,39,.02);stroke:rgba(17,24,39,.10);stroke-width:.8}
+    .diagram{margin-top:32px;overflow-x:auto}svg{display:block;width:100%;min-width:1200px;height:auto}.zone{fill:rgba(17,24,39,.02);stroke:rgba(17,24,39,.10);stroke-width:.8}
     .zone-mask,.label-mask,.node-mask{fill:var(--paper)}.node{fill:#fff;stroke:var(--ink);stroke-width:1}.node.input{fill:rgba(107,114,128,.10);stroke:var(--soft)}.node.store{fill:rgba(17,24,39,.05);stroke:var(--muted)}.node.external{fill:rgba(17,24,39,.03);stroke:rgba(17,24,39,.30)}.node.focal{fill:rgba(99,102,241,.08);stroke:var(--accent);stroke-width:1.2}
     .name{fill:var(--ink);font:600 12px var(--sans);text-anchor:middle}.meta,.tag,.arrow-label,.legend{fill:var(--muted);font:8px var(--mono);text-anchor:middle}.tag,.arrow-label{letter-spacing:.06em}.zone-label{fill:var(--muted);font:8px var(--mono);text-anchor:middle;letter-spacing:.14em}.tag-box{fill:transparent;stroke:rgba(17,24,39,.32);stroke-width:.8}.tag-box.accent{stroke:rgba(99,102,241,.50)}
     footer{margin-top:24px;padding-top:16px;border-top:1px solid var(--rule);color:var(--muted);font:12px/1.5 var(--mono)}
@@ -21,11 +21,11 @@
   <main>
     <p class="eyebrow">Architecture · TaskFlow</p>
     <h1>From planning work to understanding it</h1>
-    <p class="intro">TaskFlow keeps transactional planning in MySQL while an asynchronous NLP pipeline turns user stories into an explorable Neo4j knowledge graph.</p>
+    <p class="intro">TaskFlow keeps transactional planning in MySQL while an asynchronous analysis pipeline turns user stories into an explorable graph and reviewable recommendations.</p>
     <div class="diagram">
       <svg viewBox="0 0 1200 680" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="taskflow-architecture-title taskflow-architecture-desc">
         <title id="taskflow-architecture-title">TaskFlow architecture overview</title>
-        <desc id="taskflow-architecture-desc">React and Flutter clients call a Spring Boot API secured by Keycloak. The API stores work in MySQL, publishes events through RabbitMQ to a Python NLP worker, and serves a knowledge graph stored in Neo4j.</desc>
+        <desc id="taskflow-architecture-desc">React and Flutter clients call a Spring Boot API secured by Keycloak. The API stores work in MySQL, publishes events through RabbitMQ to a Python analysis worker, and serves recommendations and a knowledge graph stored in Neo4j.</desc>
         <defs>
           <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6b7280"/></marker>
           <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker>
@@ -76,7 +76,7 @@
         <rect class="node-mask" x="360" y="376" width="200" height="64" rx="6"/><rect class="node" x="360" y="376" width="200" height="64" rx="6"/>
         <rect class="tag-box" x="372" y="384" width="48" height="12" rx="2"/><text class="tag" x="396" y="392">QUEUE</text><text class="name" x="460" y="412">RabbitMQ</text><text class="meta" x="460" y="428">STORY EVENTS</text>
         <rect class="node-mask" x="624" y="376" width="160" height="64" rx="6"/><rect class="node" x="624" y="376" width="160" height="64" rx="6"/>
-        <rect class="tag-box" x="636" y="384" width="48" height="12" rx="2"/><text class="tag" x="660" y="392">WORKER</text><text class="name" x="704" y="412">Python NLP</text><text class="meta" x="704" y="428">SVO · SIMILARITY</text>
+        <rect class="tag-box" x="636" y="384" width="48" height="12" rx="2"/><text class="tag" x="660" y="392">WORKER</text><text class="name" x="704" y="412">Analysis engine</text><text class="meta" x="704" y="428">SVO · RECOMMEND</text>
 
         <!-- Data stores -->
         <rect class="node-mask" x="920" y="196" width="200" height="64" rx="6"/><rect class="node store" x="920" y="196" width="200" height="64" rx="6"/>

@@ -38,3 +38,4 @@ build/
 **/master-data/
 **/slave-data/
 *.sock
+/docs/

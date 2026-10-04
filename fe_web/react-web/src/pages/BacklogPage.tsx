@@ -20,8 +20,10 @@ import { BacklogList, SprintBoard, SprintBoardEmpty, CreateSprintDialog, UserSto
 import { getBacklogStories, createUserStories } from '@/services/backlogService';
 import { sprintService } from '@/services/sprintService';
 import { workspaceService } from '@/services/workspaceService';
+import { recommendationService } from '@/services/recommendationService';
 import { useToastMessage } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { GitBranch, Layers3, Search, Sparkles } from 'lucide-react';
 import type { UserStory } from '@/types/userStory';
 import type { CreateSprintRequest, Sprint } from '@/types/sprint';
@@ -73,6 +75,13 @@ export function BacklogPage() {
   const { data: workspace } = useQuery({
     queryKey: ['workspace', workspaceId],
     queryFn: () => workspaceService.getWorkspace(workspaceId),
+  });
+
+  const { data: recommendationQueue } = useQuery({
+    queryKey: ['recommendations', workspaceId, 'summary'],
+    queryFn: () => recommendationService.list(workspaceId, { status: 'OPEN', limit: 1 }),
+    enabled: Boolean(workspaceId),
+    refetchInterval: 30_000,
   });
 
   const filteredBacklogStories = useMemo(() => {
@@ -258,7 +267,17 @@ export function BacklogPage() {
         <div className="mx-auto max-w-[1480px]">
           <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div><nav className="mb-1 text-xs font-medium text-slate-500" aria-label="Breadcrumb">Workspaces / {workspace?.name || 'Workspace'}</nav><h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">Backlog</h1><p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Plan stories, prepare sprints, and turn analyzed requirements into a connected map.</p></div>
-            <Button onClick={() => navigate(`/workspace/${workspaceId}/graph`)}><GitBranch className="h-4 w-4" aria-hidden="true" /> Open story map</Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => navigate(`/workspace/${workspaceId}/recommendations`)}>
+                <Sparkles className="h-4 w-4" aria-hidden="true" /> Review suggestions
+                {(recommendationQueue?.summary.open || 0) > 0 && (
+                  <Badge variant="warning" aria-label={`${recommendationQueue?.summary.open} open recommendations`}>
+                    {recommendationQueue?.summary.open}
+                  </Badge>
+                )}
+              </Button>
+              <Button onClick={() => navigate(`/workspace/${workspaceId}/graph`)}><GitBranch className="h-4 w-4" aria-hidden="true" /> Open story map</Button>
+            </div>
           </div>
 
           <div className="mb-5 flex flex-col gap-3 border-b border-slate-200 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
