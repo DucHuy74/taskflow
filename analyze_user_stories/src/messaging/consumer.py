@@ -91,7 +91,8 @@ def handle_story_created(data):
             }],
             sprint_id=data.get("sprintId"),
             workspace_id=workspace_id,
-            creator_id=None
+            creator_id=None,
+            backlog_id=data.get("backlogId"),
         )
 
         svo_list = result.get("svo_list", [])

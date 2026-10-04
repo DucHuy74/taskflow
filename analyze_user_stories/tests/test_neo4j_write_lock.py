@@ -5,10 +5,50 @@ import unittest
 from src.services.neo4j_write_lock import WorkspaceWriteLock
 
 
+class _ScalarResult:
+    def __init__(self, value):
+        self.value = value
+
+    def scalar(self):
+        return self.value
+
+
+class _Connection:
+    def __init__(self, engine):
+        self.engine = engine
+        self.held_lock = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        if self.held_lock and self.held_lock.locked():
+            self.held_lock.release()
+
+    def execute(self, statement, params):
+        if "GET_LOCK" in str(statement):
+            lock = self.engine.locks.setdefault(params["lock_name"], threading.Lock())
+            acquired = lock.acquire(timeout=params["timeout_seconds"])
+            self.held_lock = lock if acquired else None
+            return _ScalarResult(1 if acquired else 0)
+        if self.held_lock and self.held_lock.locked():
+            self.held_lock.release()
+            self.held_lock = None
+        return _ScalarResult(1)
+
+
+class _Engine:
+    def __init__(self):
+        self.locks = {}
+
+    def connect(self):
+        return _Connection(self)
+
+
 class TestNeo4jWriteLock(unittest.TestCase):
 
     def setUp(self):
-        self.lock = WorkspaceWriteLock()
+        self.lock = WorkspaceWriteLock(engine=_Engine(), timeout_seconds=2)
         self.workspace_id = f"test-ws-{time.time_ns()}"
 
     def test_exclusive_sets_rebuilding_flag(self):

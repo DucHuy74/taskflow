@@ -9,13 +9,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only requirements first for better layer caching
-COPY requirements.txt .
+COPY requirements.txt requirements-recommendation.txt ./
 
 # Pre-download wheel packages to reduce network calls during install
 RUN pip install --user --no-cache-dir wheel
 
 # Install all dependencies in one layer
 RUN pip install --user --no-cache-dir -r requirements.txt
+RUN pip install --user --no-cache-dir -r requirements-recommendation.txt
 
 # Download spacy model separately (avoiding large wheel in requirements)
 RUN pip install --user --no-cache-dir \
@@ -38,4 +39,4 @@ RUN useradd --create-home appuser && chown -R appuser:appuser /app
 USER appuser
 
 # Default command
-CMD ["python", "app.py"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

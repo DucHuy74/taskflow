@@ -1,5 +1,10 @@
+import hashlib
+import logging
 import math
 import numpy as np
+
+
+logger = logging.getLogger(__name__)
 
 
 class PriorityService:
@@ -9,6 +14,8 @@ class PriorityService:
         self.db = db
 
     def compute_centrality(self, workspace_id):
+
+        graph_name = f"termGraph_{hashlib.sha256(workspace_id.encode()).hexdigest()[:16]}"
 
         print(f"[PRIORITY] Computing centrality workspace={workspace_id}...")
 
@@ -32,10 +39,10 @@ class PriorityService:
         # =========================
         try:
             self.neo4j_service.run_query("""
-            CALL gds.graph.drop('termGraph', false)
+            CALL gds.graph.drop($graphName, false)
             YIELD graphName
-            """)
-        except:
+            """, {"graphName": graph_name})
+        except Exception:
             pass
 
         try:
@@ -43,15 +50,15 @@ class PriorityService:
             # =========================
             # PROJECT GRAPH
             # =========================
-            self.neo4j_service.run_query(f"""
+            self.neo4j_service.run_query("""
             CALL gds.graph.project.cypher(
 
-                'termGraph',
+                $graphName,
 
                 '
                 MATCH (n:Term)
 
-                WHERE n.workspace_id = "{workspace_id}"
+                WHERE n.workspace_id = $ws
 
                 RETURN id(n) AS id
                 ',
@@ -59,25 +66,26 @@ class PriorityService:
                 '
                 MATCH (n:Term)-[r]->(m:Term)
 
-                WHERE n.workspace_id = "{workspace_id}"
-                AND m.workspace_id = "{workspace_id}"
+                WHERE n.workspace_id = $ws
+                AND m.workspace_id = $ws
 
                 RETURN
                     id(n) AS source,
                     id(m) AS target
-                '
+                ',
+                {parameters: {ws: $ws}}
             )
             YIELD graphName, nodeCount, relationshipCount
 
             RETURN graphName, nodeCount, relationshipCount
-            """)
+            """, {"graphName": graph_name, "ws": workspace_id})
 
             # =========================
             # BETWEENNESS
             # =========================
             self.neo4j_service.run_query("""
             CALL gds.betweenness.write(
-                'termGraph',
+                $graphName,
                 {
                     writeProperty: 'betweenness'
                 }
@@ -85,7 +93,7 @@ class PriorityService:
             YIELD nodePropertiesWritten
 
             RETURN nodePropertiesWritten
-            """)
+            """, {"graphName": graph_name})
 
             # =========================
             # NORMALIZE
@@ -106,16 +114,6 @@ class PriorityService:
                 "ws": workspace_id
             })
 
-            # =========================
-            # DROP GRAPH
-            # =========================
-            self.neo4j_service.run_query("""
-            CALL gds.graph.drop('termGraph')
-            YIELD graphName
-
-            RETURN graphName
-            """)
-
             print("[PRIORITY] GDS betweenness computed")
 
         except Exception as e:
@@ -131,6 +129,19 @@ class PriorityService:
             """, {
                 "ws": workspace_id
             })
+
+        finally:
+            try:
+                self.neo4j_service.run_query("""
+                CALL gds.graph.drop($graphName, false)
+                YIELD graphName
+                RETURN graphName
+                """, {"graphName": graph_name})
+            except Exception as drop_error:
+                logger.warning(
+                    "gds_graph_drop_failed",
+                    extra={"graph_name": graph_name, "error": str(drop_error)},
+                )
 
         print("[PRIORITY] Centrality done")
 

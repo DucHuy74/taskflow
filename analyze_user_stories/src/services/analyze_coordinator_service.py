@@ -19,7 +19,14 @@ class AnalyzeCoordinatorService:
         self.persistence = persistence_service
         self.neo4j = neo4j_service
 
-    def analyze_and_save(self, texts, sprint_id, workspace_id, creator_id):
+    def analyze_and_save(
+        self,
+        texts,
+        sprint_id,
+        workspace_id,
+        creator_id,
+        backlog_id=None,
+    ):
 
         parsed_results = []
 
@@ -50,7 +57,8 @@ class AnalyzeCoordinatorService:
             knowledge_result,
             sprint_id,
             workspace_id,
-            creator_id
+            creator_id,
+            backlog_id,
         )
 
         svo_list = []

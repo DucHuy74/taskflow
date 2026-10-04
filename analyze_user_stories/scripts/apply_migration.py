@@ -23,7 +23,32 @@ MIGRATIONS = [
             ),
         ],
     ),
+    (
+        "002_add_backlog_context",
+        [
+            (
+                "asr_backlog_id",
+                "ALTER TABLE analyze_story_results ADD COLUMN asr_backlog_id VARCHAR(36) NULL",
+            ),
+        ],
+    ),
 ]
+
+CREATE_STORY_EMBEDDINGS = """
+CREATE TABLE IF NOT EXISTS story_embeddings (
+    id VARCHAR(36) PRIMARY KEY,
+    workspace_id VARCHAR(36) NOT NULL,
+    story_id VARCHAR(36) NOT NULL,
+    content_fingerprint VARCHAR(64) NOT NULL,
+    model_version VARCHAR(100) NOT NULL,
+    vector LONGBLOB NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_story_embedding_revision
+        UNIQUE (workspace_id, story_id, content_fingerprint, model_version),
+    INDEX idx_story_embedding_workspace (workspace_id),
+    INDEX idx_story_embedding_story (story_id)
+)
+"""
 
 
 def main():
@@ -50,6 +75,9 @@ def main():
                     cur.execute(ddl)
                     existing.add(col_name)
                     print(f"  added {col_name}")
+
+            cur.execute(CREATE_STORY_EMBEDDINGS)
+            print("Migration 003_create_story_embeddings: ensured table exists")
 
         conn.commit()
         print("Migrations applied successfully.")
