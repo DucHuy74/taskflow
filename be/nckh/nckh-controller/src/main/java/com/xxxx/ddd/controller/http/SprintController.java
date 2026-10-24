@@ -2,11 +2,13 @@ package com.xxxx.ddd.controller.http;
 
 import com.xxxx.ddd.application.model.dto.request.SprintAddUserStoriesRequest;
 import com.xxxx.ddd.application.model.dto.request.SprintCreateRequest;
+import com.xxxx.ddd.application.model.dto.request.SprintUpdateRequest;
 import com.xxxx.ddd.application.model.dto.response.SprintResponse;
 import com.xxxx.ddd.application.model.dto.response.UserStoryResponse;
 import com.xxxx.ddd.application.service.sprint.SprintAppService;
 import com.xxxx.ddd.application.service.sprint.SprintStoryRetryService;
 import com.xxxx.ddd.common.dto.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -30,12 +32,26 @@ public class SprintController {
     @PostMapping("/workspace/{workspaceId}")
     public ResponseEntity<ApiResponse<SprintResponse>> createSprint(
             @PathVariable("workspaceId") String workspaceId,
-            @RequestBody SprintCreateRequest request
+            @Valid @RequestBody SprintCreateRequest request
     ) {
         return ResponseEntity.ok(
                 ApiResponse.<SprintResponse>builder()
                         .message("Sprint created successfully")
                         .result(sprintService.createSprint(workspaceId, request))
+                        .build()
+        );
+    }
+
+    // Update sprint name/dates
+    @PutMapping("/{sprintId}")
+    public ResponseEntity<ApiResponse<SprintResponse>> updateSprint(
+            @PathVariable("sprintId") String sprintId,
+            @Valid @RequestBody SprintUpdateRequest request
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.<SprintResponse>builder()
+                        .message("Sprint updated successfully")
+                        .result(sprintService.updateSprint(sprintId, request))
                         .build()
         );
     }

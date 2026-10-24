@@ -2,9 +2,12 @@ package com.xxxx.ddd.infrastructure.identity.adapter;
 
 import com.xxxx.ddd.application.model.dto.identity.Credential;
 import com.xxxx.ddd.application.model.dto.identity.TokenExchangeParam;
+import com.xxxx.ddd.application.model.dto.identity.TokenExchangeResponse;
 import com.xxxx.ddd.application.model.dto.identity.UserCreationParam;
+import com.xxxx.ddd.common.exception.ErrorCode;
 import com.xxxx.ddd.infrastructure.identity.client.IdentityClient;
 import com.xxxx.ddd.infrastructure.identity.exception.ErrorNormalizer;
+import com.xxxx.dddd.domain.exception.AppException;
 import com.xxxx.dddd.domain.identity.IdentityService;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +16,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -38,14 +43,7 @@ public class IdentityServiceImpl implements IdentityService {
             String password
     ) {
         try {
-            var token = identityClient.exchangeToken(
-                    TokenExchangeParam.builder()
-                            .grant_type("client_credentials")
-                            .client_id(clientId)
-                            .client_secret(clientSecret)
-                            .scope("openid")
-                            .build()
-            );
+            var token = exchangeClientToken();
 
             log.info("TokenInfo {}", token);
 
@@ -74,6 +72,34 @@ public class IdentityServiceImpl implements IdentityService {
         } catch (FeignException ex) {
             throw errorNormalizer.handleKeyCloakException(ex);
         }
+    }
+
+    @Override
+    public void updateUserName(String userId, String firstName, String lastName) {
+        try {
+            String bearer = "Bearer " + exchangeClientToken().getAccessToken();
+
+            Map<String, Object> current = identityClient.getUser(bearer, userId);
+            Map<String, Object> representation = current == null ? new HashMap<>() : new HashMap<>(current);
+            representation.put("firstName", firstName);
+            representation.put("lastName", lastName);
+
+            identityClient.updateUser(bearer, userId, representation);
+        } catch (FeignException ex) {
+            log.warn("Keycloak user update failed for userId={} status={}", userId, ex.status(), ex);
+            throw new AppException(ErrorCode.IDENTITY_SYNC_FAILED);
+        }
+    }
+
+    private TokenExchangeResponse exchangeClientToken() {
+        return identityClient.exchangeToken(
+                TokenExchangeParam.builder()
+                        .grant_type("client_credentials")
+                        .client_id(clientId)
+                        .client_secret(clientSecret)
+                        .scope("openid")
+                        .build()
+        );
     }
 
     private String extractUserId(ResponseEntity<?> response) {

@@ -3,6 +3,7 @@ package com.xxxx.ddd.controller.http;
 import com.xxxx.ddd.application.model.dto.request.WorkspaceAddMemberRequest;
 import com.xxxx.ddd.application.model.dto.request.WorkspaceCreateRequest;
 import com.xxxx.ddd.application.model.dto.request.WorkspaceUpdateRequest;
+import com.xxxx.ddd.application.model.dto.response.RebuildGraphResponse;
 import com.xxxx.ddd.application.model.dto.response.WorkspaceMemberResponse;
 import com.xxxx.ddd.application.model.dto.response.WorkspaceResponse;
 import com.xxxx.ddd.application.service.workspace.WorkspaceAppService;
@@ -70,6 +71,13 @@ public class WorkspaceController {
                 .build();
     }
 
+    @GetMapping("/{workspaceId}")
+    public ApiResponse<WorkspaceResponse> getWorkspace(@PathVariable("workspaceId") String workspaceId) {
+        return ApiResponse.<WorkspaceResponse>builder()
+                .result(workspaceService.getWorkspace(workspaceId))
+                .build();
+    }
+
     @DeleteMapping("/{workspaceId}")
     public ApiResponse<Void> deleteWorkspace(@PathVariable("workspaceId")String workspaceId) {
         workspaceService.deleteWorkspace(workspaceId);
@@ -88,11 +96,11 @@ public class WorkspaceController {
     }
 
     @PostMapping("/{workspaceId}/rebuild-graph")
-    public ResponseEntity<String> rebuildGraph(@PathVariable("workspaceId") String workspaceId) {
-
-        workspaceService.triggerRebuildGraph(workspaceId);
-
-        return ResponseEntity.ok("Rebuild triggered");
+    public ApiResponse<RebuildGraphResponse> rebuildGraph(@PathVariable("workspaceId") String workspaceId) {
+        return ApiResponse.<RebuildGraphResponse>builder()
+                .message("Rebuild triggered")
+                .result(workspaceService.triggerRebuildGraph(workspaceId))
+                .build();
     }
 }
 

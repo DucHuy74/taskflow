@@ -4,6 +4,7 @@ import com.xxxx.ddd.application.mapper.WorkspaceMapper;
 import com.xxxx.ddd.application.model.dto.request.WorkspaceAddMemberRequest;
 import com.xxxx.ddd.application.model.dto.request.WorkspaceCreateRequest;
 import com.xxxx.ddd.application.model.dto.request.WorkspaceUpdateRequest;
+import com.xxxx.ddd.application.model.dto.response.RebuildGraphResponse;
 import com.xxxx.ddd.application.model.dto.response.WorkspaceMemberResponse;
 import com.xxxx.ddd.application.model.dto.response.WorkspaceResponse;
 import com.xxxx.ddd.application.port.async.GraphEventPort;
@@ -208,20 +209,39 @@ public class WorkspaceAppServiceImpl implements WorkspaceAppService {
                             List.of(member.getWorkspaceRole().getRoleName().name())
                     );
 
-                    res.setOwnerId(
-                            workspace.getMembers().stream()
-                                    .filter(m ->
-                                            m.getWorkspaceRole().getRoleName()
-                                                    == WorkspaceRoleType.ADMIN
-                                    )
-                                    .map(m -> m.getProfile().getUserId())
-                                    .findFirst()
-                                    .orElse(null)
-                    );
+                    res.setOwnerId(resolveOwnerId(workspace));
 
                     return res;
                 })
                 .toList();
+    }
+
+    @Transactional
+    public WorkspaceResponse getWorkspace(String workspaceId) {
+
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new AppException(ErrorCode.WORKSPACE_NOT_FOUND));
+
+        WorkspaceMember member = workspaceAccessService.require(workspaceId, Permission.WORKSPACE_BROWSE);
+
+        WorkspaceResponse res = workspaceMapper.toWorkspaceResponse(workspace);
+        res.setRoles(List.of(member.getWorkspaceRole().getRoleName().name()));
+        res.setOwnerId(resolveOwnerId(workspace));
+        return res;
+    }
+
+    private String resolveOwnerId(Workspace workspace) {
+        if (workspace.getMembers() == null) {
+            return null;
+        }
+        return workspace.getMembers().stream()
+                .filter(m ->
+                        m.getWorkspaceRole().getRoleName()
+                                == WorkspaceRoleType.ADMIN
+                )
+                .map(m -> m.getProfile().getUserId())
+                .findFirst()
+                .orElse(null);
     }
 
 
@@ -253,11 +273,11 @@ public class WorkspaceAppServiceImpl implements WorkspaceAppService {
     }
 
 
-    public void triggerRebuildGraph(String workspaceId) {
+    public RebuildGraphResponse triggerRebuildGraph(String workspaceId) {
         workspaceAccessService.require(workspaceId, Permission.WORKSPACE_ADMINISTER);
         String jobId = UUID.randomUUID().toString();
         String sourceRevision = UUID.randomUUID().toString().replace("-", "");
-        recommendationJobRepository.save(RecommendationJob.builder()
+        RecommendationJob job = recommendationJobRepository.save(RecommendationJob.builder()
                 .id(jobId)
                 .workspaceId(workspaceId)
                 .sourceRevision(sourceRevision)
@@ -269,5 +289,11 @@ public class WorkspaceAppServiceImpl implements WorkspaceAppService {
                 .createdAt(Instant.now())
                 .build());
         graphEventPort.sendRebuildEvent(workspaceId, jobId, sourceRevision);
+        return RebuildGraphResponse.builder()
+                .jobId(jobId)
+                .status(job != null && job.getStatus() != null
+                        ? job.getStatus()
+                        : RecommendationJobStatus.QUEUED)
+                .build();
     }
 }

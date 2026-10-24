@@ -1,5 +1,6 @@
 package com.xxxx.ddd.controller.http;
 
+import com.xxxx.ddd.application.model.dto.request.ProfileUpdateRequest;
 import com.xxxx.ddd.application.model.dto.request.RegistrationRequest;
 import com.xxxx.ddd.application.model.dto.response.ProfileResponse;
 import com.xxxx.ddd.application.service.profile.ProfileAppService;
@@ -39,6 +40,14 @@ public class ProfileController {
     ApiResponse<ProfileResponse> getMyProfiles() {
         return ApiResponse.<ProfileResponse>builder()
                 .result(profileAppService.getMyProfile())
+                .build();
+    }
+
+    @PutMapping("/my-profile")
+    ApiResponse<ProfileResponse> updateMyProfile(@RequestBody @Valid ProfileUpdateRequest request) {
+        return ApiResponse.<ProfileResponse>builder()
+                .message("Profile updated successfully")
+                .result(profileAppService.updateMyProfile(request))
                 .build();
     }
 }

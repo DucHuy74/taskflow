@@ -32,6 +32,11 @@ public class UserStoryInfrasRepositoryImpl implements UserStoryRepository {
     }
 
     @Override
+    public UserStory saveAndFlush(UserStory userStory) {
+        return jpa.saveAndFlush(userStory);
+    }
+
+    @Override
     public List<UserStory> saveAll(List<UserStory> userStories){
         return jpa.saveAll(userStories);
     }

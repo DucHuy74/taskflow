@@ -3,6 +3,7 @@ package com.xxxx.ddd.application.service.userstory.impl;
 import com.xxxx.ddd.application.mapper.UserStoryMapper;
 import com.xxxx.ddd.application.model.dto.request.UserStoryCreateRequest;
 import com.xxxx.ddd.application.model.dto.request.UserStoryStatusUpdateRequest;
+import com.xxxx.ddd.application.model.dto.request.UserStoryUpdateRequest;
 import com.xxxx.ddd.application.model.dto.response.UserStoryResponse;
 import com.xxxx.ddd.application.port.async.UserStoryEventPort;
 import com.xxxx.ddd.application.service.access.WorkspaceAccessService;
@@ -26,10 +27,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -138,6 +141,29 @@ public class UserStoryAppServiceImpl implements UserStoryAppService {
         story.setStatus(request.getStatus());
 
         return userStoryMapper.toResponse(story);
+    }
+
+    @Override
+    @Transactional
+    public UserStoryResponse update(String userStoryId, UserStoryUpdateRequest request) {
+        UserStory story = userStoryRepository.findById(userStoryId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_STORY_NOT_FOUND));
+        workspaceAccessService.requireUserStory(story, Permission.ISSUE_EDIT);
+
+        if (!Objects.equals(story.getVersion(), request.getVersion())) {
+            throw new AppException(ErrorCode.USER_STORY_VERSION_CONFLICT);
+        }
+
+        story.setStoryText(request.getStoryText());
+
+        // Flush inside the transaction so a concurrent @Version conflict is raised
+        // before the response is mapped, and the response contains the new version.
+        try {
+            UserStory updatedStory = userStoryRepository.saveAndFlush(story);
+            return userStoryMapper.toResponse(updatedStory);
+        } catch (OptimisticLockingFailureException exception) {
+            throw new AppException(ErrorCode.USER_STORY_VERSION_CONFLICT);
+        }
     }
 
     @Override

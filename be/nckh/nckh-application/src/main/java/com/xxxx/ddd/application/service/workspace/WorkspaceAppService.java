@@ -3,6 +3,7 @@ package com.xxxx.ddd.application.service.workspace;
 import com.xxxx.ddd.application.model.dto.request.WorkspaceAddMemberRequest;
 import com.xxxx.ddd.application.model.dto.request.WorkspaceCreateRequest;
 import com.xxxx.ddd.application.model.dto.request.WorkspaceUpdateRequest;
+import com.xxxx.ddd.application.model.dto.response.RebuildGraphResponse;
 import com.xxxx.ddd.application.model.dto.response.WorkspaceMemberResponse;
 import com.xxxx.ddd.application.model.dto.response.WorkspaceResponse;
 import com.xxxx.dddd.domain.model.entity.Profile;
@@ -25,9 +26,11 @@ public interface WorkspaceAppService {
 
     List<WorkspaceResponse> getAllWorkspaces();
 
+    WorkspaceResponse getWorkspace(String workspaceId);
+
     List<WorkspaceMemberResponse> getMembers(String workspaceId);
 
     void deleteWorkspace(String workspaceId);
 
-    void triggerRebuildGraph(String workspaceId);
+    RebuildGraphResponse triggerRebuildGraph(String workspaceId);
 }

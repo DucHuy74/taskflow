@@ -18,6 +18,9 @@ import com.xxxx.dddd.domain.model.enums.UserStoryStatus;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -28,6 +31,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -37,6 +41,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @DataJpaTest(properties = {
     "spring.jpa.hibernate.ddl-auto=create",
+    "spring.flyway.enabled=false",
     "spring.datasource.hikari.max-lifetime=600000",
     "spring.datasource.hikari.idle-timeout=300000",
     "spring.datasource.hikari.keepalive-time=30000",
@@ -125,6 +130,104 @@ class SprintStoryRetryIntegrationTest {
             assertThat(committedStory.getStatus()).isEqualTo(UserStoryStatus.InProgress);
             assertThat(committedStory.getSprint().getId()).isEqualTo(fixture.sprintId());
         });
+    }
+
+    @Test
+    @Timeout(20)
+    void staleUpdate_isRejectedAndKeepsFirstCommittedChange() throws Exception {
+        String storyId = transactionTemplate.execute(ignored -> {
+            Workspace workspace = workspaceJpaMapper.saveAndFlush(
+                    Workspace.builder()
+                            .name("Optimistic locking test")
+                            .build());
+
+            UserStory story = userStoryJpaMapper.saveAndFlush(
+                    UserStory.builder()
+                            .storyText("Original")
+                            .status(UserStoryStatus.ToDo)
+                            .workspace(workspace)
+                            .build());
+
+            assertThat(story.getVersion()).isEqualTo(0L);
+            return story.getId();
+        });
+
+        assertThat(storyId).isNotNull();
+
+        CountDownLatch secondHasRead = new CountDownLatch(1);
+        CountDownLatch firstHasCommitted = new CountDownLatch(1);
+        var executor = Executors.newSingleThreadExecutor();
+
+        try {
+            // T2 reads version 0 and keeps that entity in its transaction.
+            var secondUpdate = executor.submit(() -> {
+                try {
+                    transactionTemplate.executeWithoutResult(ignored -> {
+                        UserStory story = userStoryJpaMapper
+                                .findById(storyId).orElseThrow();
+
+                        assertThat(story.getVersion()).isEqualTo(0L);
+                        secondHasRead.countDown();
+
+                        awaitLatch(firstHasCommitted);
+
+                        story.setStoryText("Changed by T2");
+
+                        // Flush through the repository so Spring translates Hibernate's exception.
+                        userStoryJpaMapper.flush();
+                    });
+                    return (Throwable) null;
+                } catch (RuntimeException exception) {
+                    return exception;
+                }
+            });
+
+            assertThat(secondHasRead.await(5, TimeUnit.SECONDS)).isTrue();
+
+            // T1 also reads version 0, then updates and commits before T2.
+            transactionTemplate.executeWithoutResult(ignored -> {
+                UserStory story = userStoryJpaMapper
+                        .findById(storyId).orElseThrow();
+
+                assertThat(story.getVersion()).isEqualTo(0L);
+                story.setStoryText("Changed by T1");
+                userStoryJpaMapper.flush();
+
+                assertThat(story.getVersion()).isEqualTo(1L);
+            });
+
+            // Returning from executeWithoutResult means T1 has committed.
+            firstHasCommitted.countDown();
+
+            Throwable rejectedUpdate = secondUpdate.get(5, TimeUnit.SECONDS);
+
+            assertThat(rejectedUpdate)
+                    .isInstanceOf(OptimisticLockingFailureException.class);
+
+            // Verify committed state in a new transaction.
+            transactionTemplate.executeWithoutResult(ignored -> {
+                UserStory story = userStoryJpaMapper
+                        .findById(storyId).orElseThrow();
+
+                assertThat(story.getStoryText()).isEqualTo("Changed by T1");
+                assertThat(story.getVersion()).isEqualTo(1L);
+            });
+        } finally {
+            firstHasCommitted.countDown();
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        }
+    }
+
+    private static void awaitLatch(CountDownLatch latch) {
+        try {
+            if (!latch.await(5, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("Timed out waiting for transaction");
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Test interrupted", exception);
+        }
     }
 
     private record Fixture(String sprintId, String storyId) {}

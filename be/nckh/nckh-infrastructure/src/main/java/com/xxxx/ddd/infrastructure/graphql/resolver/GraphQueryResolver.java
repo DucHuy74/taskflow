@@ -23,16 +23,16 @@ public class GraphQueryResolver {
             @Argument("includeAssociation") Boolean includeAssociation,
             @Argument("minScore") Double minScore,
             @Argument("minConfidence") Double minConfidence
-
     ) {
 
         boolean useSimilarity = includeSimilarity == null || includeSimilarity;
         boolean useAssociation = includeAssociation == null || includeAssociation;
         double score = minScore != null ? minScore : 0.0;
         double confidence = minConfidence != null ? minConfidence : 0.0;
-        String graphSource = (source == null) ? "REALTIME" : source;
-        if (!graphSource.equals("REALTIME") && !graphSource.equals("BATCH")) {
-            throw new IllegalArgumentException("Invalid source: " + source);
+        // null = all sources; REALTIME|BATCH only filters PERFORM/TARGET edges.
+        String graphSource = (source == null || source.isBlank()) ? null : source;
+        if (graphSource != null && !graphSource.equals("REALTIME") && !graphSource.equals("BATCH")) {
+            throw new IllegalArgumentException("Invalid source: " + source + " (expected REALTIME or BATCH)");
         }
 
         return graphService.getWorkspaceGraph(

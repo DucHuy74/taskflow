@@ -1,22 +1,28 @@
 package com.xxxx.ddd.application.model.dto.graph;
 
-public class GraphEdgeDTO {
+import lombok.Builder;
 
-    private String from;
-    private String to;
-    private String type;
+import java.util.List;
 
-    private Double score;
-    private Double confidence;
-    private Double lift;
-
-    public GraphEdgeDTO(String from, String to, String type,
-                        Double score, Double confidence, Double lift) {
-        this.from = from;
-        this.to = to;
-        this.type = type;
-        this.score = score;
-        this.confidence = confidence;
-        this.lift = lift;
-    }
+/**
+ * Edge of the workspace graph.
+ * PERFORM/TARGET edges are aggregated per (from, to, type): storyIds = distinct stories contributing the edge,
+ * weight = storyIds.size(), storyId = first of storyIds (kept for older clients).
+ * SIMILAR/ASSOCIATED edges are produced by the batch analyzer and always carry source BATCH.
+ */
+@Builder
+public record GraphEdgeDTO(
+        String from,
+        String to,
+        String type,
+        Double score,
+        Double confidence,
+        Double lift,
+        String storyId,
+        List<String> storyIds,
+        Integer weight,
+        String sprintId,
+        String backlogId,
+        String source
+) {
 }

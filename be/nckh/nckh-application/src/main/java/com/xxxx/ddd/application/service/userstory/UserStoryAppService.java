@@ -2,6 +2,7 @@ package com.xxxx.ddd.application.service.userstory;
 
 import com.xxxx.ddd.application.model.dto.request.UserStoryCreateRequest;
 import com.xxxx.ddd.application.model.dto.request.UserStoryStatusUpdateRequest;
+import com.xxxx.ddd.application.model.dto.request.UserStoryUpdateRequest;
 import com.xxxx.ddd.application.model.dto.response.UserStoryResponse;
 
 import java.util.List;
@@ -14,6 +15,8 @@ public interface UserStoryAppService {
     List<UserStoryResponse> getBySprint(String sprintId);
 
     UserStoryResponse updateStatus(String userStoryId, UserStoryStatusUpdateRequest request);
+
+    UserStoryResponse update(String userStoryId, UserStoryUpdateRequest request);
 
     void delete(String userStoryId);
 

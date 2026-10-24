@@ -3,6 +3,8 @@ package com.xxxx.ddd.controller.http;
 import com.xxxx.ddd.application.model.dto.response.NotificationResponse;
 import com.xxxx.ddd.application.service.notification.NotificationAppService;
 import com.xxxx.ddd.common.dto.ApiResponse;
+import com.xxxx.ddd.common.exception.ErrorCode;
+import com.xxxx.dddd.domain.exception.AppException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,7 +27,7 @@ public class NotificationController {
         if (authentication instanceof JwtAuthenticationToken jwt) {
             return jwt.getToken().getSubject();
         }
-        throw new RuntimeException("Unauthorized");
+        throw new AppException(ErrorCode.UNAUTHENTICATED);
     }
 
     @GetMapping("/unread")
