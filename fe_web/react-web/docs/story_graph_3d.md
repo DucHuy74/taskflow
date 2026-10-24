@@ -243,7 +243,7 @@ Lưu ý khi áp dụng:
 | Unit (mô hình graph, vai trò, lọc S–V–O) | `npx vitest run --config vitest.config.ts src/__tests__/graph` |
 | Unit (GraphQL variables) | `src/__tests__/services/graphService.test.ts` |
 | E2E hồi quy | `npx playwright test tests/e2e/graph-regression.spec.ts`: kiểm tra canvas WebGL, nhãn, số Subject |
-| Ảnh tài liệu | Ảnh trong `docs/img/*.png`, chụp bằng Playwright với backend giả lập, có cả light và dark |
+| Ảnh tài liệu | `npm run dev` rồi `npm run screenshots` (`scripts/screenshots/capture.cjs`): chụp lại `docs/img/*.png` bằng Playwright với API giả lập (`mock-api.cjs`), cả light và dark. Chụp một trang: `npm run screenshots -- story-graph-3d` |
 
 ## 8. Xử lý sự cố
 
