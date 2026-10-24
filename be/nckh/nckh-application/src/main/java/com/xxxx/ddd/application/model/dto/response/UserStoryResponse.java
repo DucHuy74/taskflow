@@ -15,6 +15,7 @@ public class UserStoryResponse {
     String id;
     String storyText;
     UserStoryStatus status;
+    Long version;
 
     String sprintId;    // null = backlog
     String workspaceId;

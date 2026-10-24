@@ -2,9 +2,11 @@ package com.xxxx.ddd.controller.http;
 
 import com.xxxx.ddd.application.model.dto.request.UserStoryCreateRequest;
 import com.xxxx.ddd.application.model.dto.request.UserStoryStatusUpdateRequest;
+import com.xxxx.ddd.application.model.dto.request.UserStoryUpdateRequest;
 import com.xxxx.ddd.application.model.dto.response.UserStoryResponse;
 import com.xxxx.ddd.application.service.userstory.UserStoryAppService;
 import com.xxxx.ddd.common.dto.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -64,6 +66,20 @@ public class UserStoryController {
         );
     }
 
+    // Update user story content using the version read by the client.
+    @PutMapping("/{userStoryId}")
+    public ResponseEntity<ApiResponse<UserStoryResponse>> update(
+            @PathVariable("userStoryId") String userStoryId,
+            @Valid @RequestBody UserStoryUpdateRequest request
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.<UserStoryResponse>builder()
+                        .message("User story updated")
+                        .result(userStoryService.update(userStoryId, request))
+                        .build()
+        );
+    }
+
     // Delete user story
     @DeleteMapping("/{userStoryId}")
     public ResponseEntity<ApiResponse<Void>> delete(
@@ -80,8 +96,10 @@ public class UserStoryController {
 
 
     @GetMapping("/{id}")
-    public UserStoryResponse getById(@PathVariable("id") String id){
-        return userStoryService.getById(id);
+    public ApiResponse<UserStoryResponse> getById(@PathVariable("id") String id) {
+        return ApiResponse.<UserStoryResponse>builder()
+                .result(userStoryService.getById(id))
+                .build();
     }
 
 }

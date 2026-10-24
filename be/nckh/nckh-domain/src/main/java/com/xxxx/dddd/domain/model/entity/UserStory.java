@@ -25,6 +25,10 @@ public class UserStory {
     @Column(name = "us_id")
     String id;
 
+    @Version
+    @Column(name = "us_version", nullable = false)
+    Long version;
+
     @Column(name = "us_story_text", length = 255, nullable = false)
     String storyText;
 

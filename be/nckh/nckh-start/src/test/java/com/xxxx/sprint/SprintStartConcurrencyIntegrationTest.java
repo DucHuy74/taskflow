@@ -55,6 +55,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @DataJpaTest(properties = {
     "spring.jpa.hibernate.ddl-auto=create",
+    "spring.flyway.enabled=false",
     "spring.datasource.hikari.max-lifetime=600000",
     "spring.datasource.hikari.idle-timeout=300000",
     "spring.datasource.hikari.keepalive-time=30000",

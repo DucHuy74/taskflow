@@ -1,6 +1,7 @@
 package com.xxxx.ddd.application.service.profile.impl;
 
 import com.xxxx.ddd.application.mapper.ProfileMapper;
+import com.xxxx.ddd.application.model.dto.request.ProfileUpdateRequest;
 import com.xxxx.ddd.application.model.dto.request.RegistrationRequest;
 import com.xxxx.ddd.application.model.dto.response.ProfileResponse;
 import com.xxxx.ddd.application.service.profile.ProfileAppService;
@@ -72,6 +73,42 @@ public class ProfileAppServiceImpl implements ProfileAppService {
         return profileMapper.toProfileResponse(profile);
     }
 
+    /**
+     * Keycloak is updated first so a rejected/unreachable identity provider leaves the Profile row untouched.
+     * If the DB write then fails, the Keycloak change is reverted (best effort) before the error is rethrown.
+     * Intentionally not @Transactional: the repository save commits on its own so DB failures surface here.
+     */
+    @Override
+    public ProfileResponse updateMyProfile(ProfileUpdateRequest request) {
+        Profile profile = getOrCreateCurrentProfile();
+
+        String userId = profile.getUserId();
+        String previousFirstName = profile.getFirstName();
+        String previousLastName = profile.getLastName();
+        String firstName = request.getFirstName().trim();
+        String lastName = request.getLastName().trim();
+
+        identityService.updateUserName(userId, firstName, lastName);
+
+        profile.setFirstName(firstName);
+        profile.setLastName(lastName);
+        profile.setDob(request.getDob());
+
+        try {
+            profile = profileRepository.save(profile);
+        } catch (RuntimeException ex) {
+            log.error("Profile update failed after Keycloak sync for userId={}, reverting Keycloak names", userId, ex);
+            try {
+                identityService.updateUserName(userId, previousFirstName, previousLastName);
+            } catch (RuntimeException revertEx) {
+                log.error("Could not revert Keycloak names for userId={}", userId, revertEx);
+            }
+            throw ex;
+        }
+
+        return profileMapper.toProfileResponse(profile);
+    }
+
     public Profile getOrCreateCurrentProfile() {
 
         var authentication = SecurityContextHolder
@@ -79,7 +116,7 @@ public class ProfileAppServiceImpl implements ProfileAppService {
                 .getAuthentication();
 
         if (!(authentication instanceof JwtAuthenticationToken jwt)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
         String userId = jwt.getToken().getSubject();

@@ -43,6 +43,14 @@ public enum ErrorCode {
     RECOMMENDATION_IDEMPOTENCY_CONFLICT(1036, "Idempotency key was reused with a different request", HttpStatus.CONFLICT),
     RECOMMENDATION_JOB_NOT_FOUND(1037, "Recommendation job not found", HttpStatus.NOT_FOUND),
     INVALID_RECOMMENDATION_CURSOR(1038, "Invalid recommendation cursor", HttpStatus.BAD_REQUEST),
+    USER_STORY_VERSION_CONFLICT(1039, "User story was updated by another user", HttpStatus.CONFLICT),
+    CONCURRENT_UPDATE_CONFLICT(1040, "Data was updated by another request, please reload", HttpStatus.CONFLICT),
+    INVALID_SPRINT_DATES(1041, "Sprint end date must be on or after the start date", HttpStatus.BAD_REQUEST),
+    SPRINT_NAME_REQUIRED(1042, "Sprint name is required", HttpStatus.BAD_REQUEST),
+    FIRST_NAME_REQUIRED(1043, "First name is required", HttpStatus.BAD_REQUEST),
+    LAST_NAME_REQUIRED(1044, "Last name is required", HttpStatus.BAD_REQUEST),
+    INVALID_DOB(1045, "Date of birth must be in the past", HttpStatus.BAD_REQUEST),
+    IDENTITY_SYNC_FAILED(1046, "Could not update the user in the identity provider, please try again", HttpStatus.BAD_GATEWAY),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

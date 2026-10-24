@@ -8,6 +8,7 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -32,6 +33,12 @@ public class Sprint {
     @Enumerated(EnumType.STRING)
     @Column(name = "spr_status", nullable = false)
     SprintStatus status;
+
+    @Column(name = "spr_start_date")
+    LocalDate startDate;
+
+    @Column(name = "spr_end_date")
+    LocalDate endDate;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "wsp_id", nullable = false)

@@ -5,6 +5,7 @@ import com.xxxx.ddd.common.exception.ErrorCode;
 import com.xxxx.dddd.domain.exception.AppException;
 import jakarta.validation.ConstraintViolation;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -51,6 +52,19 @@ public class GlobalExceptionHandler {
         apiResponse.setMessage(errorCode.getMessage());
 
         return ResponseEntity.status(errorCode.getStatusCode()).body(apiResponse);
+    }
+
+    // Fallback for @Version conflicts raised at flush/commit by flows that do not map them to an AppException.
+    @ExceptionHandler(value = OptimisticLockingFailureException.class)
+    ResponseEntity<ApiResponse> handlingOptimisticLockingFailure(OptimisticLockingFailureException exception) {
+        log.warn("Optimistic locking conflict: {}", exception.getMessage());
+        ErrorCode errorCode = ErrorCode.CONCURRENT_UPDATE_CONFLICT;
+
+        return ResponseEntity.status(errorCode.getStatusCode())
+                .body(ApiResponse.builder()
+                        .code(errorCode.getCode())
+                        .message(errorCode.getMessage())
+                        .build());
     }
 
     @ExceptionHandler(value = AccessDeniedException.class)

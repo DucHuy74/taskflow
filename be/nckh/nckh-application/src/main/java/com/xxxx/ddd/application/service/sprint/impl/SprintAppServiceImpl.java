@@ -4,6 +4,7 @@ import com.xxxx.ddd.application.annotation.ReadOnly;
 import com.xxxx.ddd.application.mapper.SprintMapper;
 import com.xxxx.ddd.application.mapper.UserStoryMapper;
 import com.xxxx.ddd.application.model.dto.request.SprintCreateRequest;
+import com.xxxx.ddd.application.model.dto.request.SprintUpdateRequest;
 import com.xxxx.ddd.application.model.dto.response.SprintResponse;
 import com.xxxx.ddd.application.model.dto.response.UserStoryResponse;
 import com.xxxx.ddd.application.port.async.UserStoryEventPort;
@@ -33,6 +34,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityManager;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -60,12 +62,34 @@ public class SprintAppServiceImpl implements SprintAppService {
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new AppException(ErrorCode.WORKSPACE_NOT_FOUND));
         workspaceAccessService.require(workspaceId, Permission.SPRINT_CREATE);
+        validateDates(request.getStartDate(), request.getEndDate());
 
         Sprint sprint = sprintMapper.toEntity(request);
         sprint.setWorkspace(workspace);
         sprint.setStatus(SprintStatus.ToDo);
 
         return sprintMapper.toResponse(sprintRepository.save(sprint));
+    }
+
+    //Update Sprint (name + dates)
+    @Override
+    @Transactional
+    public SprintResponse updateSprint(String sprintId, SprintUpdateRequest request) {
+
+        Sprint sprint = sprintRepository.findById(sprintId)
+                .orElseThrow(() -> new AppException(ErrorCode.SPRINT_NOT_FOUND));
+        workspaceAccessService.requireSprint(sprint, Permission.SPRINT_EDIT);
+        validateDates(request.getStartDate(), request.getEndDate());
+
+        sprintMapper.updateSprint(sprint, request);
+
+        return sprintMapper.toResponse(sprintRepository.save(sprint));
+    }
+
+    static void validateDates(LocalDate startDate, LocalDate endDate) {
+        if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+            throw new AppException(ErrorCode.INVALID_SPRINT_DATES);
+        }
     }
 
     //Get all sprints of workspace

@@ -23,7 +23,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -133,13 +136,26 @@ public class InvitationAppServiceImpl implements InvitationAppService {
     @Transactional(readOnly = true)
     public List<InvitationResponse> getMyPendingInvitations(String userId) {
 
+        Map<String, Optional<String>> workspaceNames = new HashMap<>();
+        Map<String, Optional<String>> inviterEmails = new HashMap<>();
+
         return invitationRepository
                 .findByInviteeUserIdAndStatus(userId, InvitationStatus.PENDING)
                 .stream()
                 .map(inv -> InvitationResponse.builder()
                         .id(inv.getId())
                         .workspaceId(inv.getWorkspaceId())
+                        .workspaceName(inv.getWorkspaceId() == null ? null : workspaceNames
+                                .computeIfAbsent(inv.getWorkspaceId(), id -> workspaceRepository.findById(id)
+                                        .map(Workspace::getName))
+                                .orElse(null))
+                        .role(inv.getRoleName() == null ? WorkspaceRoleType.MEMBER : inv.getRoleName())
+                        .email(inv.getEmail())
                         .inviterId(inv.getInviterId())
+                        .inviterEmail(inv.getInviterId() == null ? null : inviterEmails
+                                .computeIfAbsent(inv.getInviterId(), id -> profileRepository.findByUserId(id)
+                                        .map(Profile::getEmail))
+                                .orElse(null))
                         .expiredAt(inv.getExpiredAt())
                         .build()
                 )

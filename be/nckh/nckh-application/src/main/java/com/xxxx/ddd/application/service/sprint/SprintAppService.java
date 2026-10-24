@@ -1,6 +1,7 @@
 package com.xxxx.ddd.application.service.sprint;
 
 import com.xxxx.ddd.application.model.dto.request.SprintCreateRequest;
+import com.xxxx.ddd.application.model.dto.request.SprintUpdateRequest;
 import com.xxxx.ddd.application.model.dto.response.SprintResponse;
 import com.xxxx.ddd.application.model.dto.response.UserStoryResponse;
 
@@ -8,6 +9,8 @@ import java.util.List;
 
 public interface SprintAppService {
     SprintResponse createSprint(String workspaceId, SprintCreateRequest request);
+
+    SprintResponse updateSprint(String sprintId, SprintUpdateRequest request);
 
     List<SprintResponse> getSprints(String workspaceId);
 

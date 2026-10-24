@@ -1,14 +1,26 @@
 type GraphNode {
     id: ID!
     label: String!
+    # SUBJECT | ACTION | OBJECT when a term has exactly one role, TERM when mixed/unknown, USER_STORY for stories
     type: String!
 
+    # ===== Term analytics (null when the analyzer has not written them) =====
+    degree: Int
+    betweenness: Float
+    # Union of :Subject/:Action/:Object labels and PERFORM/TARGET edge-derived roles in the current filter scope.
+    # Always [] for USER_STORY nodes.
+    roles: [String!]!
+
+    # ===== User story fields (null for terms) =====
     priority: Float
+    graphRelevanceScore: Float
+    duplicateScore: Float
 }
 
 type GraphEdge {
     from: ID!
     to: ID!
+    # PERFORM | TARGET | SIMILAR | ASSOCIATED | RELATES_TO
     type: String!
 
     # ===== Analytics =====
@@ -17,11 +29,18 @@ type GraphEdge {
     lift: Float
 
     # ===== Context =====
+    # First of storyIds (kept for older clients)
     storyId: ID
+    # Distinct stories contributing to an aggregated PERFORM/TARGET edge ([] for SIMILAR/ASSOCIATED)
+    storyIds: [ID!]
+    # Number of distinct stories (PERFORM/TARGET only)
+    weight: Int
+    # Echo of the sprintId/backlogId filter when provided, else null
     sprintId: ID
     backlogId: ID
 
-    source: String   # REALTIME | BATCH
+    # REALTIME | BATCH; null when the aggregated rows have mixed sources. SIMILAR/ASSOCIATED are always BATCH.
+    source: String
 }
 
 type GraphResponse {
@@ -33,12 +52,14 @@ type Query {
     workspaceGraph(
         workspaceId: ID!
 
-        # ===== Context filter =====
+        # ===== Context filter (PERFORM/TARGET only) =====
         sprintId: ID
         backlogId: ID
 
-        # ===== Graph type =====
-        source: String   # REALTIME | BATCH
+        # ===== Source filter =====
+        # null = all sources. REALTIME | BATCH filters only PERFORM/TARGET edges (and the nodes reached through them);
+        # SIMILAR/ASSOCIATED are never filtered by source. Any other value is a BAD_REQUEST error.
+        source: String
 
         # ===== Feature toggle =====
         includeSimilarity: Boolean = true
