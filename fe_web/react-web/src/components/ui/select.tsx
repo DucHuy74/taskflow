@@ -20,7 +20,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         value={value}
         onChange={handleChange}
         className={cn(
-          "flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm",
+          "flex h-10 w-full rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 px-3 py-2 text-sm",
           "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
           "disabled:cursor-not-allowed disabled:opacity-50",
           className
@@ -43,7 +43,7 @@ const SelectTrigger = React.forwardRef<HTMLDivElement, SelectTriggerProps>(
     <div
       ref={ref}
       className={cn(
-        "flex h-10 w-full items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2 text-sm",
+        "flex h-10 w-full items-center justify-between rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 px-3 py-2 text-sm",
         "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className
@@ -65,7 +65,7 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
     <div
       ref={ref}
       className={cn(
-        "absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg",
+        "absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 py-1 shadow-lg",
         className
       )}
       {...props}
@@ -87,7 +87,7 @@ const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
       ref={ref}
       className={cn(
         "relative flex w-full cursor-pointer select-none items-center py-1.5 px-3 text-sm outline-none",
-        "hover:bg-gray-100 focus:bg-gray-100",
+        "hover:bg-gray-100 dark:hover:bg-slate-800 focus:bg-gray-100 dark:focus:bg-slate-800",
         className
       )}
       {...props}
@@ -99,7 +99,7 @@ const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
 SelectItem.displayName = "SelectItem"
 
 const SelectValue = ({ placeholder }: { placeholder?: string }) => (
-  <span className="text-gray-500">{placeholder}</span>
+  <span className="text-gray-500 dark:text-slate-400">{placeholder}</span>
 )
 
 const SelectLabel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(

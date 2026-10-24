@@ -57,9 +57,9 @@ describe('sprintService', () => {
       expect(result).toBeNull();
     });
 
-    it('should return created sprint on success', async () => {
+    it('should send name and dates and return the created sprint', async () => {
       const { api } = await import('@/services/api');
-      const mockSprint = { id: '1', name: 'New Sprint', status: 'ToDo' };
+      const mockSprint = { id: '1', name: 'New Sprint', status: 'ToDo', startDate: '2024-01-01', endDate: '2024-01-14', createdAt: '2024-01-01T00:00:00Z' };
       vi.mocked(api.post).mockResolvedValue({
         data: { code: 1000, result: mockSprint },
       });
@@ -70,7 +70,70 @@ describe('sprintService', () => {
         endDate: '2024-01-14',
       });
 
+      expect(api.post).toHaveBeenCalledWith('/sprints/workspace/workspace-1', {
+        name: 'New Sprint',
+        startDate: '2024-01-01',
+        endDate: '2024-01-14',
+      });
       expect(result).toEqual(mockSprint);
+    });
+
+    it('should send missing or empty dates as null', async () => {
+      const { api } = await import('@/services/api');
+      vi.mocked(api.post).mockResolvedValue({ data: { code: 1000, result: { id: '1', name: 'S', status: 'ToDo', startDate: null, endDate: null } } });
+
+      await sprintService.createSprint('workspace-1', { name: 'S', startDate: '' });
+
+      expect(api.post).toHaveBeenCalledWith('/sprints/workspace/workspace-1', { name: 'S', startDate: null, endDate: null });
+    });
+
+    it('should return null on validation errors (1041/1042)', async () => {
+      const { api } = await import('@/services/api');
+      vi.mocked(api.post).mockRejectedValue(Object.assign(new Error('400'), { response: { status: 400, data: { code: 1041 } } }));
+
+      await expect(sprintService.createSprint('workspace-1', { name: 'S', startDate: '2024-01-14', endDate: '2024-01-01' })).resolves.toBeNull();
+    });
+  });
+
+  describe('updateSprint', () => {
+    it('should PUT /sprints/{id} with name and current dates', async () => {
+      const { api } = await import('@/services/api');
+      const updated = { id: 's1', name: 'Renamed', status: 'ToDo', startDate: '2024-02-01', endDate: '2024-02-01', createdAt: '2024-01-01T00:00:00Z' };
+      vi.mocked(api.put).mockResolvedValue({ data: { code: 1000, result: updated } });
+
+      const result = await sprintService.updateSprint('s1', { name: 'Renamed', startDate: '2024-02-01', endDate: '2024-02-01' });
+
+      expect(api.put).toHaveBeenCalledWith('/sprints/s1', { name: 'Renamed', startDate: '2024-02-01', endDate: '2024-02-01' });
+      expect(result).toEqual(updated);
+    });
+
+    it('should send cleared dates as explicit nulls', async () => {
+      const { api } = await import('@/services/api');
+      vi.mocked(api.put).mockResolvedValue({ data: { code: 1000, result: { id: 's1', name: 'S', status: 'ToDo', startDate: null, endDate: null } } });
+
+      await sprintService.updateSprint('s1', { name: 'S', startDate: '', endDate: null });
+
+      expect(api.put).toHaveBeenCalledWith('/sprints/s1', { name: 'S', startDate: null, endDate: null });
+    });
+
+    it.each([
+      [400, 1041],
+      [400, 1042],
+      [403, 1014],
+      [404, 1020],
+    ])('should rethrow HTTP %i code %i', async (status, code) => {
+      const { api } = await import('@/services/api');
+      const failure = Object.assign(new Error(String(status)), { response: { status, data: { code } } });
+      vi.mocked(api.put).mockRejectedValue(failure);
+
+      await expect(sprintService.updateSprint('s1', { name: 'S', startDate: null, endDate: null })).rejects.toBe(failure);
+    });
+
+    it('should throw when the result is missing', async () => {
+      const { api } = await import('@/services/api');
+      vi.mocked(api.put).mockResolvedValue({ data: { code: 1000 } });
+
+      await expect(sprintService.updateSprint('s1', { name: 'S', startDate: null, endDate: null })).rejects.toThrow();
     });
   });
 

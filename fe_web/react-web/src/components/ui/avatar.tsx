@@ -15,13 +15,23 @@ Avatar.displayName = "Avatar"
 const AvatarImage = React.forwardRef<
   HTMLImageElement,
   React.ImgHTMLAttributes<HTMLImageElement>
->(({ className, ...props }, ref) => (
-  <img
-    ref={ref}
-    className={cn("aspect-square h-full w-full object-cover", className)}
-    {...props}
-  />
-))
+>(({ className, src, onError, ...props }, ref) => {
+  const [failedSrc, setFailedSrc] = React.useState<string | undefined>()
+  // Render nothing without a usable src so the sibling AvatarFallback shows instead of a broken image.
+  if (!src || failedSrc === src) return null
+  return (
+    <img
+      ref={ref}
+      src={src}
+      className={cn("absolute inset-0 aspect-square h-full w-full object-cover", className)}
+      onError={(event) => {
+        setFailedSrc(src)
+        onError?.(event)
+      }}
+      {...props}
+    />
+  )
+})
 AvatarImage.displayName = "AvatarImage"
 
 const AvatarFallback = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
@@ -29,7 +39,7 @@ const AvatarFallback = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTM
     <div
       ref={ref}
       className={cn(
-        "flex h-full w-full items-center justify-center rounded-full bg-gray-100",
+        "flex h-full w-full items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800",
         className
       )}
       {...props}

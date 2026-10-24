@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { workspaceService } from '@/services/workspaceService';
+import { PendingInvitations } from '@/components/invitations/PendingInvitations';
 import { ANIMATION_DURATION, EASING, staggerContainerVariants } from '@/lib/animations';
 
 interface HomePageProps {
@@ -58,18 +59,18 @@ export function HomePage({ onCreateWorkspace }: HomePageProps) {
   };
 
   return (
-    <div className="flex-1 overflow-auto bg-white">
+    <div className="min-h-full flex-1 overflow-auto bg-white dark:bg-slate-950">
       {/* Header */}
       <motion.div
-        className="border-b border-gray-200 px-6 py-4"
+        className="border-b border-gray-200 dark:border-slate-800 px-6 py-4"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: ANIMATION_DURATION.page, ease: EASING.easeOut }}
       >
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-[#172B4D]">For you</h1>
-            <p className="text-sm text-[#5E6C84] mt-1">Welcome back! Here&apos;s what&apos;s happening.</p>
+            <h1 className="text-2xl font-bold text-[#172B4D] dark:text-slate-100">For you</h1>
+            <p className="text-sm text-[#5E6C84] dark:text-slate-400 mt-1">Welcome back! Here&apos;s what&apos;s happening.</p>
           </div>
           <motion.div
             whileHover={{ scale: 1.02 }}
@@ -91,6 +92,9 @@ export function HomePage({ onCreateWorkspace }: HomePageProps) {
         initial="hidden"
         animate="visible"
       >
+        {/* Pending invitations (GET /invitations/pending) */}
+        <PendingInvitations />
+
         {/* Quick Stats */}
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
@@ -103,12 +107,12 @@ export function HomePage({ onCreateWorkspace }: HomePageProps) {
                 whileHover={{ x: 4 }}
                 transition={{ duration: ANIMATION_DURATION.fast }}
               >
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <LayoutDashboard className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-blue-100 dark:bg-blue-950/60 rounded-lg">
+                  <LayoutDashboard className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-[#172B4D]">{workspaces.length}</p>
-                  <p className="text-xs text-[#5E6C84]">Active Workspaces</p>
+                  <p className="text-2xl font-bold text-[#172B4D] dark:text-slate-100">{workspaces.length}</p>
+                  <p className="text-xs text-[#5E6C84] dark:text-slate-400">Active Workspaces</p>
                 </div>
               </motion.div>
             </CardContent>
@@ -121,12 +125,12 @@ export function HomePage({ onCreateWorkspace }: HomePageProps) {
                 whileHover={{ x: 4 }}
                 transition={{ duration: ANIMATION_DURATION.fast }}
               >
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                <div className="p-2 bg-green-100 dark:bg-green-950/60 rounded-lg">
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-[#172B4D]">12</p>
-                  <p className="text-xs text-[#5E6C84]">Completed Tasks</p>
+                  <p className="text-2xl font-bold text-[#172B4D] dark:text-slate-100">12</p>
+                  <p className="text-xs text-[#5E6C84] dark:text-slate-400">Completed Tasks</p>
                 </div>
               </motion.div>
             </CardContent>
@@ -139,12 +143,12 @@ export function HomePage({ onCreateWorkspace }: HomePageProps) {
                 whileHover={{ x: 4 }}
                 transition={{ duration: ANIMATION_DURATION.fast }}
               >
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Clock className="h-5 w-5 text-orange-600" />
+                <div className="p-2 bg-orange-100 dark:bg-orange-950/60 rounded-lg">
+                  <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-[#172B4D]">8</p>
-                  <p className="text-xs text-[#5E6C84]">In Progress</p>
+                  <p className="text-2xl font-bold text-[#172B4D] dark:text-slate-100">8</p>
+                  <p className="text-xs text-[#5E6C84] dark:text-slate-400">In Progress</p>
                 </div>
               </motion.div>
             </CardContent>
@@ -157,12 +161,12 @@ export function HomePage({ onCreateWorkspace }: HomePageProps) {
                 whileHover={{ x: 4 }}
                 transition={{ duration: ANIMATION_DURATION.fast }}
               >
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Star className="h-5 w-5 text-purple-600" />
+                <div className="p-2 bg-purple-100 dark:bg-purple-950/60 rounded-lg">
+                  <Star className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-[#172B4D]">5</p>
-                  <p className="text-xs text-[#5E6C84]">Starred Items</p>
+                  <p className="text-2xl font-bold text-[#172B4D] dark:text-slate-100">5</p>
+                  <p className="text-xs text-[#5E6C84] dark:text-slate-400">Starred Items</p>
                 </div>
               </motion.div>
             </CardContent>
@@ -172,7 +176,7 @@ export function HomePage({ onCreateWorkspace }: HomePageProps) {
         {/* Recent Workspaces */}
         <motion.div className="mb-8" variants={itemVariants}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[#172B4D]">Recent Workspaces</h2>
+            <h2 className="text-lg font-semibold text-[#172B4D] dark:text-slate-100">Recent Workspaces</h2>
             <Button variant="ghost" size="sm" onClick={() => navigate('/recent')}>
               View all
             </Button>
@@ -208,10 +212,10 @@ export function HomePage({ onCreateWorkspace }: HomePageProps) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
                   >
-                    <FolderKanban className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <FolderKanban className="h-12 w-12 text-gray-300 dark:text-slate-600 mx-auto mb-4" />
                   </motion.div>
-                  <h3 className="text-lg font-medium text-[#172B4D] mb-2">No workspaces yet</h3>
-                  <p className="text-sm text-[#5E6C84] mb-4">
+                  <h3 className="text-lg font-medium text-[#172B4D] dark:text-slate-100 mb-2">No workspaces yet</h3>
+                  <p className="text-sm text-[#5E6C84] dark:text-slate-400 mb-4">
                     Create your first workspace to get started
                   </p>
                   <motion.div
@@ -258,11 +262,11 @@ export function HomePage({ onCreateWorkspace }: HomePageProps) {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-[#5E6C84] line-clamp-2">
+                      <p className="text-sm text-[#5E6C84] dark:text-slate-400 line-clamp-2">
                         {ws.description || 'No description'}
                       </p>
                       <motion.div
-                        className="flex items-center gap-4 mt-3 text-xs text-[#5E6C84]"
+                        className="flex items-center gap-4 mt-3 text-xs text-[#5E6C84] dark:text-slate-400"
                         whileHover={{ x: 2 }}
                         transition={{ duration: ANIMATION_DURATION.fast }}
                       >
@@ -284,7 +288,7 @@ export function HomePage({ onCreateWorkspace }: HomePageProps) {
         {/* Upcoming */}
         <motion.div variants={itemVariants}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[#172B4D]">Upcoming</h2>
+            <h2 className="text-lg font-semibold text-[#172B4D] dark:text-slate-100">Upcoming</h2>
             <Button variant="ghost" size="sm" onClick={() => navigate('/plans')}>
               View all
             </Button>
@@ -305,9 +309,9 @@ export function HomePage({ onCreateWorkspace }: HomePageProps) {
                     transition={{ duration: ANIMATION_DURATION.fast }}
                   >
                     <item.icon className={`h-4 w-4 text-${item.color}`} />
-                    <span className="text-sm text-[#172B4D]">{item.text}</span>
+                    <span className="text-sm text-[#172B4D] dark:text-slate-100">{item.text}</span>
                     <motion.span
-                      className="text-xs text-[#5E6C84] ml-auto"
+                      className="text-xs text-[#5E6C84] dark:text-slate-400 ml-auto"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.2 + index * 0.1 }}

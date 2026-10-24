@@ -2,18 +2,16 @@ import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Bell,
   ChevronDown,
   LogOut,
   Settings,
   User,
   Plus,
   Menu,
-  Moon,
-  Sun,
   Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -31,22 +29,33 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Sidebar, SidebarDark } from '@/components/layout/Sidebar';
+import { NotificationBell } from '@/components/layout/NotificationBell';
 import { useAppSelector, useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTheme } from '@/contexts/ThemeContext';
 import { logout } from '@/store/authSlice';
 import { workspaceService } from '@/services/workspaceService';
+import { profileService } from '@/services/profileService';
+import { MY_PROFILE_QUERY_KEY } from '@/lib/queryKeys';
 import type { Workspace } from '@/types/workspace';
 
 export function HomeLayout() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const user = useAppSelector((state) => state.auth.user);
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark } = useTheme();
 
   const { data: workspaces = [] } = useQuery<Workspace[]>({
     queryKey: ['workspaces'],
     queryFn: () => workspaceService.getWorkspaces(),
   });
+
+  const { data: myProfile } = useQuery({
+    queryKey: MY_PROFILE_QUERY_KEY,
+    queryFn: () => profileService.getMyProfile(),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const displayName = [myProfile?.firstName, myProfile?.lastName].filter(Boolean).join(' ') || user?.name || 'User';
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -121,28 +130,10 @@ export function HomeLayout() {
           {/* Right Actions */}
           <div className="flex items-center gap-2">
             {/* Theme Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-            >
-              {isDark ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </Button>
+            <AnimatedThemeToggler />
 
             {/* Notifications */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full" />
-            </Button>
+            <NotificationBell />
 
             {/* Create Button - Mobile Hidden */}
             <Button
@@ -164,11 +155,11 @@ export function HomeLayout() {
                   <Avatar className="h-7 w-7">
                     <AvatarImage src={user?.avatar} />
                     <AvatarFallback className="text-xs bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-gray-200">
-                      {user?.name?.charAt(0) || 'U'}
+                      {displayName.charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-sm font-medium hidden md:inline">
-                    {user?.name || 'User'}
+                    {displayName}
                   </span>
                   <ChevronDown className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                 </Button>

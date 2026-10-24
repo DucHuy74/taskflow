@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { Workspace, CreateWorkspaceRequest } from '@/types/workspace';
+import type { Workspace, CreateWorkspaceRequest, UpdateWorkspaceRequest } from '@/types/workspace';
 import type { WorkspaceMemberResponse } from '@/types';
 
 // Backend API response wrapper
@@ -7,6 +7,12 @@ interface ApiResponse<T> {
   code: number;
   result?: T;
   message?: string;
+}
+
+/** Result of POST /workspace/{id}/rebuild-graph. */
+export interface RebuildGraphResponse {
+  jobId: string;
+  status: 'QUEUED';
 }
 
 export const workspaceService = {
@@ -31,7 +37,11 @@ export const workspaceService = {
    */
   async createWorkspace(data: CreateWorkspaceRequest): Promise<Workspace | null> {
     try {
-      const response = await api.post<ApiResponse<Workspace>>('/workspace', data);
+      const response = await api.post<ApiResponse<Workspace>>('/workspace', {
+        name: data.name,
+        type: data.type,
+        access: data.access,
+      });
       if (response.data.code === 1000) {
         return response.data.result || null;
       }
@@ -43,7 +53,8 @@ export const workspaceService = {
   },
 
   /**
-   * Get workspace by ID
+   * Get workspace by ID (GET /workspace/{id}).
+   * Returns null on failure (404 code 1012 not found, 403 code 1014 not a member).
    */
   async getWorkspace(id: string): Promise<Workspace | null> {
     try {
@@ -59,11 +70,15 @@ export const workspaceService = {
   },
 
   /**
-   * Update workspace
+   * Update workspace. Backend requires the full { name, type, access } body.
    */
-  async updateWorkspace(id: string, data: Partial<CreateWorkspaceRequest>): Promise<Workspace | null> {
+  async updateWorkspace(id: string, data: UpdateWorkspaceRequest): Promise<Workspace | null> {
     try {
-      const response = await api.put<ApiResponse<Workspace>>(`/workspace/${id}`, data);
+      const response = await api.put<ApiResponse<Workspace>>(`/workspace/${id}`, {
+        name: data.name,
+        type: data.type,
+        access: data.access,
+      });
       if (response.data.code === 1000 && response.data.result) {
         return response.data.result;
       }
@@ -79,8 +94,8 @@ export const workspaceService = {
    */
   async deleteWorkspace(id: string): Promise<boolean> {
     try {
-      await api.delete(`/workspace/${id}`);
-      return true;
+      const response = await api.delete<ApiResponse<void>>(`/workspace/${id}`);
+      return response.data?.code === undefined || response.data.code === 1000;
     } catch (error) {
       console.error('Error deleting workspace:', error);
       return false;
@@ -104,15 +119,19 @@ export const workspaceService = {
   },
 
   /**
-   * Rebuild workspace graph in Neo4j
+   * Trigger an async rebuild of the workspace graph.
+   * Returns the queued recommendation job id (poll recommendationService.latestJob), or null on failure.
    */
-  async rebuildGraph(workspaceId: string): Promise<boolean> {
+  async rebuildGraph(workspaceId: string): Promise<string | null> {
     try {
-      await api.post(`/workspace/${workspaceId}/rebuild-graph`);
-      return true;
+      const response = await api.post<ApiResponse<RebuildGraphResponse>>(`/workspace/${workspaceId}/rebuild-graph`);
+      if (response.data?.code === 1000 && response.data.result?.jobId) {
+        return response.data.result.jobId;
+      }
+      return null;
     } catch (error) {
       console.error('Error rebuilding graph:', error);
-      return false;
+      return null;
     }
   },
 };

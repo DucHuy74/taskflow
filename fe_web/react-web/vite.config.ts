@@ -28,6 +28,10 @@ export default defineConfig({
             if (id.includes('framer-motion') || id.includes('@dnd-kit') || id.includes('lucide-react')) {
               return 'vendor-ui';
             }
+            // 3D graph stack, only needed by the graph pages
+            if (id.includes('/three') || id.includes('@react-three') || id.includes('d3-force-3d') || id.includes('troika') || id.includes('three-stdlib')) {
+              return 'vendor-three';
+            }
             // Other vendor code
             return 'vendor-misc';
           }

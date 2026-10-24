@@ -97,7 +97,7 @@ const DropdownMenuContent = ({ className, children }: DropdownMenuContentProps) 
       <motion.div
         className={cn(
           "absolute z-50 mt-2 min-w-[8rem] overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-lg",
-          "dark:bg-gray-900 dark:border-gray-800",
+          "dark:bg-slate-900 dark:border-slate-800",
           className
         )}
         style={{ position: "absolute", top: "100%", right: 0 }}
@@ -137,7 +137,7 @@ const DropdownMenuItem = React.forwardRef<HTMLDivElement, DropdownMenuItemProps>
           "outline-none",
           destructive
             ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-            : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800",
+            : "text-gray-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800",
           className
         )}
         onClick={handleClick}
@@ -158,7 +158,7 @@ const DropdownMenuLabel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<
       ref={ref}
       className={cn(
         "px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider",
-        "dark:text-gray-400",
+        "dark:text-slate-400",
         className
       )}
       role="presentation"
@@ -172,7 +172,7 @@ const DropdownMenuSeparator = React.forwardRef<HTMLDivElement, React.HTMLAttribu
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("-mx-1 my-1 h-px bg-gray-100 dark:bg-gray-800", className)}
+      className={cn("-mx-1 my-1 h-px bg-gray-100 dark:bg-slate-800", className)}
       role="separator"
       {...props}
     />

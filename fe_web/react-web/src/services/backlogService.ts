@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { UserStory, CreateUserStoryRequest } from '@/types/userStory';
+import type { UserStory, CreateUserStoryRequest, UpdateUserStoryRequest } from '@/types/userStory';
 
 // API Response type
 interface ApiResponse<T> {
@@ -80,18 +80,32 @@ export async function deleteUserStory(storyId: string): Promise<boolean> {
   }
 }
 
-// Get user story by ID
+// Get user story by ID (GET /user-stories/{id} → ApiResponse<UserStoryResponse>).
 export async function getUserStory(storyId: string): Promise<UserStory | null> {
   try {
     const response = await api.get<ApiResponse<UserStory>>(`/user-stories/${storyId}`);
-    if (response.data.code === 1000 && response.data.result) {
-      return response.data.result;
+    const story = response.data?.code === 1000 ? response.data.result : undefined;
+    if (story && typeof story === 'object' && story.id) {
+      return story;
     }
     return null;
   } catch (error) {
     console.error('Error fetching user story:', error);
     return null;
   }
+}
+
+/**
+ * Edit a story's text with optimistic locking.
+ * Throws the original axios error so callers can detect 409 conflicts
+ * (codes 1039 USER_STORY_VERSION_CONFLICT / 1040 CONCURRENT_UPDATE_CONFLICT).
+ */
+export async function updateUserStory(storyId: string, data: UpdateUserStoryRequest): Promise<UserStory> {
+  const response = await api.put<ApiResponse<UserStory>>(`/user-stories/${storyId}`, data);
+  if (response.data.code !== 1000 || !response.data.result) {
+    throw new Error(response.data.message || 'Unable to update user story');
+  }
+  return response.data.result;
 }
 
 // Export as service object
@@ -102,4 +116,5 @@ export const backlogService = {
   updateStoryStatus,
   deleteUserStory,
   getUserStory,
+  updateUserStory,
 };

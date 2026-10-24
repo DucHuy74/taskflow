@@ -17,13 +17,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useTheme } from '@/contexts/ThemeContext';
 
-interface SettingsProps {
-  theme?: 'light' | 'dark' | 'system';
-  onThemeChange?: (theme: 'light' | 'dark' | 'system') => void;
-}
-
-export function Settings({ theme = 'light', onThemeChange }: SettingsProps) {
+export function Settings() {
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [isLoading, setIsLoading] = useState(false);
@@ -55,20 +52,20 @@ export function Settings({ theme = 'light', onThemeChange }: SettingsProps) {
   };
 
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
-    onThemeChange?.(newTheme);
+    setTheme(newTheme);
   };
 
   return (
-    <div className="flex-1 overflow-auto bg-gray-50">
+    <div className="min-h-full flex-1 overflow-auto bg-gray-50 dark:bg-slate-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold text-[#172B4D]">Settings</h1>
-            <p className="text-sm text-[#5E6C84]">Manage your account and preferences</p>
+            <h1 className="text-xl font-bold text-[#172B4D] dark:text-slate-100">Settings</h1>
+            <p className="text-sm text-[#5E6C84] dark:text-slate-400">Manage your account and preferences</p>
           </div>
         </div>
       </div>
@@ -76,7 +73,7 @@ export function Settings({ theme = 'light', onThemeChange }: SettingsProps) {
       {/* Content */}
       <div className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-4xl">
-          <TabsList className="mb-6 bg-gray-100">
+          <TabsList className="mb-6 bg-gray-100 dark:bg-slate-800">
             <TabsTrigger value="profile" className="gap-2">
               <User className="h-4 w-4" />
               Profile
@@ -118,7 +115,7 @@ export function Settings({ theme = 'light', onThemeChange }: SettingsProps) {
                       <Button variant="outline" size="sm">
                         Change Avatar
                       </Button>
-                      <p className="text-xs text-[#5E6C84] mt-2">
+                      <p className="text-xs text-[#5E6C84] dark:text-slate-400 mt-2">
                         JPG, PNG or GIF. Max size 2MB.
                       </p>
                     </div>
@@ -158,7 +155,7 @@ export function Settings({ theme = 'light', onThemeChange }: SettingsProps) {
                       onChange={(e) =>
                         setProfileForm((prev) => ({ ...prev, bio: e.target.value }))
                       }
-                      className="w-full min-h-[100px] px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      className="w-full min-h-[100px] px-3 py-2 text-sm bg-white text-gray-900 placeholder:text-gray-400 border border-gray-200 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                       placeholder="Tell us about yourself"
                     />
                   </div>
@@ -186,8 +183,8 @@ export function Settings({ theme = 'light', onThemeChange }: SettingsProps) {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-[#172B4D]">Email Notifications</p>
-                      <p className="text-sm text-[#5E6C84]">
+                      <p className="font-medium text-[#172B4D] dark:text-slate-100">Email Notifications</p>
+                      <p className="text-sm text-[#5E6C84] dark:text-slate-400">
                         Receive email updates about your account
                       </p>
                     </div>
@@ -198,14 +195,14 @@ export function Settings({ theme = 'light', onThemeChange }: SettingsProps) {
                         onChange={() => handleNotificationChange('email')}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0052CC]"></div>
+                      <div className="w-11 h-6 bg-gray-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 dark:after:border-slate-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0052CC]"></div>
                     </label>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-[#172B4D]">Push Notifications</p>
-                      <p className="text-sm text-[#5E6C84]">
+                      <p className="font-medium text-[#172B4D] dark:text-slate-100">Push Notifications</p>
+                      <p className="text-sm text-[#5E6C84] dark:text-slate-400">
                         Receive push notifications on your device
                       </p>
                     </div>
@@ -216,14 +213,14 @@ export function Settings({ theme = 'light', onThemeChange }: SettingsProps) {
                         onChange={() => handleNotificationChange('push')}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0052CC]"></div>
+                      <div className="w-11 h-6 bg-gray-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 dark:after:border-slate-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0052CC]"></div>
                     </label>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-[#172B4D]">Weekly Digest</p>
-                      <p className="text-sm text-[#5E6C84]">
+                      <p className="font-medium text-[#172B4D] dark:text-slate-100">Weekly Digest</p>
+                      <p className="text-sm text-[#5E6C84] dark:text-slate-400">
                         Get a weekly summary of your activity
                       </p>
                     </div>
@@ -234,14 +231,14 @@ export function Settings({ theme = 'light', onThemeChange }: SettingsProps) {
                         onChange={() => handleNotificationChange('weekly')}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0052CC]"></div>
+                      <div className="w-11 h-6 bg-gray-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 dark:after:border-slate-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0052CC]"></div>
                     </label>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-[#172B4D]">Mentions</p>
-                      <p className="text-sm text-[#5E6C84]">
+                      <p className="font-medium text-[#172B4D] dark:text-slate-100">Mentions</p>
+                      <p className="text-sm text-[#5E6C84] dark:text-slate-400">
                         Get notified when someone mentions you
                       </p>
                     </div>
@@ -252,7 +249,7 @@ export function Settings({ theme = 'light', onThemeChange }: SettingsProps) {
                         onChange={() => handleNotificationChange('mentions')}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0052CC]"></div>
+                      <div className="w-11 h-6 bg-gray-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 dark:after:border-slate-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0052CC]"></div>
                     </label>
                   </div>
                 </div>
@@ -272,42 +269,48 @@ export function Settings({ theme = 'light', onThemeChange }: SettingsProps) {
               <CardContent className="space-y-6">
                 <div>
                   <Label className="text-base font-medium">Theme</Label>
-                  <p className="text-sm text-[#5E6C84] mb-4">
+                  <p className="text-sm text-[#5E6C84] dark:text-slate-400 mb-4">
                     Select your preferred color theme
                   </p>
                   <div className="grid grid-cols-3 gap-4">
                     <button
+                      type="button"
+                      aria-pressed={theme === 'light'}
                       onClick={() => handleThemeChange('light')}
                       className={`p-4 border-2 rounded-lg transition-all ${
                         theme === 'light'
-                          ? 'border-[#0052CC] bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-[#0052CC] bg-blue-50 dark:bg-blue-950/40'
+                          : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700'
                       }`}
                     >
-                      <Sun className="h-8 w-8 mx-auto mb-2 text-[#0052CC]" />
-                      <p className="text-sm font-medium text-[#172B4D]">Light</p>
+                      <Sun className="h-8 w-8 mx-auto mb-2 text-[#0052CC] dark:text-blue-400" />
+                      <p className="text-sm font-medium text-[#172B4D] dark:text-slate-100">Light</p>
                     </button>
                     <button
+                      type="button"
+                      aria-pressed={theme === 'dark'}
                       onClick={() => handleThemeChange('dark')}
                       className={`p-4 border-2 rounded-lg transition-all ${
                         theme === 'dark'
-                          ? 'border-[#0052CC] bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-[#0052CC] bg-blue-50 dark:bg-blue-950/40'
+                          : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700'
                       }`}
                     >
-                      <Moon className="h-8 w-8 mx-auto mb-2 text-[#0052CC]" />
-                      <p className="text-sm font-medium text-[#172B4D]">Dark</p>
+                      <Moon className="h-8 w-8 mx-auto mb-2 text-[#0052CC] dark:text-blue-400" />
+                      <p className="text-sm font-medium text-[#172B4D] dark:text-slate-100">Dark</p>
                     </button>
                     <button
+                      type="button"
+                      aria-pressed={theme === 'system'}
                       onClick={() => handleThemeChange('system')}
                       className={`p-4 border-2 rounded-lg transition-all ${
                         theme === 'system'
-                          ? 'border-[#0052CC] bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-[#0052CC] bg-blue-50 dark:bg-blue-950/40'
+                          : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700'
                       }`}
                     >
-                      <Globe className="h-8 w-8 mx-auto mb-2 text-[#0052CC]" />
-                      <p className="text-sm font-medium text-[#172B4D]">System</p>
+                      <Globe className="h-8 w-8 mx-auto mb-2 text-[#0052CC] dark:text-blue-400" />
+                      <p className="text-sm font-medium text-[#172B4D] dark:text-slate-100">System</p>
                     </button>
                   </div>
                 </div>
@@ -343,10 +346,10 @@ export function Settings({ theme = 'light', onThemeChange }: SettingsProps) {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Shield className="h-5 w-5 text-[#0052CC]" />
+                      <Shield className="h-5 w-5 text-[#0052CC] dark:text-blue-400" />
                       <div>
-                        <p className="font-medium text-[#172B4D]">2FA is not enabled</p>
-                        <p className="text-sm text-[#5E6C84]">
+                        <p className="font-medium text-[#172B4D] dark:text-slate-100">2FA is not enabled</p>
+                        <p className="text-sm text-[#5E6C84] dark:text-slate-400">
                           Protect your account with two-factor authentication
                         </p>
                       </div>
@@ -365,17 +368,17 @@ export function Settings({ theme = 'light', onThemeChange }: SettingsProps) {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-950 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <Globe className="h-5 w-5 text-[#5E6C84]" />
+                        <Globe className="h-5 w-5 text-[#5E6C84] dark:text-slate-400" />
                         <div>
-                          <p className="font-medium text-[#172B4D]">Current Session</p>
-                          <p className="text-sm text-[#5E6C84]">
+                          <p className="font-medium text-[#172B4D] dark:text-slate-100">Current Session</p>
+                          <p className="text-sm text-[#5E6C84] dark:text-slate-400">
                             Chrome on Windows - Ho Chi Minh City, Vietnam
                           </p>
                         </div>
                       </div>
-                      <span className="text-xs text-green-600 font-medium">Active now</span>
+                      <span className="text-xs text-green-600 dark:text-green-400 font-medium">Active now</span>
                     </div>
                   </div>
                 </CardContent>

@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { Sprint, CreateSprintRequest } from '@/types/sprint';
+import type { Sprint, CreateSprintRequest, UpdateSprintRequest } from '@/types/sprint';
 import type { UserStory } from '@/types/userStory';
 
 // API Response type
@@ -23,10 +23,14 @@ export async function getSprints(workspaceId: string): Promise<Sprint[]> {
   }
 }
 
-// Create a new sprint
+// Create a new sprint (optional 'YYYY-MM-DD' start/end dates; empty strings are sent as null)
 export async function createSprint(workspaceId: string, data: CreateSprintRequest): Promise<Sprint | null> {
   try {
-    const response = await api.post<ApiResponse<Sprint>>(`/sprints/workspace/${workspaceId}`, data);
+    const response = await api.post<ApiResponse<Sprint>>(`/sprints/workspace/${workspaceId}`, {
+      name: data.name,
+      startDate: data.startDate || null,
+      endDate: data.endDate || null,
+    });
     if (response.data.code === 1000) {
       return response.data.result || null;
     }
@@ -35,6 +39,23 @@ export async function createSprint(workspaceId: string, data: CreateSprintReques
     console.error('Error creating sprint:', error);
     return null;
   }
+}
+
+/**
+ * Rename a sprint / set its dates (PUT /sprints/{id}). Missing dates clear them, so always
+ * send the current values. Throws the original axios error so callers can map codes
+ * 1041 (end before start), 1042 (blank name), 1014 (no permission), 1020 (not found).
+ */
+export async function updateSprint(sprintId: string, data: UpdateSprintRequest): Promise<Sprint> {
+  const response = await api.put<ApiResponse<Sprint>>(`/sprints/${sprintId}`, {
+    name: data.name,
+    startDate: data.startDate || null,
+    endDate: data.endDate || null,
+  });
+  if (response.data.code !== 1000 || !response.data.result) {
+    throw new Error(response.data.message || 'Unable to update sprint');
+  }
+  return response.data.result;
 }
 
 // Get stories in a sprint
@@ -110,6 +131,7 @@ export async function removeStoryFromSprint(userStoryId: string): Promise<boolea
 export const sprintService = {
   getSprints,
   createSprint,
+  updateSprint,
   getSprintStories,
   addStoryToSprint,
   addStoriesToSprint,

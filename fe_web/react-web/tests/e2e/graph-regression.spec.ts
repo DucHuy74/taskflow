@@ -30,9 +30,9 @@ test('workspace graph renders TERM nodes after a Strict Mode mount', async ({ pa
   });
 
   await page.goto('/workspace/ws/graph');
-  await expect(page.getByText('fCoSE overview')).toBeVisible();
+  await expect(page.getByText('3D S–V–O overview')).toBeVisible();
   await expect(page.getByText('operator', { exact: true }).last()).toBeVisible();
-  const graphHost = page.getByRole('img', { name: /Interactive S–V–O graph/ });
+  const graphHost = page.getByRole('img', { name: /Interactive 3D subject–verb–object graph/ });
   const bounds = await graphHost.evaluate((element) => {
     const box = element.getBoundingClientRect();
     const parent = element.parentElement?.getBoundingClientRect();
@@ -40,7 +40,7 @@ test('workspace graph renders TERM nodes after a Strict Mode mount', async ({ pa
   });
   expect(bounds.width).toBeGreaterThan(0);
   expect(bounds.height).toBeGreaterThan(0);
-  await expect(graphHost.locator('canvas')).toHaveCount(3);
+  await expect(graphHost.locator('canvas')).toHaveCount(1);
   await expect(page.getByText('Subjects').locator('..').getByText('1', { exact: true })).toBeVisible();
   await expect(page.getByText('Arranging graph…')).toBeHidden({ timeout: 15_000 });
   await graphHost.locator('..').screenshot({ path: 'test-results/workspace-graph-regression.png' });
@@ -80,7 +80,7 @@ test('backlog can open and start a sprint without corrupting sprint story data',
   await page.goto('/workspace/ws/backlog');
   await page.getByRole('button', { name: 'View Graph' }).click();
   await expect(page).toHaveURL(/\/workspace\/ws\/sprint\/sprint-1\/graph$/);
-  await expect(page.getByText('fCoSE overview')).toBeVisible();
+  await expect(page.getByText('3D S–V–O overview')).toBeVisible();
   await page.goto('/workspace/ws/backlog');
   await page.getByRole('button', { name: 'Start sprint' }).click();
   await expect.poll(() => startRequests).toBe(1);

@@ -92,16 +92,16 @@ export function InviteToProject() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-slate-900">
       {/* Header */}
-      <div className="border-b border-gray-200 px-6 py-4">
+      <div className="border-b border-gray-200 dark:border-slate-800 px-6 py-4">
         <div className="max-w-xl mx-auto flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-xl font-semibold text-[#172B4D]">Bring your team along</h1>
-            <p className="text-sm text-[#5E6C84]">Invite members to {workspaceName}</p>
+            <h1 className="text-xl font-semibold text-[#172B4D] dark:text-slate-100">Bring your team along</h1>
+            <p className="text-sm text-[#5E6C84] dark:text-slate-400">Invite members to {workspaceName}</p>
           </div>
         </div>
       </div>
@@ -115,7 +115,7 @@ export function InviteToProject() {
           className="space-y-6"
         >
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-md text-red-600 dark:text-red-400 text-sm">
               {error}
             </div>
           )}
@@ -123,11 +123,11 @@ export function InviteToProject() {
           {/* Email Input */}
           <div className="space-y-2">
             <Label htmlFor="emails">Email addresses</Label>
-            <div className="flex flex-wrap gap-2 p-3 border border-gray-200 rounded-md min-h-[60px]">
+            <div className="flex flex-wrap gap-2 p-3 border border-gray-200 dark:border-slate-800 rounded-md min-h-[60px]">
               {emails.map((e) => (
                 <span
                   key={e}
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 rounded-full text-sm"
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 dark:bg-slate-800 rounded-full text-sm"
                 >
                   {e}
                   <button
@@ -149,7 +149,7 @@ export function InviteToProject() {
                 className="flex-1 min-w-[200px] outline-none text-sm"
               />
             </div>
-            <p className="text-xs text-[#5E6C84]">Press Enter or comma to add email</p>
+            <p className="text-xs text-[#5E6C84] dark:text-slate-400">Press Enter or comma to add email</p>
           </div>
 
           {/* Role Selection */}
@@ -161,8 +161,8 @@ export function InviteToProject() {
                   key={role}
                   className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
                     selectedRole === role
-                      ? 'border-[#0052CC] bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-[#0052CC] bg-blue-50 dark:bg-blue-950/40'
+                      : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700'
                   }`}
                 >
                   <input
@@ -175,12 +175,12 @@ export function InviteToProject() {
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className={selectedRole === role ? 'text-[#0052CC]' : 'text-gray-600'}>
+                      <span className={selectedRole === role ? 'text-[#0052CC] dark:text-blue-400' : 'text-gray-600 dark:text-slate-400'}>
                         {roleInfo[role].icon}
                       </span>
-                      <span className="font-medium text-[#172B4D]">{roleInfo[role].label}</span>
+                      <span className="font-medium text-[#172B4D] dark:text-slate-100">{roleInfo[role].label}</span>
                     </div>
-                    <p className="text-sm text-[#5E6C84] mt-1">{roleInfo[role].description}</p>
+                    <p className="text-sm text-[#5E6C84] dark:text-slate-400 mt-1">{roleInfo[role].description}</p>
                   </div>
                 </label>
               ))}
@@ -216,7 +216,7 @@ function Label({ children, htmlFor }: { children: React.ReactNode; htmlFor?: str
   return (
     <label
       htmlFor={htmlFor}
-      className="text-sm font-semibold text-[#172B4D]"
+      className="text-sm font-semibold text-[#172B4D] dark:text-slate-100"
     >
       {children}
     </label>

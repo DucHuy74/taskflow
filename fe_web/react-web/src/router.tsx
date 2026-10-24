@@ -20,6 +20,7 @@ const SprintPage = lazy(() => import('@/pages/SprintPage').then(m => ({ default:
 const InviteToProject = lazy(() => import('@/pages/InviteToProject').then(m => ({ default: m.InviteToProject })));
 const SprintGraphPage = lazy(() => import('@/pages/SprintGraphPage').then(m => ({ default: m.SprintGraphPage })));
 const WorkspaceGraphPage = lazy(() => import('@/pages/WorkspaceGraphPage').then(m => ({ default: m.WorkspaceGraphPage })));
+const WorkspaceSettingsPage = lazy(() => import('@/pages/WorkspaceSettingsPage').then(m => ({ default: m.WorkspaceSettingsPage })));
 const RecommendationReviewPage = lazy(() => import('@/pages/RecommendationReviewPage').then(m => ({ default: m.RecommendationReviewPage })));
 
 // Loading fallback component
@@ -162,6 +163,14 @@ export const router = createBrowserRouter([
         element: (
           <LazyRoute>
             <InviteToProject />
+          </LazyRoute>
+        ),
+      },
+      {
+        path: 'workspace/:workspaceId/settings',
+        element: (
+          <LazyRoute>
+            <WorkspaceSettingsPage />
           </LazyRoute>
         ),
       },

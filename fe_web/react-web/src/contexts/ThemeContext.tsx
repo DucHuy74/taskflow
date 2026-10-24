@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useLayoutEffect, useCallback, type ReactNode } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 type ResolvedTheme = 'light' | 'dark';
@@ -85,8 +85,9 @@ export function ThemeProvider({
     }
   }, [theme]);
 
-  // Apply theme to document
-  useEffect(() => {
+  // Apply theme to document. Layout effect so a flushSync() inside a view
+  // transition paints the new theme in the same frame the snapshot is taken.
+  useLayoutEffect(() => {
     const root = document.documentElement;
 
     if (resolvedTheme === 'dark') {
@@ -100,6 +101,8 @@ export function ThemeProvider({
 
   const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);
+    // Resolve eagerly so callers wrapping this in flushSync see the class change immediately.
+    setResolvedTheme(resolveTheme(newTheme));
     persistTheme(newTheme);
     onThemeChange?.(newTheme);
   }, [onThemeChange]);

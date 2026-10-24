@@ -173,27 +173,68 @@ describe('backlogService', () => {
       expect(result).toBeNull();
     });
 
-    it('should return story on success', async () => {
+    it('should unwrap ApiResponse<UserStoryResponse>', async () => {
       const { api } = await import('@/services/api');
-      const mockStory = { id: '1', storyText: 'Test story', status: 'ToDo' };
-      vi.mocked(api.get).mockResolvedValue({
-        data: { code: 1000, result: mockStory },
-      });
+      const mockStory = { id: '1', storyText: 'Test story', status: 'ToDo', version: 3, sprintId: null, backlogId: 'b-1' };
+      vi.mocked(api.get).mockResolvedValue({ data: { code: 1000, result: mockStory } });
 
       const result = await backlogService.getUserStory('story-1');
 
+      expect(api.get).toHaveBeenCalledWith('/user-stories/story-1');
       expect(result).toEqual(mockStory);
     });
 
-    it('should return null when result is missing', async () => {
+    it('should return null when body is empty', async () => {
       const { api } = await import('@/services/api');
-      vi.mocked(api.get).mockResolvedValue({
-        data: { code: 1000, result: null },
-      });
+      vi.mocked(api.get).mockResolvedValue({ data: null });
 
       const result = await backlogService.getUserStory('story-1');
 
       expect(result).toBeNull();
+    });
+
+    it('should return null when the code is not 1000 or the result is missing', async () => {
+      const { api } = await import('@/services/api');
+      vi.mocked(api.get)
+        .mockResolvedValueOnce({ data: { code: 1019, message: 'Not found' } })
+        .mockResolvedValueOnce({ data: { code: 1000 } });
+
+      await expect(backlogService.getUserStory('story-1')).resolves.toBeNull();
+      await expect(backlogService.getUserStory('story-1')).resolves.toBeNull();
+    });
+  });
+
+  describe('updateUserStory', () => {
+    it('should PUT storyText and version and return the updated story', async () => {
+      const { api } = await import('@/services/api');
+      const updated = { id: 'story-1', storyText: 'Edited', status: 'ToDo', version: 4 };
+      vi.mocked(api.put).mockResolvedValue({ data: { code: 1000, result: updated } });
+
+      const result = await backlogService.updateUserStory('story-1', { storyText: 'Edited', version: 3 });
+
+      expect(api.put).toHaveBeenCalledWith('/user-stories/story-1', { storyText: 'Edited', version: 3 });
+      expect(result).toEqual(updated);
+    });
+
+    it('should rethrow 409 conflicts so the UI can detect them', async () => {
+      const { api } = await import('@/services/api');
+      const conflict = Object.assign(new Error('Request failed with status code 409'), {
+        response: { status: 409, data: { code: 1039, message: 'User story was updated by another user' } },
+      });
+      vi.mocked(api.put).mockRejectedValue(conflict);
+
+      await expect(
+        backlogService.updateUserStory('story-1', { storyText: 'Edited', version: 1 })
+      ).rejects.toBe(conflict);
+    });
+
+    it('should throw when the response code is not 1000', async () => {
+      const { api } = await import('@/services/api');
+      vi.mocked(api.put).mockResolvedValue({ data: { code: 1001, message: 'Invalid key' } });
+
+      await expect(
+        backlogService.updateUserStory('story-1', { storyText: '', version: 1 })
+      ).rejects.toThrow('Invalid key');
     });
   });
 });

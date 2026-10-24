@@ -21,14 +21,14 @@ export function Header() {
   };
 
   return (
-    <header className="h-14 bg-white border-b flex items-center justify-between px-4">
+    <header className="h-14 bg-white dark:bg-slate-900 border-b flex items-center justify-between px-4">
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-500">Projects / Project Alpha</span>
+        <span className="text-sm text-gray-500 dark:text-slate-400">Projects / Project Alpha</span>
       </div>
 
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5 text-gray-500" />
+          <Bell className="h-5 w-5 text-gray-500 dark:text-slate-400" />
           <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full" />
         </Button>
 
@@ -37,14 +37,14 @@ export function Header() {
             <Button variant="ghost" className="flex items-center gap-2 pl-2 pr-1">
               <Avatar className="h-7 w-7">
                 <AvatarImage src={user?.avatar} />
-                <AvatarFallback className="bg-blue-100 text-blue-600 text-xs">
+                <AvatarFallback className="bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-xs">
                   {user?.name?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
               <span className="text-sm font-medium">
                 {user?.name || 'User'}
               </span>
-              <ChevronDown className="h-4 w-4 text-gray-400" />
+              <ChevronDown className="h-4 w-4 text-gray-400 dark:text-slate-500" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-48">
@@ -59,7 +59,7 @@ export function Header() {
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+            <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400">
               <LogOut className="mr-2 h-4 w-4" />
               Log out
             </DropdownMenuItem>

@@ -90,18 +90,18 @@ export function CreateWorkspace() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-slate-900">
       {/* Header */}
-      <div className="border-b border-gray-200 px-6 py-4">
+      <div className="border-b border-gray-200 dark:border-slate-800 px-6 py-4">
         <div className="flex items-center gap-4 max-w-4xl mx-auto">
           <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-xl font-semibold text-[#172B4D]">
+            <h1 className="text-xl font-semibold text-[#172B4D] dark:text-slate-100">
               {selectedTemplate ? 'Create project' : 'Space templates'}
             </h1>
-            <p className="text-sm text-[#5E6C84]">
+            <p className="text-sm text-[#5E6C84] dark:text-slate-400">
               {selectedTemplate
                 ? 'Enter your project details'
                 : 'Templates for you based on how similar teams work.'}
@@ -128,7 +128,7 @@ export function CreateWorkspace() {
                   className="cursor-pointer"
                   onClick={() => setSelectedTemplate(template)}
                 >
-                  <div className="group relative overflow-hidden rounded-lg border border-gray-200 transition-all hover:border-[#0052CC] hover:shadow-lg">
+                  <div className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-slate-800 transition-all hover:border-[#0052CC] hover:shadow-lg">
                     {/* Preview Header */}
                     <div
                       className="h-32 relative"
@@ -136,20 +136,20 @@ export function CreateWorkspace() {
                         background: `linear-gradient(135deg, ${template.color1}, ${template.color2})`,
                       }}
                     >
-                      <div className="absolute top-4 left-4 right-4 bg-white rounded p-3 shadow-sm">
-                        <div className="h-2 bg-gray-200 rounded mb-2 w-3/4"></div>
+                      <div className="absolute top-4 left-4 right-4 bg-white dark:bg-slate-900 rounded p-3 shadow-sm">
+                        <div className="h-2 bg-gray-200 dark:bg-slate-700 rounded mb-2 w-3/4"></div>
                         <div className="flex gap-2">
-                          <div className="flex-1 h-8 bg-gray-100 rounded"></div>
-                          <div className="flex-1 h-8 bg-gray-100 rounded"></div>
-                          <div className="flex-1 h-8 bg-gray-100 rounded"></div>
+                          <div className="flex-1 h-8 bg-gray-100 dark:bg-slate-800 rounded"></div>
+                          <div className="flex-1 h-8 bg-gray-100 dark:bg-slate-800 rounded"></div>
+                          <div className="flex-1 h-8 bg-gray-100 dark:bg-slate-800 rounded"></div>
                         </div>
                       </div>
                     </div>
 
                     {/* Template Info */}
                     <div className="p-4">
-                      <h3 className="font-semibold text-[#172B4D]">{template.name}</h3>
-                      <p className="text-sm text-[#5E6C84] mt-1">{template.description}</p>
+                      <h3 className="font-semibold text-[#172B4D] dark:text-slate-100">{template.name}</h3>
+                      <p className="text-sm text-[#5E6C84] dark:text-slate-400 mt-1">{template.description}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -166,7 +166,7 @@ export function CreateWorkspace() {
           >
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+                <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-md text-red-600 dark:text-red-400 text-sm">
                   {error}
                 </div>
               )}
@@ -205,7 +205,7 @@ export function CreateWorkspace() {
               </div>
 
               {/* Preview */}
-              <div className="mt-8 p-6 bg-gray-50 rounded-lg">
+              <div className="mt-8 p-6 bg-gray-50 dark:bg-slate-950 rounded-lg">
                 <div className="flex items-center gap-3 mb-4">
                   <div
                     className="w-10 h-10 rounded flex items-center justify-center text-white font-bold"
@@ -214,10 +214,10 @@ export function CreateWorkspace() {
                     {workspaceName.trim()[0]?.toUpperCase() || 'W'}
                   </div>
                   <div>
-                    <p className="font-semibold text-[#172B4D]">
+                    <p className="font-semibold text-[#172B4D] dark:text-slate-100">
                       {workspaceName.trim() || 'Untitled space'}
                     </p>
-                    <p className="text-sm text-[#5E6C84]">
+                    <p className="text-sm text-[#5E6C84] dark:text-slate-400">
                       {managementType === WorkspaceType.TEAM_MANAGED ? 'Team-managed' : 'Company-managed'} space
                     </p>
                   </div>
