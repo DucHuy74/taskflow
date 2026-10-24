@@ -1,15 +1,20 @@
+export type InvitationRole = 'ADMIN' | 'MEMBER' | 'VIEWER';
+
+/** Mirrors backend InvitationResponse (GET /invitations/pending). */
 export interface Invitation {
   id: string;
   workspaceId: string;
-  inviterId: string;
+  /** Null when the workspace could not be resolved. */
+  workspaceName: string | null;
+  role: InvitationRole;
   email: string;
-  role: 'ADMIN' | 'MEMBER' | 'VIEWER';
-  status: 'PENDING' | 'ACCEPTED' | 'DENIED';
-  createdAt: string;
-  expiredAt?: string;
+  inviterId: string;
+  /** Null when the inviter's profile could not be resolved. */
+  inviterEmail: string | null;
+  expiredAt: string;
 }
 
 export interface SendInvitationRequest {
   email: string;
-  role: 'ADMIN' | 'MEMBER' | 'VIEWER';
+  role: InvitationRole;
 }

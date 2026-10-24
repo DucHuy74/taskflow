@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adaptGraphData, buildSvoConstraints, normalizeEdgeType, normalizeNodeType } from '@/lib/graph/graphModel';
+import { adaptGraphData, describeRoles, normalizeEdgeType, normalizeNodeType, toSvoGraph } from '@/lib/graph/graphModel';
 import type { GraphData } from '@/services/graphService';
 
 const data: GraphData = {
@@ -69,29 +69,59 @@ describe('graph adapter', () => {
   });
 });
 
-describe('SVO relative constraints', () => {
-  it('creates left-to-right constraints only for PERFORM and TARGET', () => {
-    const graph = adaptGraphData(data);
-    expect(buildSvoConstraints(graph).constraints).toEqual([
-      { left: 's', right: 'v', gap: 100 },
-      { left: 'v', right: 'o', gap: 100 },
-    ]);
-  });
-
-  it('skips a constraint that would create a cycle', () => {
-    const graph = adaptGraphData({
-      nodes: data.nodes.slice(0, 3),
+describe('S–V–O only view', () => {
+  it('drops user story nodes and their RELATES_TO links', () => {
+    const graph = toSvoGraph(adaptGraphData({
+      nodes: [
+        { id: 's', label: 'operator', type: 'TERM' },
+        { id: 'v', label: 'reviews', type: 'TERM' },
+        { id: 'o', label: 'plan', type: 'TERM' },
+        { id: 'story-1', label: 'story-1', type: 'USER_STORY' },
+      ],
       edges: [
         { from: 's', to: 'v', type: 'PERFORM' },
         { from: 'v', to: 'o', type: 'TARGET' },
-        { from: 'o', to: 's', type: 'TARGET' },
+        { from: 'story-1', to: 's', type: 'RELATES_TO' },
       ],
+    }));
+    expect(graph.nodes.map((node) => [node.id, node.type])).toEqual([['s', 'SUBJECT'], ['v', 'ACTION'], ['o', 'OBJECT']]);
+    expect(graph.edges.map((edge) => edge.type)).toEqual(['PERFORM', 'TARGET']);
+    expect(graph.nodes.find((node) => node.id === 's')?.degree).toBe(1);
+  });
+
+  it('keeps similarity links between terms but removes isolated mixed terms', () => {
+    const graph = toSvoGraph(adaptGraphData({
+      nodes: [
+        { id: 'a', label: 'account', type: 'OBJECT' },
+        { id: 'b', label: 'profile', type: 'OBJECT' },
+        { id: 'lonely', label: 'lonely', type: 'TERM' },
+      ],
+      edges: [{ from: 'a', to: 'b', type: 'SIMILAR', score: 0.8 }],
+    }));
+    expect(graph.nodes.map((node) => node.id)).toEqual(['a', 'b']);
+    expect(graph.edges).toHaveLength(1);
+  });
+});
+
+describe('backend roles', () => {
+  it('uses roles from the API and marks multi-role terms as mixed', () => {
+    const graph = adaptGraphData({
+      nodes: [
+        { id: 'pm', label: 'product manager', type: 'TERM', roles: ['SUBJECT'] },
+        { id: 'backlog', label: 'backlog', type: 'TERM', roles: ['OBJECT', 'SUBJECT'] },
+      ],
+      edges: [],
     });
-    const result = buildSvoConstraints(graph, 90);
-    expect(result.constraints).toEqual([
-      { left: 's', right: 'v', gap: 90 },
-      { left: 'v', right: 'o', gap: 90 },
-    ]);
-    expect(result.warnings).toEqual([expect.stringContaining('Cyclic SVO constraint')]);
+    expect(graph.nodes.map((node) => node.type)).toEqual(['SUBJECT', 'TERM']);
+    expect(graph.nodes[1].roles).toEqual(['SUBJECT', 'OBJECT']);
+    expect(describeRoles(graph.nodes[1])).toBe('Subject + Object');
+  });
+
+  it('uses the story count as the weight of S–V–O edges', () => {
+    const graph = adaptGraphData({
+      nodes: [{ id: 's', label: 's', type: 'TERM' }, { id: 'v', label: 'v', type: 'TERM' }],
+      edges: [{ from: 's', to: 'v', type: 'PERFORM', weight: 3, storyIds: ['a', 'b', 'c'] }],
+    });
+    expect(graph.edges[0].weight).toBe(3);
   });
 });

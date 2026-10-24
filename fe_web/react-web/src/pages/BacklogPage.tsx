@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { BacklogList, SprintBoard, SprintBoardEmpty, CreateSprintDialog, UserStoryCardStatic } from '@/components/backlog';
+import { BacklogList, SprintBoard, SprintBoardEmpty, CreateSprintDialog, EditSprintDialog, UserStoryCardStatic, EditStoryDialog } from '@/components/backlog';
 import { getBacklogStories, createUserStories } from '@/services/backlogService';
 import { sprintService } from '@/services/sprintService';
 import { workspaceService } from '@/services/workspaceService';
@@ -24,7 +24,7 @@ import { recommendationService } from '@/services/recommendationService';
 import { useToastMessage } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { GitBranch, Layers3, Search, Sparkles } from 'lucide-react';
+import { GitBranch, Layers3, Search, Settings as SettingsIcon, Sparkles } from 'lucide-react';
 import type { UserStory } from '@/types/userStory';
 import type { CreateSprintRequest, Sprint } from '@/types/sprint';
 
@@ -38,6 +38,8 @@ export function BacklogPage() {
   const [activeStory, setActiveStory] = useState<UserStory | null>(null);
   const [createSprintOpen, setCreateSprintOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [editingStory, setEditingStory] = useState<UserStory | null>(null);
+  const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
 
   const collisionDetectionStrategy = useCallback<CollisionDetection>((args) => {
     const pointerCollisions = pointerWithin(args);
@@ -119,9 +121,14 @@ export function BacklogPage() {
   });
 
   const createSprintMutation = useMutation({
-    mutationFn: (data: CreateSprintRequest) => sprintService.createSprint(workspaceId, data),
-    onSuccess: () => {
+    mutationFn: async (data: CreateSprintRequest) => {
+      const sprint = await sprintService.createSprint(workspaceId, data);
+      if (!sprint) throw new Error('The sprint could not be created. Please try again.');
+      return sprint;
+    },
+    onSuccess: (sprint) => {
       queryClient.invalidateQueries({ queryKey: ['sprints', workspaceId] });
+      showToast(`${sprint.name} was created.`, 'success', 'Sprint created');
     },
   });
 
@@ -266,7 +273,7 @@ export function BacklogPage() {
       <div className="min-h-full bg-slate-50 px-4 py-6 dark:bg-slate-950 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-[1480px]">
           <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div><nav className="mb-1 text-xs font-medium text-slate-500" aria-label="Breadcrumb">Workspaces / {workspace?.name || 'Workspace'}</nav><h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">Backlog</h1><p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Plan stories, prepare sprints, and turn analyzed requirements into a connected map.</p></div>
+            <div><nav className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400" aria-label="Breadcrumb">Workspaces / {workspace?.name || 'Workspace'}</nav><h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">Backlog</h1><p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Plan stories, prepare sprints, and turn analyzed requirements into a connected map.</p></div>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => navigate(`/workspace/${workspaceId}/recommendations`)}>
                 <Sparkles className="h-4 w-4" aria-hidden="true" /> Review suggestions
@@ -283,9 +290,10 @@ export function BacklogPage() {
           <div className="mb-5 flex flex-col gap-3 border-b border-slate-200 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-5">
               <NavLink to={`/workspace/${workspaceId}/backlog`} className="flex min-h-11 items-center gap-2 border-b-2 border-indigo-600 text-sm font-semibold text-indigo-700 no-underline dark:text-indigo-300"><Layers3 className="h-4 w-4" aria-hidden="true" /> Backlog</NavLink>
-              <NavLink to={`/workspace/${workspaceId}/graph`} className="flex min-h-11 items-center gap-2 border-b-2 border-transparent text-sm font-medium text-slate-600 no-underline hover:border-slate-300 dark:text-slate-300"><GitBranch className="h-4 w-4" aria-hidden="true" /> Story map</NavLink>
+              <NavLink to={`/workspace/${workspaceId}/graph`} className="flex min-h-11 items-center gap-2 border-b-2 border-transparent text-sm font-medium text-slate-600 no-underline hover:border-slate-300 dark:hover:border-slate-700 dark:text-slate-300"><GitBranch className="h-4 w-4" aria-hidden="true" /> Story map</NavLink>
+              <NavLink to={`/workspace/${workspaceId}/settings`} className="flex min-h-11 items-center gap-2 border-b-2 border-transparent text-sm font-medium text-slate-600 no-underline hover:border-slate-300 dark:hover:border-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-slate-300"><SettingsIcon className="h-4 w-4" aria-hidden="true" /> Settings</NavLink>
             </div>
-            <div className="relative mb-3 w-full sm:w-72"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" /><label htmlFor="backlog-search" className="sr-only">Search backlog</label><input id="backlog-search" type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search backlog" className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900 dark:text-white" /></div>
+            <div className="relative mb-3 w-full sm:w-72"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" aria-hidden="true" /><label htmlFor="backlog-search" className="sr-only">Search backlog</label><input id="backlog-search" type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search backlog" className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900 dark:text-white" /></div>
           </div>
 
           <div className="mb-5 flex items-start gap-3 rounded-lg border border-violet-100 bg-violet-50 px-4 py-3 text-sm text-violet-900 dark:border-violet-900 dark:bg-violet-950/50 dark:text-violet-200"><Sparkles className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><p>New stories are analyzed by a background worker. When the batch is ready, rebuild the story map to refresh workspace relationships.</p></div>
@@ -302,6 +310,8 @@ export function BacklogPage() {
                 onStartSprint={() => handleStartSprint(sprint.id)}
                 onViewGraph={() => handleViewSprintGraph(sprint)}
                 isStarting={startSprintMutation.isPending && startSprintMutation.variables === sprint.id}
+                onEditStory={setEditingStory}
+                onEditSprint={() => setEditingSprint(sprint)}
               />
             ))}
           </div>
@@ -321,6 +331,25 @@ export function BacklogPage() {
           isCreating={createStoryMutation.isPending}
           onCreateStories={handleCreateStory}
           onStartSprint={() => setCreateSprintOpen(true)}
+          onEditStory={setEditingStory}
+        />
+
+        {/* Edit Story Dialog (optimistic locking) */}
+        <EditStoryDialog
+          key={editingStory?.id ?? 'none'}
+          story={editingStory}
+          workspaceId={workspaceId}
+          open={Boolean(editingStory)}
+          onOpenChange={(open) => { if (!open) setEditingStory(null); }}
+        />
+
+        {/* Edit Sprint Dialog (rename + dates) */}
+        <EditSprintDialog
+          key={editingSprint?.id ?? 'no-sprint'}
+          sprint={editingSprint}
+          workspaceId={workspaceId}
+          open={Boolean(editingSprint)}
+          onOpenChange={(open) => { if (!open) setEditingSprint(null); }}
         />
 
         {/* Create Sprint Dialog */}

@@ -16,6 +16,7 @@ import { workspaceService } from '@/services/workspaceService';
 import { backlogService } from '@/services/backlogService';
 import { sprintService } from '@/services/sprintService';
 import { ANIMATION_DURATION, EASING, staggerContainerVariants } from '@/lib/animations';
+import { formatSprintDateRange } from '@/lib/sprintDates';
 import type { Workspace } from '@/types/workspace';
 import type { Sprint } from '@/types/sprint';
 
@@ -44,43 +45,45 @@ const itemVariants = {
 
 export function DashboardPage() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
-
-  if (!workspaceId) {
-    return <Navigate to="/" replace />;
-  }
-
   const { data: workspace, isLoading: workspaceLoading } = useQuery({
     queryKey: ['workspace', workspaceId],
-    queryFn: () => workspaceService.getWorkspace(workspaceId) as Promise<Workspace>,
+    queryFn: () => workspaceService.getWorkspace(workspaceId!) as Promise<Workspace>,
+    enabled: Boolean(workspaceId),
     initialData: undefined,
   });
 
   const { data: backlogStories = [], isLoading: backlogLoading } = useQuery({
     queryKey: ['backlog-stories', workspaceId],
-    queryFn: () => backlogService.getBacklogStories(workspaceId),
+    queryFn: () => backlogService.getBacklogStories(workspaceId!),
+    enabled: Boolean(workspaceId),
   });
 
   const { data: sprints = [], isLoading: sprintsLoading } = useQuery<Sprint[]>({
     queryKey: ['sprints', workspaceId],
-    queryFn: () => sprintService.getSprints(workspaceId),
+    queryFn: () => sprintService.getSprints(workspaceId!),
+    enabled: Boolean(workspaceId),
   });
 
   const activeSprints = sprints.filter((s) => s.status === 'InProgress');
-  const completedSprints = sprints.filter((s) => s.status === 'Completed');
+  const completedSprints = sprints.filter((s) => s.status === 'Done');
   const todoSprints = sprints.filter((s) => s.status === 'ToDo');
 
   const isLoading = workspaceLoading || backlogLoading || sprintsLoading;
 
+  if (!workspaceId) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <motion.div
-      className="flex-1 overflow-auto bg-gray-50"
+      className="flex-1 overflow-auto bg-gray-50 dark:bg-slate-950"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
     >
       {/* Header */}
       <motion.div
-        className="bg-white border-b border-gray-200 px-6 py-4"
+        className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-4"
         variants={{
           hidden: { opacity: 0, y: -20 },
           visible: {
@@ -104,8 +107,8 @@ export function DashboardPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: ANIMATION_DURATION.normal }}
           >
-            <h1 className="text-2xl font-bold text-[#172B4D]">{workspace?.name}</h1>
-            <p className="text-sm text-[#5E6C84] mt-1">
+            <h1 className="text-2xl font-bold text-[#172B4D] dark:text-slate-100">{workspace?.name}</h1>
+            <p className="text-sm text-[#5E6C84] dark:text-slate-400 mt-1">
               {workspace?.description || 'No description'}
             </p>
           </motion.div>
@@ -136,8 +139,8 @@ export function DashboardPage() {
                     <stat.icon className={`h-5 w-5 text-${stat.color}-600`} />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-[#172B4D]">{stat.value}</p>
-                    <p className="text-xs text-[#5E6C84]">{stat.label}</p>
+                    <p className="text-2xl font-bold text-[#172B4D] dark:text-slate-100">{stat.value}</p>
+                    <p className="text-xs text-[#5E6C84] dark:text-slate-400">{stat.label}</p>
                   </div>
                 </motion.div>
               </CardContent>
@@ -155,7 +158,7 @@ export function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-[#5E6C84] mb-4">
+              <p className="text-sm text-[#5E6C84] dark:text-slate-400 mb-4">
                 Manage your backlog and create user stories.
               </p>
               <Link to={`/workspace/${workspaceId}/backlog`}>
@@ -175,7 +178,7 @@ export function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-[#5E6C84] mb-4">
+              <p className="text-sm text-[#5E6C84] dark:text-slate-400 mb-4">
                 Plan and execute sprints.
               </p>
               <Link to={`/workspace/${workspaceId}/backlog`}>
@@ -205,7 +208,7 @@ export function DashboardPage() {
                   ))}
                 </div>
               ) : sprints.length === 0 ? (
-                <p className="text-sm text-[#5E6C84] text-center py-4">
+                <p className="text-sm text-[#5E6C84] dark:text-slate-400 text-center py-4">
                   No sprints yet. Create your first sprint in the backlog.
                 </p>
               ) : (
@@ -213,13 +216,13 @@ export function DashboardPage() {
                   {sprints.slice(0, 5).map((sprint) => (
                     <motion.div
                       key={sprint.id}
-                      className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
                       whileHover={{ x: 4 }}
                     >
                       <div className="flex items-center gap-3">
                         <div
                           className={`w-2 h-2 rounded-full ${
-                            sprint.status === 'Completed'
+                            sprint.status === 'Done'
                               ? 'bg-green-500'
                               : sprint.status === 'InProgress'
                               ? 'bg-blue-500'
@@ -227,22 +230,21 @@ export function DashboardPage() {
                           }`}
                         />
                         <div>
-                          <p className="font-medium text-[#172B4D]">{sprint.name}</p>
-                          {sprint.startDate && sprint.endDate && (
-                            <p className="text-xs text-[#5E6C84]">
-                              {new Date(sprint.startDate).toLocaleDateString()} -{' '}
-                              {new Date(sprint.endDate).toLocaleDateString()}
+                          <p className="font-medium text-[#172B4D] dark:text-slate-100">{sprint.name}</p>
+                          {(sprint.startDate || sprint.endDate) && (
+                            <p className="text-xs text-[#5E6C84] dark:text-slate-400">
+                              {formatSprintDateRange(sprint.startDate, sprint.endDate)}
                             </p>
                           )}
                         </div>
                       </div>
                       <span
                         className={`px-2 py-1 rounded text-xs font-medium ${
-                          sprint.status === 'Completed'
-                            ? 'bg-green-100 text-green-700'
+                          sprint.status === 'Done'
+                            ? 'bg-green-100 dark:bg-green-950/60 text-green-700 dark:text-green-300'
                             : sprint.status === 'InProgress'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-gray-100 text-gray-600'
+                            ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
+                            : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400'
                         }`}
                       >
                         {sprint.status}

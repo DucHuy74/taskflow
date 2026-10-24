@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "./styles/theme.css";
 
+/* Tailwind v4 ignores darkMode in tailwind.config.js; drive dark: from the .dark class set by ThemeContext. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --radius: 0.5rem;
 }
@@ -175,4 +178,15 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ========================================
+   Animated theme toggle (View Transitions)
+   The new snapshot is revealed by a clip-path circle animated from JS.
+   ======================================== */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }

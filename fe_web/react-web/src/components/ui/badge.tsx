@@ -9,11 +9,11 @@ const Badge = React.forwardRef<
 >(({ className, variant = "default", ...props }, ref) => {
   const variants = {
     default: "bg-indigo-600 text-white",
-    secondary: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+    secondary: "bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300",
     destructive: "bg-red-600 text-white",
     success: "bg-emerald-600 text-white",
     warning: "bg-amber-500 text-white",
-    outline: "border border-gray-200 text-gray-700 dark:border-gray-700 dark:text-gray-300",
+    outline: "border border-gray-200 text-gray-700 dark:border-slate-700 dark:text-slate-300",
   }
   return (
     <div

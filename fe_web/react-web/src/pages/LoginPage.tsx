@@ -77,7 +77,7 @@ export function LoginPage() {
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm"
+                  className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-md text-red-600 dark:text-red-400 text-sm"
                 >
                   {error}
                 </motion.div>
@@ -118,10 +118,10 @@ export function LoginPage() {
             <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200" />
+                  <div className="w-full border-t border-gray-200 dark:border-slate-800" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                  <span className="px-2 bg-white dark:bg-slate-900 text-gray-500 dark:text-slate-400">Or continue with</span>
                 </div>
               </div>
 
@@ -166,9 +166,9 @@ export function LoginPage() {
               </div>
             </div>
 
-            <p className="mt-6 text-center text-sm text-gray-500">
+            <p className="mt-6 text-center text-sm text-gray-500 dark:text-slate-400">
               Don't have an account?{' '}
-              <a href="/register" className="text-blue-600 hover:underline">
+              <a href="/register" className="text-blue-600 dark:text-blue-400 hover:underline">
                 Sign up
               </a>
             </p>

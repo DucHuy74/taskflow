@@ -18,21 +18,21 @@ interface SkeletonProps {
 export function Skeleton({ className, lines = 3, showAvatar = false, showCard = false }: SkeletonProps) {
   if (showCard) {
     return (
-      <div className={cn("rounded-xl border border-gray-200 bg-white p-4 space-y-4", className)}>
+      <div className={cn("rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-4", className)}>
         <div className="flex items-center gap-3">
           <motion.div
-            className="h-10 w-10 rounded-full bg-gray-200"
+            className="h-10 w-10 rounded-full bg-gray-200 dark:bg-slate-700"
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
           />
           <div className="flex-1 space-y-2">
             <motion.div
-              className="h-4 w-1/3 rounded bg-gray-200"
+              className="h-4 w-1/3 rounded bg-gray-200 dark:bg-slate-700"
               animate={{ opacity: [0.5, 1, 0.5] }}
               transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
             />
             <motion.div
-              className="h-3 w-1/4 rounded bg-gray-100"
+              className="h-3 w-1/4 rounded bg-gray-100 dark:bg-slate-800"
               animate={{ opacity: [0.5, 1, 0.5] }}
               transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.1 }}
             />
@@ -43,7 +43,7 @@ export function Skeleton({ className, lines = 3, showAvatar = false, showCard = 
             <motion.div
               key={i}
               className={cn(
-                "h-3 rounded bg-gray-100",
+                "h-3 rounded bg-gray-100 dark:bg-slate-800",
                 i === lines - 1 ? "w-3/4" : "w-full"
               )}
               animate={{ opacity: [0.5, 1, 0.5] }}
@@ -64,18 +64,18 @@ export function Skeleton({ className, lines = 3, showAvatar = false, showCard = 
     return (
       <div className={cn("flex items-center gap-3", className)}>
         <motion.div
-          className="h-10 w-10 rounded-full bg-gray-200"
+          className="h-10 w-10 rounded-full bg-gray-200 dark:bg-slate-700"
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
         />
         <div className="flex-1 space-y-2">
           <motion.div
-            className="h-4 w-1/3 rounded bg-gray-200"
+            className="h-4 w-1/3 rounded bg-gray-200 dark:bg-slate-700"
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
           />
           <motion.div
-            className="h-3 w-1/4 rounded bg-gray-100"
+            className="h-3 w-1/4 rounded bg-gray-100 dark:bg-slate-800"
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.1 }}
           />
@@ -94,7 +94,7 @@ export function Skeleton({ className, lines = 3, showAvatar = false, showCard = 
         <motion.div
           key={i}
           className={cn(
-            "h-4 rounded bg-gray-200",
+            "h-4 rounded bg-gray-200 dark:bg-slate-700",
             i === lines - 1 ? "w-3/4" : "w-full"
           )}
           animate={{ opacity: [0.5, 1, 0.5] }}
@@ -116,7 +116,7 @@ export function Skeleton({ className, lines = 3, showAvatar = false, showCard = 
 export function SkeletonText({ className, width = "w-full" }: { className?: string; width?: string }) {
   return (
     <motion.div
-      className={cn("h-4 rounded bg-gray-200", width, className)}
+      className={cn("h-4 rounded bg-gray-200 dark:bg-slate-700", width, className)}
       animate={{ opacity: [0.5, 1, 0.5] }}
       transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
     />
@@ -135,7 +135,7 @@ export function SkeletonAvatar({ size = "md", className }: { size?: "sm" | "md" 
 
   return (
     <motion.div
-      className={cn("rounded-full bg-gray-200", sizeClasses[size], className)}
+      className={cn("rounded-full bg-gray-200 dark:bg-slate-700", sizeClasses[size], className)}
       animate={{ opacity: [0.5, 1, 0.5] }}
       transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
     />
@@ -148,7 +148,7 @@ export function SkeletonAvatar({ size = "md", className }: { size?: "sm" | "md" 
 export function SkeletonButton({ className }: { className?: string }) {
   return (
     <motion.div
-      className={cn("h-10 w-24 rounded-lg bg-gray-200", className)}
+      className={cn("h-10 w-24 rounded-lg bg-gray-200 dark:bg-slate-700", className)}
       animate={{ opacity: [0.5, 1, 0.5] }}
       transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
     />

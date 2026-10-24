@@ -1,8 +1,11 @@
-import type { ElementDefinition } from 'cytoscape';
 import type { GraphData, GraphEdge, GraphNode } from '@/services/graphService';
 
 export type GraphNodeType = 'SUBJECT' | 'ACTION' | 'OBJECT' | 'TERM' | 'USER_STORY' | 'UNKNOWN';
 export type GraphEdgeType = 'PERFORM' | 'TARGET' | 'SIMILAR' | 'ASSOCIATED' | 'REDUNDANT_WITH' | 'HAS_STORY' | 'UNKNOWN';
+
+export interface GraphElementDefinition {
+  data: Record<string, unknown>;
+}
 
 export interface VisualGraphNode {
   id: string;
@@ -13,6 +16,8 @@ export interface VisualGraphNode {
   betweenness: number;
   structure: number;
   color: string;
+  /** All S–V–O roles the term plays; more than one means it is drawn as a mixed-role term. */
+  roles: Array<'SUBJECT' | 'ACTION' | 'OBJECT'>;
 }
 
 export interface VisualGraphEdge {
@@ -26,14 +31,8 @@ export interface VisualGraphEdge {
 export interface VisualGraph {
   nodes: VisualGraphNode[];
   edges: VisualGraphEdge[];
-  elements: ElementDefinition[];
+  elements: GraphElementDefinition[];
   warnings: string[];
-}
-
-export interface RelativePlacementConstraint {
-  left: string;
-  right: string;
-  gap: number;
 }
 
 const NODE_COLORS: Record<GraphNodeType, string> = {
@@ -79,7 +78,7 @@ export function normalizeEdgeType(type: string): GraphEdgeType {
 }
 
 function edgeWeight(edge: GraphEdge): number {
-  const raw = edge.score ?? edge.confidence ?? edge.lift ?? 0.5;
+  const raw = edge.weight ?? edge.score ?? edge.confidence ?? edge.lift ?? 0.5;
   return Number.isFinite(raw) ? Math.max(0, Number(raw)) : 0.5;
 }
 
@@ -172,9 +171,21 @@ export function adaptGraphData(data: GraphData, storyLabels: ReadonlyMap<string,
   const betweenness = normalizedBetweenness([...uniqueNodes.values()], adjacency);
   const rawNodes = [...uniqueNodes.values()].map((node) => {
     const apiType = normalizeNodeType(node.type);
-    const hints = roleHints.get(node.id);
-    const type = (apiType === 'TERM' || apiType === 'UNKNOWN') && hints?.size === 1 ? [...hints][0] : apiType;
+    // Roles come from the backend (Neo4j labels + edges); edge hints cover older backends without `roles`.
+    const roleSet = new Set<GraphNodeType>(roleHints.get(node.id));
+    (node.roles ?? []).forEach((role) => {
+      const normalized = normalizeNodeType(role);
+      if (normalized === 'SUBJECT' || normalized === 'ACTION' || normalized === 'OBJECT') roleSet.add(normalized);
+    });
+    if (apiType === 'SUBJECT' || apiType === 'ACTION' || apiType === 'OBJECT') roleSet.add(apiType);
+    const roles = (['SUBJECT', 'ACTION', 'OBJECT'] as const).filter((role) => roleSet.has(role));
+    let type = apiType;
+    if (apiType !== 'USER_STORY') {
+      if (roles.length === 1) type = roles[0];
+      else if (roles.length > 1) type = 'TERM';
+    }
     return {
+      roles,
       id: node.id,
       label: type === 'USER_STORY' ? storyLabels.get(node.id) || node.label || node.id : node.label || node.id,
       type,
@@ -202,40 +213,55 @@ export function adaptGraphData(data: GraphData, storyLabels: ReadonlyMap<string,
   };
 }
 
-function canReach(adjacency: Map<string, Set<string>>, start: string, goal: string): boolean {
-  const queue = [start];
-  const visited = new Set<string>();
-  for (let cursor = 0; cursor < queue.length; cursor += 1) {
-    const current = queue[cursor];
-    if (current === goal) return true;
-    if (visited.has(current)) continue;
-    visited.add(current);
-    adjacency.get(current)?.forEach((next) => queue.push(next));
-  }
-  return false;
+const SVO_NODE_TYPES: ReadonlySet<GraphNodeType> = new Set(['SUBJECT', 'ACTION', 'OBJECT', 'TERM']);
+const SVO_EDGE_TYPES: ReadonlySet<GraphEdgeType> = new Set(['PERFORM', 'TARGET', 'SIMILAR', 'ASSOCIATED']);
+
+/**
+ * Keeps only the semantic layer of the graph: subject, action and object terms
+ * (plus terms used in several roles) and the relations between them. User story
+ * nodes and their RELATES_TO links are dropped so the overview stays readable.
+ */
+export function toSvoGraph(graph: VisualGraph): VisualGraph {
+  const nodes = graph.nodes.filter((node) => SVO_NODE_TYPES.has(node.type));
+  const ids = new Set(nodes.map((node) => node.id));
+  const edges = graph.edges.filter((edge) => SVO_EDGE_TYPES.has(edge.type) && ids.has(edge.source) && ids.has(edge.target));
+  const degree = new Map(nodes.map((node) => [node.id, new Set<string>()]));
+  edges.forEach((edge) => {
+    degree.get(edge.source)?.add(edge.target);
+    degree.get(edge.target)?.add(edge.source);
+  });
+  const connected = nodes
+    .filter((node) => (degree.get(node.id)?.size ?? 0) > 0 || node.type !== 'TERM')
+    .map((node) => ({ ...node, degree: degree.get(node.id)?.size ?? 0 }));
+  const maxDegree = Math.max(1, ...connected.map((node) => node.degree));
+  const maxBetweenness = Math.max(1e-9, ...connected.map((node) => node.betweenness));
+  const svoNodes = connected.map((node) => ({
+    ...node,
+    structure: 0.5 * (node.degree / maxDegree) + 0.5 * (node.betweenness / maxBetweenness),
+  }));
+  const keptIds = new Set(svoNodes.map((node) => node.id));
+  const svoEdges = edges.filter((edge) => keptIds.has(edge.source) && keptIds.has(edge.target));
+  return {
+    nodes: svoNodes,
+    edges: svoEdges,
+    warnings: graph.warnings,
+    elements: [
+      ...svoNodes.map((node) => ({ data: { ...node } })),
+      ...svoEdges.map((edge) => ({ data: { ...edge } })),
+    ],
+  };
 }
 
-export function buildSvoConstraints(graph: Pick<VisualGraph, 'nodes' | 'edges'>, gap = 100) {
-  const ids = new Set(graph.nodes.map((node) => node.id));
-  const adjacency = new Map<string, Set<string>>();
-  const seen = new Set<string>();
-  const constraints: RelativePlacementConstraint[] = [];
-  const warnings: string[] = [];
+export function roleName(type: GraphNodeType) {
+  if (type === 'SUBJECT') return 'Subject';
+  if (type === 'ACTION') return 'Action (verb)';
+  if (type === 'OBJECT') return 'Object';
+  if (type === 'TERM') return 'Mixed-role term';
+  return type.replace('_', ' ').toLowerCase();
+}
 
-  graph.edges.forEach((edge) => {
-    if (edge.type !== 'PERFORM' && edge.type !== 'TARGET') return;
-    if (!ids.has(edge.source) || !ids.has(edge.target) || edge.source === edge.target) return;
-    const key = `${edge.source}\u0000${edge.target}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    if (canReach(adjacency, edge.target, edge.source)) {
-      warnings.push(`Cyclic SVO constraint skipped: ${edge.source} -> ${edge.target}`);
-      return;
-    }
-    if (!adjacency.has(edge.source)) adjacency.set(edge.source, new Set());
-    adjacency.get(edge.source)?.add(edge.target);
-    constraints.push({ left: edge.source, right: edge.target, gap });
-  });
-
-  return { constraints, warnings };
+/** Human-readable role description, e.g. "Subject + Object" for a mixed-role term. */
+export function describeRoles(node: Pick<VisualGraphNode, 'type' | 'roles'>) {
+  if (node.type === 'TERM' && node.roles.length > 1) return node.roles.map(roleName).join(' + ');
+  return roleName(node.type);
 }

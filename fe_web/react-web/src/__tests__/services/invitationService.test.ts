@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { invitationService } from '@/services/invitationService';
+import { invitationService, toInvitation } from '@/services/invitationService';
 
 // Mock the api module
 vi.mock('@/services/api', () => ({
@@ -57,6 +57,17 @@ describe('invitationService', () => {
   });
 
   describe('getPendingInvitations', () => {
+    const backendItem = {
+      id: 'inv-1',
+      workspaceId: 'ws-1',
+      workspaceName: 'Platform Engineering',
+      role: 'MEMBER',
+      email: 'huy@example.com',
+      inviterId: 'u2',
+      inviterEmail: 'linh@example.com',
+      expiredAt: '2026-10-31T00:00:00Z',
+    };
+
     it('should return empty array on error', async () => {
       const { api } = await import('@/services/api');
       vi.mocked(api.get).mockRejectedValue(new Error('Network error'));
@@ -66,38 +77,70 @@ describe('invitationService', () => {
       expect(result).toEqual([]);
     });
 
-    it('should return invitations on success', async () => {
+    it('should unwrap ApiResponse<InvitationResponse[]>', async () => {
       const { api } = await import('@/services/api');
-      const mockInvitations = [
-        { id: '1', email: 'test@example.com', status: 'PENDING' },
-        { id: '2', email: 'test2@example.com', status: 'PENDING' },
-      ];
-      vi.mocked(api.get).mockResolvedValue({ data: mockInvitations });
+      vi.mocked(api.get).mockResolvedValue({ data: { code: 1000, result: [backendItem] } });
 
       const result = await invitationService.getPendingInvitations();
 
-      expect(result).toEqual(mockInvitations);
+      expect(api.get).toHaveBeenCalledWith('/invitations/pending');
+      expect(result).toEqual([backendItem]);
     });
 
-    it('should return empty array when data is not an array', async () => {
+    it('should keep null workspaceName / inviterEmail and drop items without an id', async () => {
       const { api } = await import('@/services/api');
-      vi.mocked(api.get).mockResolvedValue({ data: 'not an array' });
+      vi.mocked(api.get).mockResolvedValue({
+        data: { code: 1000, result: [{ ...backendItem, workspaceName: null, inviterEmail: null }, { workspaceId: 'x' }, null] },
+      });
 
       const result = await invitationService.getPendingInvitations();
 
-      expect(result).toEqual([]);
+      expect(result).toEqual([{ ...backendItem, workspaceName: null, inviterEmail: null }]);
+    });
+
+    it('should return empty array for the old raw-array shape or non-1000 codes', async () => {
+      const { api } = await import('@/services/api');
+      vi.mocked(api.get)
+        .mockResolvedValueOnce({ data: [backendItem] })
+        .mockResolvedValueOnce({ data: { code: 1006, message: 'Unauthenticated' } });
+
+      await expect(invitationService.getPendingInvitations()).resolves.toEqual([]);
+      await expect(invitationService.getPendingInvitations()).resolves.toEqual([]);
+    });
+  });
+
+  describe('toInvitation', () => {
+    it('should normalize role casing and default unknown roles to MEMBER', () => {
+      expect(toInvitation({ id: 'a', role: 'viewer' })?.role).toBe('VIEWER');
+      expect(toInvitation({ id: 'a', role: 'OWNER' })?.role).toBe('MEMBER');
+    });
+
+    it('should treat blank names as null', () => {
+      expect(toInvitation({ id: 'a', workspaceName: '  ', inviterEmail: '' })).toMatchObject({ workspaceName: null, inviterEmail: null });
+    });
+
+    it('should return null for invalid input', () => {
+      expect(toInvitation(undefined)).toBeNull();
+      expect(toInvitation({ id: '' })).toBeNull();
     });
   });
 
   describe('acceptInvitation', () => {
     it('should return true on success', async () => {
       const { api } = await import('@/services/api');
-      vi.mocked(api.post).mockResolvedValue({ data: { code: 1000 } });
+      vi.mocked(api.post).mockResolvedValue({ data: { code: 1000, message: 'Invitation accepted' } });
 
       const result = await invitationService.acceptInvitation('invitation-1');
 
       expect(result).toBe(true);
       expect(api.post).toHaveBeenCalledWith('/invitations/invitation-1/accept');
+    });
+
+    it('should return false when the response code is not 1000', async () => {
+      const { api } = await import('@/services/api');
+      vi.mocked(api.post).mockResolvedValue({ data: { code: 1030, message: 'Invitation expired' } });
+
+      await expect(invitationService.acceptInvitation('invitation-1')).resolves.toBe(false);
     });
 
     it('should return false on error', async () => {
@@ -113,7 +156,7 @@ describe('invitationService', () => {
   describe('denyInvitation', () => {
     it('should return true on success', async () => {
       const { api } = await import('@/services/api');
-      vi.mocked(api.post).mockResolvedValue({ data: { code: 1000 } });
+      vi.mocked(api.post).mockResolvedValue({ data: { code: 1000, message: 'Invitation denied' } });
 
       const result = await invitationService.denyInvitation('invitation-1');
 

@@ -47,7 +47,7 @@ The main request path runs through the modular Spring Boot API. User-story chang
 
 | Area | Technology | Responsibility |
 | --- | --- | --- |
-| Web client | React 19, TypeScript, Vite, Cytoscape | Workspace UI, sprint/backlog flows, recommendation review, interactive graph exploration |
+| Web client | React 19, TypeScript, Vite, React Three Fiber + d3-force-3d | Workspace UI, sprint/backlog flows, recommendation review, interactive graph exploration |
 | Cross-platform client | Flutter, Provider/MVVM | Mobile and desktop client experiments |
 | Core API | Java 21, Spring Boot, Maven | REST/GraphQL APIs, domain rules, authorization, events, background jobs |
 | Identity | Keycloak, OAuth 2.0/OIDC | Authentication and JWT issuance |
@@ -175,7 +175,7 @@ Large NLP model files are intentionally not stored in Git. Configure or download
 2. The client manages workspace members, backlog items, and sprint state through REST endpoints.
 3. The backend persists transactional data and emits domain events after a successful commit.
 4. The Python worker consumes story events, extracts semantic relationships, writes the knowledge graph, and proposes likely duplicate pairs.
-5. The client requests graph data through GraphQL and renders it with Cytoscape.
+5. The client requests graph data through GraphQL and renders the subject–verb–object terms as a 3D force-directed graph (React Three Fiber + d3-force-3d). See `fe_web/react-web/docs/story_graph_3d.md`.
 6. Reviewers inspect evidence and record a merge-review, keep-separate, or defer decision; TaskFlow does not mutate stories automatically.
 
 ## Testing

@@ -17,9 +17,11 @@ export interface UserStory {
     name: string;
     avatar?: string;
   };
-  sprintId?: string;
+  /** Optimistic-locking version; must be sent back on PUT /user-stories/{id}. */
+  version?: number;
+  sprintId?: string | null;
   workspaceId?: string;
-  backlogId?: string;
+  backlogId?: string | null;
   createdAt?: string;
   updatedAt?: string;
   analysisStatus?: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | string;
@@ -29,4 +31,9 @@ export interface UserStory {
 
 export interface CreateUserStoryRequest {
   storyText: string;
+}
+
+export interface UpdateUserStoryRequest {
+  storyText: string;
+  version: number;
 }

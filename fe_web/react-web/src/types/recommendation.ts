@@ -1,3 +1,5 @@
+import type { ResourceGrantResponse } from './acl';
+
 export type RecommendationStatus = 'OPEN' | 'ACCEPTED' | 'REJECTED' | 'DEFERRED' | 'STALE';
 export type RecommendationDecision = 'MERGE' | 'KEEP_SEPARATE' | 'DEFER';
 export type RecommendationConfidence = 'HIGH' | 'MEDIUM';
@@ -51,4 +53,6 @@ export interface RecommendationJob {
 export interface WorkspaceRecommendationAccess {
   role: 'ADMIN' | 'MEMBER' | 'VIEWER';
   permissions: string[];
+  /** Resource-level ACL grants that apply to the current user (MyWorkspaceAccessResponse.grants). */
+  grants?: ResourceGrantResponse[];
 }

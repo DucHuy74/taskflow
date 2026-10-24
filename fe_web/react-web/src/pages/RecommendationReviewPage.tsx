@@ -113,7 +113,7 @@ export function RecommendationReviewPage() {
       <div className="mx-auto max-w-6xl">
         <Link
           to={`/workspace/${workspaceId}/backlog`}
-          className="inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-medium text-slate-600 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-slate-300"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-medium text-slate-600 hover:text-indigo-700 dark:hover:text-indigo-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-slate-300"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to backlog
         </Link>
@@ -129,7 +129,7 @@ export function RecommendationReviewPage() {
             </p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900" aria-live="polite">
-            <span className="block text-xs font-medium uppercase tracking-wide text-slate-500">Open reviews</span>
+            <span className="block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Open reviews</span>
             <span className="mt-1 block text-2xl font-semibold tabular-nums">{summary?.open ?? '—'}</span>
           </div>
         </div>
@@ -177,7 +177,7 @@ export function RecommendationReviewPage() {
 
           {recommendations.isError && (
             <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center dark:border-red-900 dark:bg-red-950/50" role="alert">
-              <AlertTriangle className="mx-auto h-7 w-7 text-red-600" aria-hidden="true" />
+              <AlertTriangle className="mx-auto h-7 w-7 text-red-600 dark:text-red-400" aria-hidden="true" />
               <h2 className="mt-2 font-semibold">Recommendations could not be loaded</h2>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Check your connection and try again.</p>
               <Button className="mt-4" onClick={() => void recommendations.refetch()}>Try again</Button>
@@ -186,7 +186,7 @@ export function RecommendationReviewPage() {
 
           {!recommendations.isLoading && !recommendations.isError && items.length === 0 && (
             <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center dark:border-slate-700 dark:bg-slate-900">
-              <Check className="mx-auto h-9 w-9 text-emerald-600" aria-hidden="true" />
+              <Check className="mx-auto h-9 w-9 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
               <h2 className="mt-3 text-lg font-semibold">No recommendations need review</h2>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">The queue is clear for this confidence filter.</p>
             </div>
@@ -211,7 +211,7 @@ export function RecommendationReviewPage() {
                   {recommendation.stories.map((story) => (
                     <div key={story.id} className={`min-w-0 rounded-lg border p-4 ${story.id === recommendation.suggestedAction.representativeStoryId ? 'border-indigo-300 bg-indigo-50/70 dark:border-indigo-700 dark:bg-indigo-950/40' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950'}`}>
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-xs font-semibold text-slate-500">{story.id}</span>
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{story.id}</span>
                         {story.id === recommendation.suggestedAction.representativeStoryId && <Badge variant="outline">Suggested representative</Badge>}
                       </div>
                       <p className="mt-3 [overflow-wrap:anywhere] text-sm leading-6">{story.text}</p>
@@ -220,14 +220,14 @@ export function RecommendationReviewPage() {
                 </div>
 
                 <div className="mt-4">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Why it was suggested</h3>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Why it was suggested</h3>
                   <ul className="mt-2 flex flex-wrap gap-2">
                     {recommendation.evidence.slice(0, 3).map((evidence) => (
                       <li key={evidence.code}><Badge variant="outline">{evidence.label}</Badge></li>
                     ))}
                   </ul>
                   {!recommendation.confidence.calibrated && (
-                    <p className="mt-2 text-xs text-slate-500">Confidence is a similarity band, not a probability.</p>
+                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Confidence is a similarity band, not a probability.</p>
                   )}
                 </div>
 
@@ -236,7 +236,7 @@ export function RecommendationReviewPage() {
                     {canReview && <Button variant="ghost" disabled={pending} onClick={() => submit(recommendation, 'DEFER')}><Clock3 className="h-4 w-4" aria-hidden="true" />Review later</Button>}
                     {canReview && <Button variant="outline" disabled={pending} onClick={() => submit(recommendation, 'KEEP_SEPARATE')}>Keep separate</Button>}
                     {canAccept && <Button isLoading={pending && decide.variables?.decision === 'MERGE'} disabled={pending} onClick={() => submit(recommendation, 'MERGE')}><GitMerge className="h-4 w-4" aria-hidden="true" />Approve merge review</Button>}
-                    {!canReview && !canAccept && <p className="text-sm text-slate-500">You have view-only access.</p>}
+                    {!canReview && !canAccept && <p className="text-sm text-slate-500 dark:text-slate-400">You have view-only access.</p>}
                   </div>
                 )}
               </article>

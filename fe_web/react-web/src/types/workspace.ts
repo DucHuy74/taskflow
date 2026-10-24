@@ -27,11 +27,21 @@ export interface Workspace {
   ownerId?: string;
   createdAt?: string;
   updatedAt?: string;
+  totalBacklogs?: number;
+  totalSprints?: number;
+  /** Roles of the current user in this workspace. */
+  roles?: string[];
 }
 
 export interface CreateWorkspaceRequest {
   name: string;
-  description?: string;
   type?: WorkspaceType;
   access?: WorkspaceAccess;
+}
+
+/** Body for PUT /workspace/{id}. */
+export interface UpdateWorkspaceRequest {
+  name: string;
+  type: WorkspaceType;
+  access: WorkspaceAccess;
 }

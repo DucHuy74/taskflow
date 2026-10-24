@@ -2,14 +2,28 @@
 export { type Sprint, type CreateSprintRequest, SprintStatus } from './sprint';
 
 // User Story types
-export { type UserStory, type CreateUserStoryRequest, UserStoryStatus } from './userStory';
+export { type UserStory, type CreateUserStoryRequest, type UpdateUserStoryRequest, UserStoryStatus } from './userStory';
 
 // Workspace types
 export { WorkspaceType, WorkspaceAccess } from './workspace';
-export type { Workspace, CreateWorkspaceRequest } from './workspace';
+export type { Workspace, CreateWorkspaceRequest, UpdateWorkspaceRequest } from './workspace';
 
 // Invitation types
 export type { Invitation, SendInvitationRequest } from './invitation';
+
+// Notification, profile and access-control types
+export type { NotificationResponse, NotificationType } from './notification';
+export type { ProfileResponse } from './profile';
+export type {
+  Permission,
+  RolePermissionMatrixResponse,
+  ResourceGrantResponse,
+  ResourceGrantRequest,
+  ResourceType,
+  PrincipalType,
+  PermissionEffect,
+  MyWorkspaceAccessResponse,
+} from './acl';
 
 // Auth types
 export interface User {
@@ -26,18 +40,13 @@ export interface AuthState {
   isLoading: boolean;
 }
 
-// Workspace Member Response
+// Workspace Member Response (backend WorkspaceMemberResponse)
+export type WorkspaceRole = 'ADMIN' | 'MEMBER' | 'VIEWER';
+
 export interface WorkspaceMemberResponse {
   userId: string;
-  workspaceId: string;
-  role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
-  joinedAt: string;
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-    avatar?: string;
-  };
+  email: string;
+  role: WorkspaceRole;
 }
 
 // API Response types

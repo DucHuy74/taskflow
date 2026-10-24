@@ -81,17 +81,17 @@ function ToastViewport({ toasts, removeToast }: { toasts: ToastProps[]; removeTo
 
 function ToastItem({ toast, onClose }: { toast: ToastProps; onClose: () => void }) {
   const variantStyles = {
-    default: 'bg-white border-gray-200',
-    success: 'bg-green-50 border-green-200',
-    error: 'bg-red-50 border-red-200',
-    warning: 'bg-yellow-50 border-yellow-200',
+    default: 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800',
+    success: 'bg-green-50 dark:bg-green-950/40 border-green-200 dark:border-green-800',
+    error: 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800',
+    warning: 'bg-yellow-50 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-800',
   };
 
   const iconStyles = {
-    default: 'text-gray-600',
-    success: 'text-green-600',
-    error: 'text-red-600',
-    warning: 'text-yellow-600',
+    default: 'text-gray-600 dark:text-slate-400',
+    success: 'text-green-600 dark:text-green-400',
+    error: 'text-red-600 dark:text-red-400',
+    warning: 'text-yellow-600 dark:text-yellow-400',
   };
 
   return (
@@ -133,12 +133,12 @@ function ToastItem({ toast, onClose }: { toast: ToastProps; onClose: () => void 
         )}
       </div>
       <div className="flex-1 min-w-0">
-        {toast.title && <p className="text-sm font-medium text-gray-900">{toast.title}</p>}
-        {toast.description && <p className="text-sm text-gray-500 mt-1">{toast.description}</p>}
+        {toast.title && <p className="text-sm font-medium text-gray-900 dark:text-slate-100">{toast.title}</p>}
+        {toast.description && <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{toast.description}</p>}
       </div>
       <button
         onClick={onClose}
-        className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+        className="flex-shrink-0 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-200 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
