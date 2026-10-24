@@ -34,3 +34,6 @@ class GraphBuildingService:
             backlog_id,
             source="REALTIME"
         )
+
+        # Đồng bộ nhãn vai trò theo cạnh PERFORM/TARGET hiện tại của workspace
+        self.neo4j_service.refresh_role_labels(workspace_id)
