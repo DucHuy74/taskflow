@@ -60,6 +60,9 @@ class Neo4jService:
         MERGE (act:Term {name: row.a, workspace_id: $ws})
         MERGE (obj:Term {name: row.o, workspace_id: $ws})
 
+        // GÁN NHÃN VAI TRÒ (một Term có thể mang nhiều nhãn)
+        SET sub:Subject, act:Action, obj:Object
+
         // TẠO NODE USER STORY
         // Nếu dòng dữ liệu có story_id thì mới tạo node UserStory
         FOREACH (ignoreMe IN CASE WHEN row.story_id IS NOT NULL THEN [1] ELSE [] END |
@@ -182,6 +185,59 @@ class Neo4jService:
             "backlogId": backlog_id
         })
         
+    # --- Role labels (:Subject / :Action / :Object) ---
+    REFRESH_ROLE_LABELS_QUERY = """
+        MATCH (t:Term {workspace_id: $ws})
+        REMOVE t:Subject:Action:Object
+        WITH t,
+             size([(t)-[:PERFORM]->(:Term) | 1]) > 0 AS is_subject,
+             size([(:Term)-[:PERFORM]->(t) | 1]) + size([(t)-[:TARGET]->(:Term) | 1]) > 0 AS is_action,
+             size([(:Term)-[:TARGET]->(t) | 1]) > 0 AS is_object
+        FOREACH (_ IN CASE WHEN is_subject THEN [1] ELSE [] END | SET t:Subject)
+        FOREACH (_ IN CASE WHEN is_action THEN [1] ELSE [] END | SET t:Action)
+        FOREACH (_ IN CASE WHEN is_object THEN [1] ELSE [] END | SET t:Object)
+        RETURN count(t) AS terms,
+               sum(CASE WHEN is_subject THEN 1 ELSE 0 END) AS subjects,
+               sum(CASE WHEN is_action THEN 1 ELSE 0 END) AS actions,
+               sum(CASE WHEN is_object THEN 1 ELSE 0 END) AS objects
+        """
+
+    PREVIEW_ROLE_LABELS_QUERY = """
+        MATCH (t:Term {workspace_id: $ws})
+        WITH t,
+             size([(t)-[:PERFORM]->(:Term) | 1]) > 0 AS is_subject,
+             size([(:Term)-[:PERFORM]->(t) | 1]) + size([(t)-[:TARGET]->(:Term) | 1]) > 0 AS is_action,
+             size([(:Term)-[:TARGET]->(t) | 1]) > 0 AS is_object
+        RETURN count(t) AS terms,
+               sum(CASE WHEN is_subject THEN 1 ELSE 0 END) AS subjects,
+               sum(CASE WHEN is_action THEN 1 ELSE 0 END) AS actions,
+               sum(CASE WHEN is_object THEN 1 ELSE 0 END) AS objects,
+               sum(CASE WHEN t:Subject THEN 1 ELSE 0 END) AS current_subjects,
+               sum(CASE WHEN t:Action THEN 1 ELSE 0 END) AS current_actions,
+               sum(CASE WHEN t:Object THEN 1 ELSE 0 END) AS current_objects
+        """
+
+    def refresh_role_labels(self, workspace_id):
+        """Recompute :Subject/:Action/:Object on every Term of the workspace from current PERFORM/TARGET edges."""
+        if not workspace_id:
+            return None
+        rows = self._write(self.REFRESH_ROLE_LABELS_QUERY, {"ws": workspace_id})
+        return rows[0] if rows else None
+
+    def preview_role_labels(self, workspace_id):
+        """Read-only: expected vs current role-label counts for the workspace."""
+        rows = self._read(self.PREVIEW_ROLE_LABELS_QUERY, {"ws": workspace_id})
+        return rows[0] if rows else None
+
+    def list_term_workspace_ids(self):
+        rows = self._read("""
+        MATCH (t:Term)
+        WHERE t.workspace_id IS NOT NULL
+        RETURN DISTINCT t.workspace_id AS workspace_id
+        ORDER BY workspace_id
+        """)
+        return [row["workspace_id"] for row in rows]
+
     def clear_workspace(self, workspace_id):
         query = """
         MATCH (n {workspace_id: $ws})

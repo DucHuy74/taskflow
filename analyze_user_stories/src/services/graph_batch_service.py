@@ -124,6 +124,9 @@ class GraphBatchService:
 
             print("[BATCH] Saving rules...")
             self.neo4j_service.save_rules(rules, canonical_map, workspace_id)
+
+            print("[BATCH] Refreshing term role labels...")
+            self.neo4j_service.refresh_role_labels(workspace_id)
             
             print("[BATCH] Computing priority...")
             self.priority_service.compute_priority_for_workspace(workspace_id)
