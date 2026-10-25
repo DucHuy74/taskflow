@@ -27,6 +27,8 @@ interface ForceGraph3DProps {
   selectedNodeId: string | null;
   searchQuery?: string;
   className?: string;
+  /** Terms to keep lit (e.g. one story's S–V–O path); takes precedence over the selection's neighborhood. */
+  highlightIds?: ReadonlySet<string> | null;
   onNodeSelected: (node: VisualGraphNode | null) => void;
 }
 
@@ -127,7 +129,7 @@ function expand(adjacency: Map<string, Set<string>>, seeds: string[], hops: numb
 }
 
 export const ForceGraph3D = forwardRef<ForceGraph3DHandle, ForceGraph3DProps>(function ForceGraph3D({
-  graph, storageKey, selectedNodeId, searchQuery = '', className, onNodeSelected,
+  graph, storageKey, selectedNodeId, searchQuery = '', className, highlightIds = null, onNodeSelected,
 }, ref) {
   const { isDark } = useTheme();
   const palette = isDark ? DARK : LIGHT;
@@ -143,13 +145,14 @@ export const ForceGraph3D = forwardRef<ForceGraph3DHandle, ForceGraph3DProps>(fu
 
   const adjacency = useMemo(() => buildAdjacency(graph), [graph]);
   const active = useMemo(() => {
+    if (!hovered && highlightIds?.size) return new Set(highlightIds);
     const focusId = hovered?.id ?? selectedNodeId;
     if (focusId) return expand(adjacency, [focusId], expandedId === focusId ? 2 : 1);
     const query = searchQuery.trim().toLocaleLowerCase();
     if (!query) return null;
     const matches = graph.nodes.filter((node) => node.label.toLocaleLowerCase().includes(query)).map((node) => node.id);
     return expand(adjacency, matches, 1);
-  }, [adjacency, expandedId, graph.nodes, hovered, searchQuery, selectedNodeId]);
+  }, [adjacency, expandedId, graph.nodes, highlightIds, hovered, searchQuery, selectedNodeId]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
