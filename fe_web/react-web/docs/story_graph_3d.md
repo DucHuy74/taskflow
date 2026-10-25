@@ -95,6 +95,13 @@ File [`src/lib/graph/graphModel.ts`](../src/lib/graph/graphModel.ts).
 - `roleName(type)` trả về `Subject`, `Action (verb)`, `Object`, `Mixed-role term`.
 - `describeRoles(node)` trả về chuỗi như `Subject + Object` cho term đa vai trò.
 
+### 3.4. Liên kết term ↔ user story
+
+- Mỗi cạnh `PERFORM`/`TARGET` giữ `storyIds` (từ BE).
+- `storyIdsForNode(graph, nodeId)` trả về các story có bộ ba S–V–O chứa term đó; cạnh SIMILAR/ASSOCIATED được bỏ qua.
+- `termIdsForStory(graph, storyId)` trả về các term của một story, dùng để highlight.
+- Component `NodeStoriesPanel` (`src/components/graph/NodeStoriesPanel.tsx`) tải từng story qua `GET /user-stories/{id}`, hiện tên sprint, và đổi trạng thái qua `useStoryStatusMutation`. Trang graph workspace và graph sprint đều dùng component này.
+
 ## 4. Component `ForceGraph3D`
 
 File [`src/components/graph/ForceGraph3D.tsx`](../src/components/graph/ForceGraph3D.tsx).
@@ -108,6 +115,7 @@ interface ForceGraph3DProps {
   selectedNodeId: string | null; // node đang chọn (do trang quản lý)
   searchQuery?: string;          // làm nổi term khớp + hàng xóm
   className?: string;            // thường dùng để đặt chiều cao
+  highlightIds?: ReadonlySet<string> | null; // giữ sáng một nhóm term, ví dụ termIdsForStory(graph, storyId)
   onNodeSelected: (node: VisualGraphNode | null) => void; // nên bọc useCallback
 }
 
@@ -162,7 +170,9 @@ interface ForceGraph3DHandle {   // qua ref
 | Chuột phải / hai ngón kéo | Pan |
 | Cuộn / pinch | Zoom |
 | Hover node | Con trỏ thành `pointer`, làm nổi hàng xóm 1 bước, hiện thẻ thông tin góc phải |
-| Click node | Chọn node, cập nhật panel Insights |
+| Click node | Chọn node, cập nhật panel Insights: số liệu và **danh sách user story dùng term đó** |
+| Panel: ô trạng thái của story | Đổi To do / In progress / Done ngay trong graph; chỉ hiện khi sprint của story đang `InProgress`, các trường hợp khác có dòng giải thích |
+| Panel: "Highlight in graph" | Làm nổi đường S → V → O của đúng story đó (prop `highlightIds`) |
 | Double-click node | Mở rộng vùng làm nổi ra 2 bước |
 | Kéo node | Ghim node tại vị trí thả (lưu vào `localStorage[storageKey]`) |
 | Click vùng trống / `Esc` | Bỏ chọn |

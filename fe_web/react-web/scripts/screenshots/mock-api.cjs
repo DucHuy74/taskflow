@@ -114,7 +114,13 @@ function apiResult(method, pathname) {
   if (pathname.endsWith('/profiles')) return ok([profile]);
   if (pathname.endsWith('/sprints/workspace/ws')) return ok(sprints);
   if (/\/sprints\/sprint-\d+$/.test(pathname) && method === 'PUT') return ok(sprints.find((sprint) => pathname.endsWith(sprint.id)) || sprints[0]);
-  if (/\/sprints\/sprint-\d\/user-stories$/.test(pathname)) return ok(pathname.includes('sprint-1') ? sprintStories : []);
+  if (/\/sprints\/sprint-\d+\/start$/.test(pathname) && method === 'POST') return ok({ ...(sprints.find((sprint) => pathname.includes(`/${sprint.id}/`)) || sprints[1]), status: 'InProgress' });
+  if (/\/sprints\/sprint-\d+\/complete$/.test(pathname) && method === 'POST') return ok({ ...(sprints.find((sprint) => pathname.includes(`/${sprint.id}/`)) || sprints[0]), status: 'Done' });
+  if (/\/user-stories\/story-[^/]+\/status$/.test(pathname) && method === 'PUT') {
+    const id = pathname.split('/').slice(-2)[0];
+    return ok([...stories, ...sprintStories].find((story) => story.id === id) || sprintStories[0]);
+  }
+  if (/\/sprints\/sprint-\d\/user-stories$/.test(pathname))return ok(pathname.includes('sprint-1') ? sprintStories : []);
   if (pathname.endsWith('/user-stories/workspace/ws/backlog')) return ok(stories);
   if (/\/user-stories\/story-[^/]+$/.test(pathname) && method === 'GET') return ok(stories[0]);
   // Single workspace: exact match so /workspace/ws/members etc. never land here.

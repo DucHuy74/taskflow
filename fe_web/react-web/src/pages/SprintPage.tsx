@@ -5,6 +5,8 @@ import {
   DragOverlay,
   closestCenter,
   PointerSensor,
+  KeyboardSensor,
+  useDroppable,
   useSensor,
   useSensors,
   type DragStartEvent,
@@ -12,16 +14,19 @@ import {
 } from '@dnd-kit/core';
 import {
   SortableContext,
+  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { EditSprintDialog, SprintActionsMenu, UserStoryCard, UserStoryCardStatic } from '@/components/backlog';
+import { CompleteSprintDialog, EditSprintDialog, SprintActionsMenu, UserStoryCard, UserStoryCardStatic } from '@/components/backlog';
+import { useToastMessage } from '@/components/ui/toast';
 import { formatSprintDateRange } from '@/lib/sprintDates';
+import { findActiveSprint, SPRINT_STATUS_LABELS } from '@/lib/sprintLifecycle';
+import { invalidateSprintData, useSprintLifecycle, useStoryStatusMutation } from '@/hooks/useSprintMutations';
 import { sprintService } from '@/services/sprintService';
 import { getBacklogStories } from '@/services/backlogService';
-import { updateStoryStatus } from '@/services/backlogService';
-import type { UserStory } from '@/types/userStory';
+import type { UserStory, UserStoryStatus } from '@/types/userStory';
 
 const columns = [
   { id: 'ToDo', title: 'To Do', color: 'bg-gray-100 dark:bg-slate-800' },
@@ -34,6 +39,7 @@ type ColumnId = (typeof columns)[number]['id'];
 export function SprintPage() {
   const { workspaceId, sprintId } = useParams<{ workspaceId: string; sprintId: string }>();
   const queryClient = useQueryClient();
+  const showToast = useToastMessage();
 
   // Fetch all sprints to find the current one
   const { data: sprints = [] } = useQuery({
@@ -45,6 +51,7 @@ export function SprintPage() {
   const sprint = sprintId ? sprints.find((s) => s.id === sprintId) : sprints[0];
   const [activeStory, setActiveStory] = useState<UserStory | null>(null);
   const [isEditingSprint, setIsEditingSprint] = useState(false);
+  const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
 
   // Sensors
   const sensors = useSensors(
@@ -52,7 +59,8 @@ export function SprintPage() {
       activationConstraint: {
         distance: 8,
       },
-    })
+    }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   // Queries
@@ -68,38 +76,21 @@ export function SprintPage() {
     enabled: Boolean(workspaceId),
   });
 
-  // Mutations
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ storyId, status }: { storyId: string; status: ColumnId }) => {
-      // Backend expects: ToDo, InProgress, Done
-      return updateStoryStatus(storyId, status);
-    },
-    onMutate: async ({ storyId, status }) => {
-      if (!sprint) return;
-      await queryClient.cancelQueries({ queryKey: ['sprint-stories', sprint.id] });
-      const previous = queryClient.getQueryData(['sprint-stories', sprint.id]);
-      queryClient.setQueryData<UserStory[]>(['sprint-stories', sprint.id], (old) =>
-        old?.map((s) => (s.id === storyId ? { ...s, status } : s))
-      );
-      return { previous };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previous && sprint) {
-        queryClient.setQueryData(['sprint-stories', sprint.id], context.previous);
-      }
-    },
-    onSettled: () => {
-      if (sprint) {
-        queryClient.invalidateQueries({ queryKey: ['sprint-stories', sprint.id] });
-      }
-    },
-  });
+  // Mutations (status changes are optimistic with rollback; see useStoryStatusMutation)
+  const updateStatusMutation = useStoryStatusMutation(workspaceId || '');
+  const { startSprint: startSprintMutation, completeSprint: completeSprintMutation } = useSprintLifecycle(workspaceId || '', sprints);
+  const activeSprint = findActiveSprint(sprints, sprint?.id);
+  const startBlockedReason = sprint?.status === 'ToDo' && activeSprint
+    ? `“${activeSprint.name}” is in progress. Complete it before starting this sprint.`
+    : undefined;
 
-  // Note: addToSprintMutation available for future drag-to-sprint feature
-  // const addToSprintMutation = useMutation({ ... });
-
-  const startSprintMutation = useMutation({
-    mutationFn: () => sprintService.startSprint(sprint!.id),
+  const addToSprintMutation = useMutation({
+    mutationFn: async ({ sprintId: targetSprintId, storyId }: { sprintId: string; storyId: string }) => {
+      if (!await sprintService.addStoryToSprint(targetSprintId, storyId)) throw new Error('Unable to add story to sprint');
+    },
+    onSuccess: () => showToast(`Story added to ${sprint?.name || 'the sprint'}.`, 'success', 'Sprint updated'),
+    onError: () => showToast('The story could not be added to the sprint. Please try again.', 'error', 'Move failed'),
+    onSettled: () => invalidateSprintData(queryClient, workspaceId || ''),
   });
 
   // Group stories by status
@@ -118,7 +109,7 @@ export function SprintPage() {
   }, []);
 
   const handleDragEnd = useCallback(
-    async (event: DragEndEvent) => {
+    (event: DragEndEvent) => {
       const { active, over } = event;
       setActiveStory(null);
 
@@ -143,16 +134,44 @@ export function SprintPage() {
         targetColumn = overStory.status;
       }
 
-      if (targetColumn && targetColumn !== story.status) {
-        await updateStatusMutation.mutateAsync({ storyId, status: targetColumn });
+      if (!targetColumn || !sprint) return;
+      if (sprint.status === 'Done') {
+        showToast('Completed sprints are read-only.', 'default', 'Sprint completed');
+        return;
       }
+
+      // A backlog story dropped onto the board joins the sprint.
+      if (!sprintStories.some((item) => item.id === storyId)) {
+        addToSprintMutation.mutate({ sprintId: sprint.id, storyId });
+        return;
+      }
+
+      if (targetColumn === story.status) return;
+      if (sprint.status !== 'InProgress') {
+        showToast('Start the sprint to move stories between columns.', 'default', 'Sprint not started');
+        return;
+      }
+      updateStatusMutation.mutate({ story, sprintId: sprint.id, status: targetColumn });
     },
-    [updateStatusMutation]
+    [addToSprintMutation, showToast, sprint, sprintStories, updateStatusMutation]
   );
 
-  const handleStartSprint = useCallback(async () => {
-    await startSprintMutation.mutateAsync();
-  }, [startSprintMutation]);
+  const handleStartSprint = useCallback(() => {
+    if (!sprint || startBlockedReason) return;
+    startSprintMutation.mutate(sprint.id);
+  }, [sprint, startBlockedReason, startSprintMutation]);
+
+  const handleConfirmComplete = useCallback(() => {
+    if (!sprint) return;
+    completeSprintMutation.mutate(
+      { sprintId: sprint.id, stories: sprintStories },
+      { onSettled: () => setIsCompleteDialogOpen(false) }
+    );
+  }, [completeSprintMutation, sprint, sprintStories]);
+
+  const handleChangeStatus = useCallback((story: UserStory, status: UserStoryStatus) => {
+    if (sprint) updateStatusMutation.mutate({ story, sprintId: sprint.id, status });
+  }, [sprint, updateStatusMutation]);
 
   const dateRange = formatSprintDateRange(sprint?.startDate, sprint?.endDate);
 
@@ -174,6 +193,8 @@ export function SprintPage() {
     );
   }
 
+  const isDone = sprint.status === 'Done';
+
   return (
     <DndContext
       sensors={sensors}
@@ -184,10 +205,10 @@ export function SprintPage() {
       <div className="min-h-screen bg-gray-100 dark:bg-slate-950">
         {/* Sprint Header */}
         <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-gray-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{sprint.name}</h1>
@@ -205,7 +226,7 @@ export function SprintPage() {
                     : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400'
                 )}
               >
-                {sprint.status === 'InProgress' ? 'Active' : sprint.status}
+                <span className="sr-only">Status: </span>{SPRINT_STATUS_LABELS[sprint.status]}
               </span>
             </div>
 
@@ -220,21 +241,55 @@ export function SprintPage() {
 
               {sprint.status === 'ToDo' && (
                 <button
+                  type="button"
                   onClick={handleStartSprint}
                   disabled={startSprintMutation.isPending}
+                  aria-disabled={startBlockedReason ? true : undefined}
+                  aria-describedby={startBlockedReason ? 'sprint-start-blocked' : undefined}
+                  title={startBlockedReason}
                   className={cn(
-                    'px-4 py-2 text-sm font-medium rounded bg-blue-600 text-white',
-                    'hover:bg-blue-700 disabled:opacity-50 transition-colors'
+                    'min-h-11 px-4 py-2 text-sm font-medium rounded bg-blue-600 text-white transition-colors',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900',
+                    'disabled:opacity-50',
+                    startBlockedReason ? 'cursor-not-allowed opacity-50' : 'hover:bg-blue-700'
                   )}
                 >
-                  {startSprintMutation.isPending ? 'Starting...' : 'Start Sprint'}
+                  {startSprintMutation.isPending ? 'Starting…' : 'Start Sprint'}
+                </button>
+              )}
+
+              {sprint.status === 'InProgress' && (
+                <button
+                  type="button"
+                  onClick={() => setIsCompleteDialogOpen(true)}
+                  disabled={completeSprintMutation.isPending}
+                  className={cn(
+                    'min-h-11 px-4 py-2 text-sm font-medium rounded bg-emerald-600 text-white transition-colors',
+                    'hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 disabled:opacity-50',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900'
+                  )}
+                >
+                  {completeSprintMutation.isPending ? 'Completing…' : 'Complete sprint'}
                 </button>
               )}
 
               {/* Actions menu */}
-              <SprintActionsMenu sprintName={sprint.name} onEditSprint={() => setIsEditingSprint(true)} />
+              <SprintActionsMenu
+                sprintName={sprint.name}
+                onEditSprint={() => setIsEditingSprint(true)}
+                onCompleteSprint={sprint.status === 'InProgress' ? () => setIsCompleteDialogOpen(true) : undefined}
+              />
             </div>
           </div>
+          {startBlockedReason && (
+            <p id="sprint-start-blocked" className="mt-2 text-right text-xs text-amber-700 dark:text-amber-300">{startBlockedReason}</p>
+          )}
+          {sprint.status === 'ToDo' && !startBlockedReason && sprintStories.length > 0 && (
+            <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">Start the sprint to move stories between columns.</p>
+          )}
+          {isDone && (
+            <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">This sprint is completed and read-only. Unfinished stories were returned to the backlog.</p>
+          )}
         </div>
 
         {/* Kanban Board */}
@@ -262,36 +317,39 @@ export function SprintPage() {
                   key={column.id}
                   column={column}
                   stories={storiesByStatus[column.id]}
+                  readOnly={isDone}
+                  onStatusChange={sprint.status === 'InProgress' ? handleChangeStatus : undefined}
                 />
               ))}
 
-              {/* Backlog Drop Zone */}
-              <div className="flex-shrink-0 w-64">
-                <div className="bg-gray-200/50 dark:bg-slate-900/60 dark:ring-1 dark:ring-slate-800 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-3 px-1">
-                    <svg className="w-4 h-4 text-gray-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                    </svg>
-                    <span className="text-sm font-medium text-gray-500 dark:text-slate-400">Backlog</span>
-                    <span className="text-xs text-gray-400 dark:text-slate-500">({backlogStories.length})</span>
-                  </div>
-                  <div className="space-y-2 *:rounded-md dark:*:ring-1 dark:*:ring-slate-800">
-                    {backlogStories.slice(0, 5).map((story) => (
-                      <UserStoryCard key={story.id} story={story} draggable />
-                    ))}
-                    {backlogStories.length > 5 && (
-                      <div className="text-center text-xs text-gray-400 dark:text-slate-500 py-2">
-                        +{backlogStories.length - 5} more
-                      </div>
-                    )}
+              {/* Backlog Drop Zone (completed sprints are read-only) */}
+              {!isDone && (
+                <div className="flex-shrink-0 w-64">
+                  <div className="bg-gray-200/50 dark:bg-slate-900/60 dark:ring-1 dark:ring-slate-800 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-3 px-1">
+                      <svg className="w-4 h-4 text-gray-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                      </svg>
+                      <span className="text-sm font-medium text-gray-500 dark:text-slate-400">Backlog</span>
+                      <span className="text-xs text-gray-400 dark:text-slate-500">({backlogStories.length})</span>
+                    </div>
+                    <div className="space-y-2 *:rounded-md dark:*:ring-1 dark:*:ring-slate-800">
+                      {backlogStories.slice(0, 5).map((story) => (
+                        <UserStoryCard key={story.id} story={story} draggable />
+                      ))}
+                      {backlogStories.length > 5 && (
+                        <div className="text-center text-xs text-gray-400 dark:text-slate-500 py-2">
+                          +{backlogStories.length - 5} more
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Drag Overlay */}
         <EditSprintDialog
           key={isEditingSprint ? sprint.id : 'closed'}
           sprint={sprint}
@@ -300,6 +358,16 @@ export function SprintPage() {
           onOpenChange={setIsEditingSprint}
         />
 
+        <CompleteSprintDialog
+          sprint={sprint}
+          stories={sprintStories}
+          open={isCompleteDialogOpen}
+          onOpenChange={(open) => { if (!completeSprintMutation.isPending) setIsCompleteDialogOpen(open); }}
+          onConfirm={handleConfirmComplete}
+          isCompleting={completeSprintMutation.isPending}
+        />
+
+        {/* Drag Overlay */}
         <DragOverlay>
           {activeStory ? (
             <div className="w-[320px]">
@@ -316,12 +384,26 @@ export function SprintPage() {
 function KanbanColumn({
   column,
   stories,
+  readOnly,
+  onStatusChange,
 }: {
   column: (typeof columns)[number];
   stories: UserStory[];
+  readOnly: boolean;
+  onStatusChange?: (story: UserStory, status: UserStoryStatus) => void;
 }) {
+  // Makes empty columns valid drop targets (previously only dropping on another card worked).
+  const { setNodeRef, isOver } = useDroppable({
+    id: `column-${column.id}`,
+    data: { type: 'column', columnId: column.id },
+    disabled: readOnly,
+  });
+
   return (
-    <div className="flex-1 min-w-[280px] max-w-[360px]">
+    <div
+      ref={setNodeRef}
+      className={cn('flex-1 min-w-[280px] max-w-[360px] rounded-lg transition-colors', isOver && 'bg-blue-50 ring-2 ring-blue-200 dark:bg-blue-950/40 dark:ring-blue-800')}
+    >
       {/* Column Header */}
       <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">
@@ -347,13 +429,14 @@ function KanbanColumn({
             <UserStoryCard
               key={story.id}
               story={story}
-              draggable
+              draggable={!readOnly}
+              onStatusChange={onStatusChange}
             />
           ))}
 
           {stories.length === 0 && (
             <div className="h-24 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-lg flex items-center justify-center text-gray-400 dark:text-slate-500 text-sm">
-              Drop stories here
+              {readOnly ? 'No stories' : 'Drop stories here'}
             </div>
           )}
         </div>

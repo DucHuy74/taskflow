@@ -4,3 +4,4 @@ export { UserStoryCard, UserStoryCardStatic } from './UserStoryCard';
 export { CreateSprintDialog, EditSprintDialog } from './CreateSprintDialog';
 export { SprintActionsMenu } from './SprintActionsMenu';
 export { EditStoryDialog } from './EditStoryDialog';
+export { CompleteSprintDialog } from './CompleteSprintDialog';

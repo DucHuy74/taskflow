@@ -94,26 +94,30 @@ export async function addStoriesToSprint(sprintId: string, storyIds: string[]): 
   }
 }
 
-// Start a sprint
-export async function startSprint(sprintId: string): Promise<boolean> {
-  try {
-    const response = await api.post(`/sprints/${sprintId}/start`);
-    return response.status === 200;
-  } catch (error) {
-    console.error('Error starting sprint:', error);
-    return false;
+/**
+ * Start a sprint (POST /sprints/{id}/start). Only a ToDo sprint can be started.
+ * Throws the original axios error so callers can map codes
+ * 1021 (not ToDo), 1022 (another sprint of the workspace is InProgress), 1014 (no permission).
+ */
+export async function startSprint(sprintId: string): Promise<Sprint | null> {
+  const response = await api.post<ApiResponse<Sprint>>(`/sprints/${sprintId}/start`);
+  if (response.data && typeof response.data.code === 'number' && response.data.code !== 1000) {
+    throw new Error(response.data.message || 'Unable to start sprint');
   }
+  return response.data?.result ?? null;
 }
 
-// Complete a sprint
-export async function completeSprint(sprintId: string): Promise<boolean> {
-  try {
-    const response = await api.post(`/sprints/${sprintId}/complete`);
-    return response.status === 200;
-  } catch (error) {
-    console.error('Error completing sprint:', error);
-    return false;
+/**
+ * Complete a sprint (POST /sprints/{id}/complete). Only an InProgress sprint can be completed;
+ * unfinished stories return to the backlog as ToDo, Done stories stay in the sprint.
+ * Throws the original axios error so callers can map codes 1021 (not InProgress), 1014.
+ */
+export async function completeSprint(sprintId: string): Promise<Sprint | null> {
+  const response = await api.post<ApiResponse<Sprint>>(`/sprints/${sprintId}/complete`);
+  if (response.data && typeof response.data.code === 'number' && response.data.code !== 1000) {
+    throw new Error(response.data.message || 'Unable to complete sprint');
   }
+  return response.data?.result ?? null;
 }
 
 // Remove story from sprint (move to backlog)

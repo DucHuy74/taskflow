@@ -26,6 +26,8 @@ export interface VisualGraphEdge {
   target: string;
   type: GraphEdgeType;
   weight: number;
+  /** Stories behind a PERFORM / TARGET relation (empty for analytical edges). */
+  storyIds: string[];
 }
 
 export interface VisualGraph {
@@ -155,7 +157,8 @@ export function adaptGraphData(data: GraphData, storyLabels: ReadonlyMap<string,
     edgeKeys.add(key);
     adjacency.get(edge.from)?.add(edge.to);
     adjacency.get(edge.to)?.add(edge.from);
-    edges.push({ id: `edge:${encodeURIComponent(key)}`, source: edge.from, target: edge.to, type, weight: edgeWeight(edge) });
+    const storyIds = edge.storyIds?.length ? [...edge.storyIds] : edge.storyId ? [edge.storyId] : [];
+    edges.push({ id: `edge:${encodeURIComponent(key)}`, source: edge.from, target: edge.to, type, weight: edgeWeight(edge), storyIds });
   });
 
   const roleHints = new Map<string, Set<GraphNodeType>>();
@@ -264,4 +267,29 @@ export function roleName(type: GraphNodeType) {
 export function describeRoles(node: Pick<VisualGraphNode, 'type' | 'roles'>) {
   if (node.type === 'TERM' && node.roles.length > 1) return node.roles.map(roleName).join(' + ');
   return roleName(node.type);
+}
+
+const STORY_EDGE_TYPES: ReadonlySet<GraphEdgeType> = new Set(['PERFORM', 'TARGET']);
+
+/** User stories whose S–V–O triple contains the given term, in first-seen order. */
+export function storyIdsForNode(graph: Pick<VisualGraph, 'edges'>, nodeId: string): string[] {
+  const ids = new Set<string>();
+  graph.edges.forEach((edge) => {
+    if (STORY_EDGE_TYPES.has(edge.type) && (edge.source === nodeId || edge.target === nodeId)) {
+      edge.storyIds.forEach((id) => ids.add(id));
+    }
+  });
+  return [...ids];
+}
+
+/** The subject, action and object terms produced by one story (used to highlight its path). */
+export function termIdsForStory(graph: Pick<VisualGraph, 'edges'>, storyId: string): Set<string> {
+  const ids = new Set<string>();
+  graph.edges.forEach((edge) => {
+    if (STORY_EDGE_TYPES.has(edge.type) && edge.storyIds.includes(storyId)) {
+      ids.add(edge.source);
+      ids.add(edge.target);
+    }
+  });
+  return ids;
 }

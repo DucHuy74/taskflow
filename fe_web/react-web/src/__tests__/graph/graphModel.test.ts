@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adaptGraphData, describeRoles, normalizeEdgeType, normalizeNodeType, toSvoGraph } from '@/lib/graph/graphModel';
+import { adaptGraphData, describeRoles, normalizeEdgeType, normalizeNodeType, storyIdsForNode, termIdsForStory, toSvoGraph } from '@/lib/graph/graphModel';
 import type { GraphData } from '@/services/graphService';
 
 const data: GraphData = {
@@ -123,5 +123,37 @@ describe('backend roles', () => {
       edges: [{ from: 's', to: 'v', type: 'PERFORM', weight: 3, storyIds: ['a', 'b', 'c'] }],
     });
     expect(graph.edges[0].weight).toBe(3);
+  });
+});
+
+describe('stories behind terms', () => {
+  const graph = adaptGraphData({
+    nodes: [
+      { id: 'member', label: 'team member', type: 'TERM' },
+      { id: 'add', label: 'add', type: 'TERM' },
+      { id: 'find', label: 'find', type: 'TERM' },
+      { id: 'comment', label: 'comment', type: 'TERM' },
+      { id: 'story', label: 'story', type: 'TERM' },
+    ],
+    edges: [
+      { from: 'member', to: 'add', type: 'PERFORM', storyIds: ['s1'] },
+      { from: 'add', to: 'comment', type: 'TARGET', storyIds: ['s1'] },
+      { from: 'member', to: 'find', type: 'PERFORM', storyIds: ['s2'] },
+      { from: 'find', to: 'story', type: 'TARGET', storyId: 's2' },
+      { from: 'comment', to: 'story', type: 'SIMILAR', score: 0.8 },
+    ],
+  });
+
+  it('lists every story whose triple contains the term', () => {
+    expect(storyIdsForNode(graph, 'member')).toEqual(['s1', 's2']);
+    expect(storyIdsForNode(graph, 'story')).toEqual(['s2']);
+  });
+
+  it('ignores analytical edges when collecting stories', () => {
+    expect(storyIdsForNode(graph, 'comment')).toEqual(['s1']);
+  });
+
+  it('returns the S–V–O path of one story', () => {
+    expect([...termIdsForStory(graph, 's2')].sort()).toEqual(['find', 'member', 'story']);
   });
 });

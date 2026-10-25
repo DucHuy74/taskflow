@@ -2,14 +2,16 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { AlertCircle, CheckCircle2, CircleDashed, GripVertical, Pencil, Sparkles } from 'lucide-react';
-import type { UserStory } from '@/types/userStory';
+import { AlertCircle, CheckCircle2, ChevronDown, CircleDashed, GripVertical, Pencil, Sparkles } from 'lucide-react';
+import { STORY_STATUS_OPTIONS, storyStatusLabel } from '@/lib/sprintLifecycle';
+import type { UserStory, UserStoryStatus } from '@/types/userStory';
 
 interface UserStoryCardProps {
   story: UserStory;
   isDragging?: boolean;
   isInSprint?: boolean;
-  onStatusChange?: (storyId: string, status: 'ToDo' | 'InProgress' | 'Done') => void;
+  /** When provided (story in an InProgress sprint), the status badge becomes a "Change status" select. */
+  onStatusChange?: (story: UserStory, status: UserStoryStatus) => void;
   draggable?: boolean;
   /** When provided, renders an "Edit story" button. */
   onEdit?: (story: UserStory) => void;
@@ -33,6 +35,7 @@ export function UserStoryCard({
   isInSprint = false,
   draggable = true,
   onEdit,
+  onStatusChange,
 }: UserStoryCardProps) {
   const {
     attributes,
@@ -64,7 +67,7 @@ export function UserStoryCard({
       .slice(0, 2);
   };
 
-  const statusLabel = story.status === 'InProgress' ? 'In progress' : story.status === 'ToDo' ? 'To do' : story.status;
+  const statusLabel = storyStatusLabel(story.status);
 
   return (
     <div
@@ -95,7 +98,32 @@ export function UserStoryCard({
 
           <div className="flex min-w-0 items-center gap-2 @xl:shrink-0">
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 @xl:flex-none">
-              <span className={cn('inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold', statusColors[story.status])}>{statusLabel}</span>
+              {onStatusChange ? (
+                <span className="relative inline-flex">
+                  <select
+                    value={story.status}
+                    onChange={(event) => {
+                      const next = event.target.value as UserStoryStatus;
+                      if (next !== story.status) onStatusChange(story, next);
+                    }}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    aria-label={`Change status: ${story.storyText}`}
+                    title="Change status"
+                    className={cn(
+                      'h-11 cursor-pointer appearance-none rounded-lg border border-transparent py-0 pl-2.5 pr-7 text-xs font-semibold transition-colors',
+                      'hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:hover:border-slate-600',
+                      statusColors[story.status]
+                    )}
+                  >
+                    {STORY_STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">{option.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 opacity-70" aria-hidden="true" />
+                </span>
+              ) : (
+                <span className={cn('inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold', statusColors[story.status])}>{statusLabel}</span>
+              )}
 
               {story.priority && (
                 <span className={cn('inline-flex items-center rounded px-2 py-0.5 text-xs font-medium', priorityColors[story.priority])}>
@@ -180,7 +208,7 @@ export function UserStoryCardStatic({ story, isInSprint = false }: { story: User
               statusColors[story.status]
             )}
           >
-            {story.status}
+            {storyStatusLabel(story.status)}
           </span>
 
           {story.priority && (
