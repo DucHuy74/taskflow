@@ -110,34 +110,32 @@ describe('backlogService', () => {
   });
 
   describe('updateStoryStatus', () => {
-    it('should return true on success', async () => {
+    it('returns the updated story on success', async () => {
       const { api } = await import('@/services/api');
-      vi.mocked(api.put).mockResolvedValue({ data: { code: 1000 } });
+      const updated = { id: 'story-1', storyText: 'S', status: 'InProgress' };
+      vi.mocked(api.put).mockResolvedValue({ data: { code: 1000, result: updated } });
 
       const result = await backlogService.updateStoryStatus('story-1', 'InProgress');
 
-      expect(result).toBe(true);
+      expect(result).toEqual(updated);
       expect(api.put).toHaveBeenCalledWith('/user-stories/story-1/status', {
         status: 'InProgress',
       });
     });
 
-    it('should return false on error', async () => {
+    it.each([1026, 1027, 1028, 1014])('rethrows the original axios error for code %i', async (code) => {
       const { api } = await import('@/services/api');
-      vi.mocked(api.put).mockRejectedValue(new Error('Network error'));
+      const failure = Object.assign(new Error('400'), { response: { status: code === 1014 ? 403 : 400, data: { code } } });
+      vi.mocked(api.put).mockRejectedValue(failure);
 
-      const result = await backlogService.updateStoryStatus('story-1', 'Done');
-
-      expect(result).toBe(false);
+      await expect(backlogService.updateStoryStatus('story-1', 'Done')).rejects.toBe(failure);
     });
 
-    it('should return false when code is not 1000', async () => {
+    it('throws when code is not 1000', async () => {
       const { api } = await import('@/services/api');
-      vi.mocked(api.put).mockResolvedValue({ data: { code: 500 } });
+      vi.mocked(api.put).mockResolvedValue({ data: { code: 500, message: 'Boom' } });
 
-      const result = await backlogService.updateStoryStatus('story-1', 'ToDo');
-
-      expect(result).toBe(false);
+      await expect(backlogService.updateStoryStatus('story-1', 'ToDo')).rejects.toThrow('Boom');
     });
   });
 

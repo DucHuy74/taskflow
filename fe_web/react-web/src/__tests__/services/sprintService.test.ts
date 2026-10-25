@@ -211,42 +211,51 @@ describe('sprintService', () => {
   });
 
   describe('startSprint', () => {
-    it('should return true on success', async () => {
+    it('posts to the start endpoint and returns the started sprint', async () => {
       const { api } = await import('@/services/api');
-      vi.mocked(api.post).mockResolvedValue({ status: 200 });
+      const started = { id: 'sprint-1', name: 'Sprint 1', status: 'InProgress' };
+      vi.mocked(api.post).mockResolvedValue({ status: 200, data: { code: 1000, result: started } });
 
       const result = await sprintService.startSprint('sprint-1');
 
-      expect(result).toBe(true);
+      expect(api.post).toHaveBeenCalledWith('/sprints/sprint-1/start');
+      expect(result).toEqual(started);
     });
 
-    it('should return false on error', async () => {
+    it.each([1021, 1022, 1014])('rethrows the original axios error for code %i', async (code) => {
       const { api } = await import('@/services/api');
-      vi.mocked(api.post).mockRejectedValue(new Error('Network error'));
+      const failure = Object.assign(new Error('400'), { response: { status: 400, data: { code } } });
+      vi.mocked(api.post).mockRejectedValue(failure);
 
-      const result = await sprintService.startSprint('sprint-1');
+      await expect(sprintService.startSprint('sprint-1')).rejects.toBe(failure);
+    });
 
-      expect(result).toBe(false);
+    it('throws when the body carries a non-success code', async () => {
+      const { api } = await import('@/services/api');
+      vi.mocked(api.post).mockResolvedValue({ status: 200, data: { code: 1021, message: 'Sprint is not in the correct state' } });
+
+      await expect(sprintService.startSprint('sprint-1')).rejects.toThrow('Sprint is not in the correct state');
     });
   });
 
   describe('completeSprint', () => {
-    it('should return true on success', async () => {
+    it('posts to the complete endpoint and returns the completed sprint', async () => {
       const { api } = await import('@/services/api');
-      vi.mocked(api.post).mockResolvedValue({ status: 200 });
+      const completed = { id: 'sprint-1', name: 'Sprint 1', status: 'Done' };
+      vi.mocked(api.post).mockResolvedValue({ status: 200, data: { code: 1000, result: completed } });
 
       const result = await sprintService.completeSprint('sprint-1');
 
-      expect(result).toBe(true);
+      expect(api.post).toHaveBeenCalledWith('/sprints/sprint-1/complete');
+      expect(result).toEqual(completed);
     });
 
-    it('should return false on error', async () => {
+    it('rethrows the original axios error', async () => {
       const { api } = await import('@/services/api');
-      vi.mocked(api.post).mockRejectedValue(new Error('Network error'));
+      const failure = Object.assign(new Error('400'), { response: { status: 400, data: { code: 1021 } } });
+      vi.mocked(api.post).mockRejectedValue(failure);
 
-      const result = await sprintService.completeSprint('sprint-1');
-
-      expect(result).toBe(false);
+      await expect(sprintService.completeSprint('sprint-1')).rejects.toBe(failure);
     });
   });
 

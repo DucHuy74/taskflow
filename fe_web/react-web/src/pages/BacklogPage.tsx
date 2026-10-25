@@ -16,16 +16,18 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { BacklogList, SprintBoard, SprintBoardEmpty, CreateSprintDialog, EditSprintDialog, UserStoryCardStatic, EditStoryDialog } from '@/components/backlog';
+import { BacklogList, SprintBoard, SprintBoardEmpty, CreateSprintDialog, EditSprintDialog, UserStoryCardStatic, EditStoryDialog, CompleteSprintDialog } from '@/components/backlog';
 import { getBacklogStories, createUserStories } from '@/services/backlogService';
 import { sprintService } from '@/services/sprintService';
 import { workspaceService } from '@/services/workspaceService';
 import { recommendationService } from '@/services/recommendationService';
 import { useToastMessage } from '@/components/ui/toast';
+import { useSprintLifecycle, useStoryStatusMutation } from '@/hooks/useSprintMutations';
+import { findActiveSprint } from '@/lib/sprintLifecycle';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { GitBranch, Layers3, Search, Settings as SettingsIcon, Sparkles } from 'lucide-react';
-import type { UserStory } from '@/types/userStory';
+import type { UserStory, UserStoryStatus } from '@/types/userStory';
 import type { CreateSprintRequest, Sprint } from '@/types/sprint';
 
 export function BacklogPage() {
@@ -40,6 +42,7 @@ export function BacklogPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingStory, setEditingStory] = useState<UserStory | null>(null);
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
+  const [completingSprintId, setCompletingSprintId] = useState<string | null>(null);
 
   const collisionDetectionStrategy = useCallback<CollisionDetection>((args) => {
     const pointerCollisions = pointerWithin(args);
@@ -168,18 +171,10 @@ export function BacklogPage() {
     },
   });
 
-  const startSprintMutation = useMutation({
-    mutationFn: async (sprintId: string) => {
-      if (!await sprintService.startSprint(sprintId)) throw new Error('Unable to start sprint');
-      return sprintId;
-    },
-    onSuccess: (_data, sprintId) => {
-      void queryClient.invalidateQueries({ queryKey: ['sprints', workspaceId] });
-      showToast('Sprint started successfully.', 'success', 'Sprint started');
-      navigate(`/workspace/${workspaceId}/sprint/${sprintId}/graph`);
-    },
-    onError: () => showToast('The sprint could not be started. Please try again.', 'error', 'Start failed'),
-  });
+  const { startSprint: startSprintMutation, completeSprint: completeSprintMutation } = useSprintLifecycle(workspaceId, sprints);
+  const storyStatusMutation = useStoryStatusMutation(workspaceId);
+  const activeSprint = useMemo(() => findActiveSprint(sprints), [sprints]);
+  const completingSprint = sprints.find((sprint) => sprint.id === completingSprintId) ?? null;
 
   // Handlers
   const handleCreateStory = useCallback(
@@ -199,6 +194,18 @@ export function BacklogPage() {
   const handleStartSprint = useCallback((sprintId: string) => {
     startSprintMutation.mutate(sprintId);
   }, [startSprintMutation]);
+
+  const handleConfirmCompleteSprint = useCallback(() => {
+    if (!completingSprintId) return;
+    completeSprintMutation.mutate(
+      { sprintId: completingSprintId, stories: sprintStoriesMap[completingSprintId] || [] },
+      { onSettled: () => setCompletingSprintId(null) }
+    );
+  }, [completeSprintMutation, completingSprintId, sprintStoriesMap]);
+
+  const handleChangeStoryStatus = useCallback((sprintId: string, story: UserStory, status: UserStoryStatus) => {
+    storyStatusMutation.mutate({ story, sprintId, status });
+  }, [storyStatusMutation]);
 
   const handleViewSprintGraph = useCallback((sprint: Sprint) => {
     navigate(`/workspace/${workspaceId}/sprint/${sprint.id}/graph`);
@@ -234,6 +241,9 @@ export function BacklogPage() {
       const storyId = active.id as string;
       const story = activeData.story as UserStory;
 
+      const sourceSprint = story.sprintId ? sprints.find((sprint) => sprint.id === story.sprintId) : undefined;
+      if (sourceSprint?.status === 'Done') return; // completed sprints are read-only
+
       if (overData?.type === 'backlog') {
         if (story.sprintId) {
           await sprintService.removeStoryFromSprint(storyId);
@@ -246,17 +256,33 @@ export function BacklogPage() {
 
       // Check if dropped on a sprint or sprint column
       if (overData?.type === 'sprint' || overData?.type === 'sprint-column') {
-        const targetSprintId = overData?.type === 'sprint'
+        const targetSprintId: string = overData?.type === 'sprint'
           ? overData.sprint.id
           : overData.sprintId;
+        const targetSprint = sprints.find((sprint) => sprint.id === targetSprintId);
+        if (targetSprint?.status === 'Done') {
+          showToast('Completed sprints are read-only.', 'default', 'Sprint completed');
+          return;
+        }
 
-        // Don't add if already in this sprint
         if (story.sprintId !== targetSprintId) {
           await handleMoveStoryToSprint(targetSprintId, story);
+          return;
+        }
+
+        // Same sprint: dropping on another column changes the story's status.
+        if (overData?.type === 'sprint-column') {
+          const targetStatus = overData.status as UserStoryStatus;
+          if (targetStatus === story.status) return;
+          if (targetSprint?.status !== 'InProgress') {
+            showToast('Start the sprint to move stories between columns.', 'default', 'Sprint not started');
+            return;
+          }
+          storyStatusMutation.mutate({ story, sprintId: targetSprintId, status: targetStatus });
         }
       }
     },
-    [handleMoveStoryToSprint, queryClient, workspaceId]
+    [handleMoveStoryToSprint, queryClient, showToast, sprints, storyStatusMutation, workspaceId]
   );
 
   if (!workspaceIdParam) {
@@ -308,10 +334,14 @@ export function BacklogPage() {
                 stories={sprintStoriesMap[sprint.id] || []}
                 isLoading={sprintsLoading}
                 onStartSprint={() => handleStartSprint(sprint.id)}
+                onCompleteSprint={() => setCompletingSprintId(sprint.id)}
                 onViewGraph={() => handleViewSprintGraph(sprint)}
                 isStarting={startSprintMutation.isPending && startSprintMutation.variables === sprint.id}
+                isCompleting={completeSprintMutation.isPending && completeSprintMutation.variables?.sprintId === sprint.id}
+                activeSprintName={activeSprint && activeSprint.id !== sprint.id ? activeSprint.name : null}
                 onEditStory={setEditingStory}
                 onEditSprint={() => setEditingSprint(sprint)}
+                onChangeStoryStatus={(story, status) => handleChangeStoryStatus(sprint.id, story, status)}
               />
             ))}
           </div>
@@ -350,6 +380,16 @@ export function BacklogPage() {
           workspaceId={workspaceId}
           open={Boolean(editingSprint)}
           onOpenChange={(open) => { if (!open) setEditingSprint(null); }}
+        />
+
+        {/* Complete Sprint confirmation */}
+        <CompleteSprintDialog
+          sprint={completingSprint}
+          stories={completingSprintId ? sprintStoriesMap[completingSprintId] || [] : []}
+          open={Boolean(completingSprint)}
+          onOpenChange={(open) => { if (!open && !completeSprintMutation.isPending) setCompletingSprintId(null); }}
+          onConfirm={handleConfirmCompleteSprint}
+          isCompleting={completeSprintMutation.isPending}
         />
 
         {/* Create Sprint Dialog */}

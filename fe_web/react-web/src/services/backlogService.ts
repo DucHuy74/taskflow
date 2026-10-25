@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { UserStory, CreateUserStoryRequest, UpdateUserStoryRequest } from '@/types/userStory';
+import type { UserStory, UserStoryStatus, CreateUserStoryRequest, UpdateUserStoryRequest } from '@/types/userStory';
 
 // API Response type
 interface ApiResponse<T> {
@@ -55,18 +55,17 @@ export async function createUserStories(
   return response.data.result;
 }
 
-// Update user story status
-export async function updateStoryStatus(storyId: string, status: string): Promise<boolean> {
-  try {
-    const response = await api.put(`/user-stories/${storyId}/status`, { status });
-    if (response.data.code === 1000) {
-      return true;
-    }
-    return false;
-  } catch (error) {
-    console.error('Error updating story status:', error);
-    return false;
+/**
+ * Move a story to another status column (PUT /user-stories/{id}/status).
+ * Only allowed for stories in an InProgress sprint. Throws the original axios error so callers
+ * can map codes 1026 (not in a sprint), 1027 (sprint not active), 1028 (invalid status), 1014.
+ */
+export async function updateStoryStatus(storyId: string, status: UserStoryStatus): Promise<UserStory | null> {
+  const response = await api.put<ApiResponse<UserStory>>(`/user-stories/${storyId}/status`, { status });
+  if (response.data?.code !== 1000) {
+    throw new Error(response.data?.message || 'Unable to update story status');
   }
+  return response.data.result ?? null;
 }
 
 // Delete user story
