@@ -52,7 +52,11 @@ type Query {
     workspaceGraph(
         workspaceId: ID!
 
-        # ===== Context filter (PERFORM/TARGET only) =====
+        # ===== Context filter =====
+        # sprintId: stories currently in that sprint (must belong to workspaceId, else NOT_FOUND).
+        # backlogId (ignored when sprintId is set): stories of the workspace that are in no sprint.
+        # Story ids come from MySQL; PERFORM/TARGET/RELATES_TO edges are limited to those stories, and
+        # SIMILAR/ASSOCIATED edges to pairs of terms that both appear in the scoped PERFORM/TARGET edges.
         sprintId: ID
         backlogId: ID
 
