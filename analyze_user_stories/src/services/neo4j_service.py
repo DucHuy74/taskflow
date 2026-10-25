@@ -41,12 +41,18 @@ class Neo4jService:
             # Lấy priority từ svo nếu bên NLP của bạn có trích xuất
             priority = svo.get("priority") 
 
+            # Context sprint/backlog theo từng triple (batch rebuild), nếu không có thì dùng tham số hàm
+            item_sprint_id = svo["sprint_id"] if "sprint_id" in svo else sprint_id
+            item_backlog_id = svo["backlog_id"] if "backlog_id" in svo else backlog_id
+
             data.append({
                 "s": s,
                 "a": a,
                 "o": o,
                 "story_id": current_story_id,
-                "priority": priority
+                "priority": priority,
+                "sprint_id": item_sprint_id,
+                "backlog_id": item_backlog_id
             })
 
         if not data:
@@ -75,20 +81,18 @@ class Neo4jService:
         // TẠO MỐI QUAN HỆ PERFORM & TARGET
         MERGE (sub)-[r1:PERFORM {source: $source, story_id: row.story_id}]->(act)
         SET 
-            r1.sprint_id = $sprintId,
-            r1.backlog_id = $backlogId
+            r1.sprint_id = row.sprint_id,
+            r1.backlog_id = row.backlog_id
 
         MERGE (act)-[r2:TARGET {source: $source, story_id: row.story_id}]->(obj)
         SET 
-            r2.sprint_id = $sprintId,
-            r2.backlog_id = $backlogId
+            r2.sprint_id = row.sprint_id,
+            r2.backlog_id = row.backlog_id
         """
 
         self._write(query, {
             "data": data,
             "ws": workspace_id,
-            "sprintId": sprint_id,
-            "backlogId": backlog_id,
             "source": source
         })
         
