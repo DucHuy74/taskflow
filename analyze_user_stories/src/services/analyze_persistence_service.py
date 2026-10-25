@@ -54,11 +54,17 @@ class AnalyzePersistenceService:
         ).first()
         
     def update_context(self, story_id, sprint_id, backlog_id):
-        result = self.db.query(AnalyzeStoryResult)\
-            .filter_by(asr_user_story_id=story_id)\
-            .first()
-
-        if result:
-            result.asr_sprint_id = sprint_id
-            result.asr_backlog_id = backlog_id
-            self.db.commit()
+        """Sync sprint/backlog on EVERY analyze_story_results row of the story (one story can have several SVO rows)."""
+        updated = (
+            self.db.query(AnalyzeStoryResult)
+            .filter(AnalyzeStoryResult.asr_user_story_id == story_id)
+            .update(
+                {
+                    AnalyzeStoryResult.asr_sprint_id: sprint_id,
+                    AnalyzeStoryResult.asr_backlog_id: backlog_id,
+                },
+                synchronize_session=False,
+            )
+        )
+        self.db.commit()
+        return updated

@@ -47,6 +47,58 @@ class GraphBatchService:
         )
         return {story.id: story.story_text for story in stories}
 
+    def _load_story_context_by_id(self, rows):
+        """Resolve each story's CURRENT (sprint_id, backlog_id).
+
+        Source of truth is the backend replica table user_story (columns us_id, spr_id,
+        backlog_id via the UserStory ORM model). A story present in the replica is
+        authoritative even when spr_id/backlog_id are NULL. Stories missing from the
+        replica (or a replica failure) fall back to analyze_story_results.asr_sprint_id /
+        asr_backlog_id.
+        """
+        fallback = {}
+        for row in rows:
+            story_id = getattr(row, "asr_user_story_id", None)
+            if not story_id or story_id in fallback:
+                continue
+            fallback[story_id] = (
+                getattr(row, "asr_sprint_id", None),
+                getattr(row, "asr_backlog_id", None),
+            )
+
+        if not fallback:
+            return {}
+
+        replica = {}
+        try:
+            stories = (
+                self.source_db.query(UserStory)
+                .filter(UserStory.id.in_(list(fallback)))
+                .all()
+            )
+            for story in stories:
+                replica[story.id] = (story.sprint_id, story.backlog_id)
+        except Exception as e:
+            print(f"[BATCH] WARN cannot read story context from replica, using analyze_story_results: {e}")
+            replica = {}
+
+        missing = [story_id for story_id in fallback if story_id not in replica]
+        if missing:
+            print(f"[BATCH] {len(missing)} stories not found in replica, using asr_sprint_id/asr_backlog_id")
+
+        return {
+            story_id: replica.get(story_id, fallback_ctx)
+            for story_id, fallback_ctx in fallback.items()
+        }
+
+    @staticmethod
+    def _attach_story_context(svo_list, context_by_story_id):
+        enriched = []
+        for svo in svo_list:
+            sprint_id, backlog_id = context_by_story_id.get(svo.get("story_id"), (None, None))
+            enriched.append({**svo, "sprint_id": sprint_id, "backlog_id": backlog_id})
+        return enriched
+
     def rebuild_workspace(self, workspace_id, source_revision=None, progress_callback=None):
 
         def report(stage, progress):
@@ -110,6 +162,10 @@ class GraphBatchService:
             )
 
             print(f"[BATCH] Rules count: {len(rules)}")
+
+            # sprint/backlog hiện tại của từng story để cạnh PERFORM/TARGET không bị null sau rebuild
+            story_context = self._load_story_context_by_id(rows)
+            valid_svo = self._attach_story_context(valid_svo, story_context)
 
             # clear after build xong để tránh mất dữ liệu nếu có lỗi ở phần neo4j
             print("[BATCH] Clearing old graph...")
